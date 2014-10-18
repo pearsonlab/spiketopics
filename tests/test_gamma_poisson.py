@@ -1,10 +1,11 @@
 """
 Tests for Gamma-Poisson model.
 """
-from nose.tools import assert_equals, with_setup 
+from nose.tools import assert_equals
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
+import gamma_poisson as gp
 
 class Test_Forwards_Backwards_Integration():
     @classmethod
@@ -38,7 +39,7 @@ class Test_Forwards_Backwards_Integration():
         Set variables that determine the problem size.
         """
         self.U = 100  # units
-        self.T = 5000  # time points
+        self.T = 500  # time points
         self.K = 5  # categories
         self.dt = 1 / 30  # time length of observation (in s)
 
@@ -137,5 +138,8 @@ class Test_Forwards_Backwards_Integration():
         # initial belief about states
         self.pi0_test = np.array([0.5, 0.5])
 
-    def test_fb_argument_dimensions_consistent(self):
-        pass
+    def test_observation_probs_consistent(self):
+        psi = gp.calculate_observation_probs(self.N_test, self.mu_test)
+        assert_equals(psi.shape, (self.T, self.mu_test.shape[-1]))
+        npt.assert_array_equal(psi >= 0, np.ones_like(psi, dtype='bool'))
+        
