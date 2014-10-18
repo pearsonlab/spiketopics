@@ -1,7 +1,7 @@
 """
-Tests for Gamma-Poisson model.
+Tests for Forwards-Backwards inference model.
 """
-from nose.tools import assert_equals, assert_true
+from nose.tools import assert_equals, assert_true, set_trace
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
@@ -24,21 +24,15 @@ class Test_Forwards_Backwards():
 
         self._make_chain()
 
-        self._make_firing_rates()
-
-        # draw from Poisson
-        self.N = stats.poisson.rvs(self.fr)
-
-        # make smaller test case for forwards-backwards
+        # make test case for forwards-backwards
         self._setup_fb_data()
-
 
     @classmethod
     def _setup_constants(self):
         """
         Set variables that determine the problem size.
         """
-        self.U = 100  # units
+        self.U = 10  # units
         self.T = 500  # time points
         self.K = 5  # categories
         self.dt = 1 / 30  # time length of observation (in s)
@@ -86,31 +80,14 @@ class Test_Forwards_Backwards():
         self.chain = chain
 
     @classmethod
-    def _make_firing_rates(self):
-        """
-        Make matrix of firing rates (categories x units)
-        """        
-
-        aa = 3, 1
-        bb = 2, 1
-        lam = stats.gamma.rvs(a=aa[1], scale=bb[1], size=(self.K, self.U))
-
-        # baselines should follow a different distribution
-        lam[0, :] = stats.gamma.rvs(a=aa[0], scale=bb[0], size=self.U)   
-
-        # calculate rate for each time
-        fr = np.exp(self.chain.T.dot(np.log(lam))) * self.dt
-        self.fr = fr + 1e-5  # in case we get exactly 0
-
-    @classmethod
     def _setup_fb_data(self):
         idx = 1  # which chain to test
-        self.num_units = 10  # number of units for test case
+        self.U = 10  # number of units for test case
         self.z_test = self.chain[idx]
 
         # rates for each unit
-        mu0 = np.random.rand(self.num_units)
-        mu = 5 * np.random.rand(self.num_units)
+        mu0 = np.random.rand(self.U)
+        mu = 5 * np.random.rand(self.U)
         mu_stack = np.dstack([mu0, mu0 + mu])
         self.mu_test = mu_stack[0]
 
@@ -130,11 +107,9 @@ class Test_Forwards_Backwards():
         assert_equals(np.max(self.chain), 1)
         assert_equals(np.min(self.chain), 0)
         npt.assert_allclose(self.chain, np.around(self.chain))
-        npt.assert_array_less(0, self.fr)
-        npt.assert_string_equal(self.N.dtype.kind, 'i')
         assert_equals(self.z_test.shape, (self.T,))
-        assert_equals(self.mu_test.shape, (self.num_units, 2))
-        assert_equals(self.N_test.shape, (self.T, self.num_units))
+        assert_equals(self.mu_test.shape, (self.U, 2))
+        assert_equals(self.N_test.shape, (self.T, self.U))
         assert_equals(self.A_test.shape, (2, 2))
         assert_equals(self.pi0_test.shape, (2,))
 
@@ -165,5 +140,7 @@ class Test_Forwards_Backwards():
     def fb_infer_integration_test(self):
         gamma, logZ, Xi = gp.fb_infer(self.N_test, self.mu_test, self.A_test, 
             self.pi0_test) 
-        npt.assert_allclose(self.z_test[5:], gamma[5:, 1])
+        # set_trace()
+        npt.assert_allclose(self.z_test.astype('float')[5:], 
+            gamma[5:, 1], atol=1e-3)
         
