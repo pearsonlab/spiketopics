@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.stats as stats
 
-def calculate_observation_probs(y, pars):
+def calculate_observation_probs(y, pars, rate_min=1e-200):
     """
     Calculates the probability of the observations given the hidden state: 
     p(y_t|z_t, pars). Calculates on the log scale to avoid overflow/underflow 
@@ -11,22 +11,26 @@ def calculate_observation_probs(y, pars):
     M = pars.shape[-1]  # last index is for values of z
     logpsi = np.empty((T, M))
 
+    # sanitize inputs, since logpmf(lam = 0) = nan
+    rates = pars.copy()
+    rates[rates == 0] = rate_min
+
     # Poisson observation model
     # observation matrix is times x units
     # z = 0
-    logpsi[:, 0] = np.sum(stats.poisson.logpmf(y, pars[..., 0]), axis=1)
+    logpsi[:, 0] = np.sum(stats.poisson.logpmf(y, rates[..., 0]), axis=1)
 
     # z = 1
-    logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, pars[..., 1]), axis=1)
+    logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, rates[..., 1]), axis=1)
+
+    # take 
     
     # take care of underflow
     logpsi = logpsi - np.amax(logpsi, 1, keepdims=True)
     psi = np.exp(logpsi)
-    
-    # take care of trials where the z = 0 rate is 0 but we had spikes
-    bad_times = np.any(pars[..., 0] == 0, 1)
-    psi[bad_times, 0] = 0
-    psi[bad_times, 1] = 1
+
+    if np.any(np.isnan(psi)):
+        raise ValueError('NaNs appear in observation probabilities.')
 
     return psi
 

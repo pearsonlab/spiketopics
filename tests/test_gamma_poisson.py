@@ -1,7 +1,7 @@
 """
 Tests for Gamma-Poisson model.
 """
-from nose.tools import assert_equals
+from nose.tools import assert_equals, assert_raises, set_trace
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
@@ -102,19 +102,6 @@ class Test_Forwards_Backwards_Integration():
         fr = np.exp(self.chain.T.dot(np.log(lam))) * self.dt
         self.fr = fr + 1e-5  # in case we get exactly 0
 
-    def test_class_setup(self):
-        assert_equals(self.chain.shape, (self.K, self.T))
-        assert_equals(np.max(self.chain), 1)
-        assert_equals(np.min(self.chain), 0)
-        npt.assert_allclose(self.chain, np.around(self.chain))
-        npt.assert_array_less(0, self.fr)
-        npt.assert_string_equal(self.N.dtype.kind, 'i')
-        assert_equals(self.ztest.shape, (self.T,))
-        assert_equals(self.mu_test.shape, (1, self.num_units, 2))
-        assert_equals(self.N_test.shape, (self.T, self.num_units))
-        assert_equals(self.A_test.shape, (2, 2))
-        assert_equals(self.pi0_test.shape, (2,))
-
     @classmethod
     def _setup_fb_data(self):
         idx = 1  # which chain to test
@@ -125,7 +112,7 @@ class Test_Forwards_Backwards_Integration():
         mu0 = np.random.rand(self.num_units)
         mu = 5 * np.random.rand(self.num_units)
         mu_stack = np.dstack([mu0, mu0 + mu])
-        self.mu_test = mu_stack
+        self.mu_test = mu_stack[0]
 
         # series of observations: ground truth
         rates = mu0 + np.outer(self.ztest, mu)
@@ -138,8 +125,31 @@ class Test_Forwards_Backwards_Integration():
         # initial belief about states
         self.pi0_test = np.array([0.5, 0.5])
 
+    def test_class_setup(self):
+        assert_equals(self.chain.shape, (self.K, self.T))
+        assert_equals(np.max(self.chain), 1)
+        assert_equals(np.min(self.chain), 0)
+        npt.assert_allclose(self.chain, np.around(self.chain))
+        npt.assert_array_less(0, self.fr)
+        npt.assert_string_equal(self.N.dtype.kind, 'i')
+        assert_equals(self.ztest.shape, (self.T,))
+        assert_equals(self.mu_test.shape, (self.num_units, 2))
+        assert_equals(self.N_test.shape, (self.T, self.num_units))
+        assert_equals(self.A_test.shape, (2, 2))
+        assert_equals(self.pi0_test.shape, (2,))
+
     def test_observation_probs_consistent(self):
         psi = gp.calculate_observation_probs(self.N_test, self.mu_test)
         assert_equals(psi.shape, (self.T, self.mu_test.shape[-1]))
         npt.assert_array_equal(psi >= 0, np.ones_like(psi, dtype='bool'))
-        
+
+    def test_observation_probs_corrects_impossible_baseline(self):
+        # set up a case were N is nonzero probability, baseline is 
+        # 0, and function corrects this 
+        Ntest = self.N_test.copy()
+        Ntest[0] = 1 
+        mutest = self.mu_test.copy()
+        mutest[0, 0] = 0
+        # set_trace()
+        psi = gp.calculate_observation_probs(Ntest, mutest)
+        npt.assert_allclose(psi[0, :], np.array([0.0, 1.0]), atol=1e-10)        
