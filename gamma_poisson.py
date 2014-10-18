@@ -1,5 +1,35 @@
 import numpy as np
-import scipty.stats as stats
+import scipy.stats as stats
+
+def calculate_observation_probs(y, pars):
+    """
+    Calculates the probability of the observations given the hidden state: 
+    p(y_t|z_t, pars). Calculates on the log scale to avoid overflow/underflow 
+    issues.
+    """
+    T = y.shape[0]  # number of observations
+    M = pars.shape[-1]  # last index is for values of z
+    logpsi = np.empty((T, M))
+
+    # Poisson observation model
+    # observation matrix is times x units
+    # z = 0
+    logpsi[:, 0] = np.sum(stats.poisson.logpmf(y, pars[..., 0]), axis=1)
+
+    # z = 1
+    logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, pars[..., 1]), axis=1)
+    
+    # take care of underflow
+    logpsi = logpsi - np.amax(logpsi, 1, keepdims=True)
+    psi = np.exp(logpsi)
+    
+    # take care of trials where the z = 0 rate is 0 but we had spikes
+    bad_times = np.any(pars[..., 0] == 0, 1)
+    psi[bad_times, 0] = 0
+    psi[bad_times, 1] = 1
+
+    return psi
+
 
 def fb_infer(y, lam, A, pi0):
     """
