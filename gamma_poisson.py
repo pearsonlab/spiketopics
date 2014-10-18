@@ -49,27 +49,10 @@ def fb_infer(y, lam, A, pi0):
     # initialize empty variables
     alpha = np.empty((T, M))  # p(z_t|y_{1:T})
     beta = np.empty((T, M))  # p(y_{t+1:T}|z_t) (unnormalized)
-    psi = np.empty((T, M))  # p(y_t|z_t) (observation model)
-    logpsi = np.empty((T, M))
     gamma = np.empty((T, M))  # p(z_t|y_{1:T}) (posterior)
     logZ = np.empty(T)  # log partition function
 
-    # Poisson observation model
-    # observation matrix is times x units
-    # z = 0
-    logpsi[:, 0] = np.sum(stats.poisson.logpmf(y, lam[..., 0]), axis=1)
-
-    # z = 1
-    logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, lam[..., 1]), axis=1)
-    
-    # take care of underflow
-    logpsi = logpsi - np.amax(logpsi, 1, keepdims=True)
-    psi = np.exp(logpsi)
-    
-    # take care of trials where the z = 0 rate is 0 but we had spikes
-    bad_times = np.any(lam[..., 0] == 0, 1)
-    psi[bad_times, 0] = 0
-    psi[bad_times, 1] = 1
+    psi = calculate_observation_probs(y, lam)
     
     # initialize
     alpha[0, :] = pi0

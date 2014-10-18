@@ -1,7 +1,7 @@
 """
 Tests for Gamma-Poisson model.
 """
-from nose.tools import assert_equals, assert_raises, set_trace
+from nose.tools import assert_equals, assert_true
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
@@ -150,6 +150,14 @@ class Test_Forwards_Backwards_Integration():
         Ntest[0] = 1 
         mutest = self.mu_test.copy()
         mutest[0, 0] = 0
-        # set_trace()
         psi = gp.calculate_observation_probs(Ntest, mutest)
         npt.assert_allclose(psi[0, :], np.array([0.0, 1.0]), atol=1e-10)        
+    def test_fb_returns_consistent(self):
+        gamma, logZ, Xi = gp.fb_infer(self.N_test, self.mu_test, self.A_test, 
+            self.pi0_test) 
+        assert_equals(gamma.shape, (self.T, 2))
+        npt.assert_allclose(np.sum(gamma, 1), np.ones((self.T,)))
+        assert_equals(logZ.shape, ())
+        assert_true(logZ >= 0)
+        assert_equals(Xi.shape, (self.T - 1, 2, 2))
+        npt.assert_allclose(np.sum(Xi, axis=(1, 2)), np.ones((self.T - 1, )))
