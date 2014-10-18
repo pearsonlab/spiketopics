@@ -106,7 +106,7 @@ class Test_Forwards_Backwards_Integration():
     def _setup_fb_data(self):
         idx = 1  # which chain to test
         self.num_units = 10  # number of units for test case
-        self.ztest = self.chain[idx]
+        self.z_test = self.chain[idx]
 
         # rates for each unit
         mu0 = np.random.rand(self.num_units)
@@ -115,7 +115,7 @@ class Test_Forwards_Backwards_Integration():
         self.mu_test = mu_stack[0]
 
         # series of observations: ground truth
-        rates = mu0 + np.outer(self.ztest, mu)
+        rates = mu0 + np.outer(self.z_test, mu)
         self.N_test = stats.poisson.rvs(rates)
 
         # transition matrix
@@ -132,7 +132,7 @@ class Test_Forwards_Backwards_Integration():
         npt.assert_allclose(self.chain, np.around(self.chain))
         npt.assert_array_less(0, self.fr)
         npt.assert_string_equal(self.N.dtype.kind, 'i')
-        assert_equals(self.ztest.shape, (self.T,))
+        assert_equals(self.z_test.shape, (self.T,))
         assert_equals(self.mu_test.shape, (self.num_units, 2))
         assert_equals(self.N_test.shape, (self.T, self.num_units))
         assert_equals(self.A_test.shape, (2, 2))
@@ -161,3 +161,9 @@ class Test_Forwards_Backwards_Integration():
         assert_true(logZ >= 0)
         assert_equals(Xi.shape, (self.T - 1, 2, 2))
         npt.assert_allclose(np.sum(Xi, axis=(1, 2)), np.ones((self.T - 1, )))
+
+    def fb_infer_integration_test(self):
+        gamma, logZ, Xi = gp.fb_infer(self.N_test, self.mu_test, self.A_test, 
+            self.pi0_test) 
+        npt.assert_allclose(self.z_test[5:], gamma[5:, 1])
+        
