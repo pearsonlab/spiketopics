@@ -108,16 +108,21 @@ class Test_Forwards_Backwards_Integration():
         npt.assert_allclose(self.chain, np.around(self.chain))
         npt.assert_array_less(0, self.fr)
         npt.assert_string_equal(self.N.dtype.kind, 'i')
+        assert_equals(self.ztest.shape, (self.T,))
+        assert_equals(self.mu_test.shape, (1, self.num_units, 2))
+        assert_equals(self.N_test.shape, (self.T, self.num_units))
+        assert_equals(self.A_test.shape, (2, 2))
+        assert_equals(self.pi0_test.shape, (2,))
 
     @classmethod
     def _setup_fb_data(self):
         idx = 1  # which chain to test
-        num_units = 10  # number of units for test case
+        self.num_units = 10  # number of units for test case
         self.ztest = self.chain[idx]
 
         # rates for each unit
-        mu0 = np.random.rand(num_units)
-        mu = 5 * np.random.rand(num_units)
+        mu0 = np.random.rand(self.num_units)
+        mu = 5 * np.random.rand(self.num_units)
         mu_stack = np.dstack([mu0, mu0 + mu])
         self.mu_test = mu_stack
 
