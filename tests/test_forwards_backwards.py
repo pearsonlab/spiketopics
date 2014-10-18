@@ -7,7 +7,7 @@ import scipy.stats as stats
 import numpy.testing as npt
 import gamma_poisson as gp
 
-class Test_Forwards_Backwards_Integration():
+class Test_Forwards_Backwards():
     @classmethod
     def setup_class(self):
         """
