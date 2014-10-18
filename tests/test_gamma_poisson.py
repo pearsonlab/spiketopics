@@ -1,10 +1,36 @@
 """
 Tests for Gamma-Poisson model.
 """
+from nose.tools import assert_equals, with_setup 
 import numpy as np
 import scipy.stats as stats
+import numpy.testing as npt
 
-class Test_Forwards_Backwards_Integration:
+class Test_Forwards_Backwards_Integration():
+    @classmethod
+    def setup_class(self):
+        """
+        Make some sample Markov chain data to run inference on.
+        """
+
+        np.random.seed(12345)
+
+        self._setup_constants()
+
+        self._make_transition_probs()
+
+        self._make_initial_states()
+
+        self._make_chain()
+
+        self._make_firing_rates()
+
+        # draw from Poisson
+        self.N = stats.poisson.rvs(self.fr)
+
+        # make smaller test case for forwards-backwards
+        self._setup_fb_data()
+
 
     @classmethod
     def _setup_constants(self):
@@ -75,26 +101,36 @@ class Test_Forwards_Backwards_Integration:
         fr = np.exp(self.chain.T.dot(np.log(lam))) * self.dt
         self.fr = fr + 1e-5  # in case we get exactly 0
 
+    def test_class_setup(self):
+        assert_equals(self.chain.shape, (self.K, self.T))
+        assert_equals(np.max(self.chain), 1)
+        assert_equals(np.min(self.chain), 0)
+        npt.assert_allclose(self.chain, np.around(self.chain))
+        npt.assert_array_less(0, self.fr)
+        npt.assert_string_equal(self.N.dtype.kind, 'i')
+
     @classmethod
-    def setup_class(self):
-        """
-        Make some sample Markov chain data to run inference on.
-        """
+    def _setup_fb_data(self):
+        idx = 1  # which chain to test
+        num_units = 10  # number of units for test case
+        self.ztest = self.chain[idx]
 
-        np.random.seed(12345)
+        # rates for each unit
+        mu0 = np.random.rand(num_units)
+        mu = 5 * np.random.rand(num_units)
+        mu_stack = np.dstack([mu0, mu0 + mu])
+        self.mu_test = mu_stack
 
-        self._setup_constants()
+        # series of observations: ground truth
+        rates = mu0 + np.outer(self.ztest, mu)
+        self.N_test = stats.poisson.rvs(rates)
 
-        self._make_transition_probs()
+        # transition matrix
+        to_1 = np.expand_dims(self.trans_probs[idx, :], 0)
+        self.A_test = np.r_[1 - to_1, to_1]
 
-        self._make_initial_states()
+        # initial belief about states
+        self.pi0_test = np.array([0.5, 0.5])
 
-        self._make_chain()
-
-        self._make_firing_rates()
-
-        # draw from Poisson
-        self.N = stats.poisson.rvs(self.fr)
-
-    def test_stuff(self):
-        assert(0 == 0)
+    def test_fb_argument_dimensions_consistent(self):
+        pass
