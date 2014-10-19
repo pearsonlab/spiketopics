@@ -94,6 +94,7 @@ class GPModel:
     This class represents and fits a Gamma-Poisson model via variational
     inference. Variables are as follows:
     T: number of (discrete) times
+    dt: time difference between observations
     U: number of observation units
     K: number of latent categories to fit
 
@@ -115,6 +116,9 @@ class GPModel:
     A(k)_{i -> 1} ~ Beta(nu1_{ik}, nu2_{ik})
     pi0(k)_1 ~ Beta(rho1_k, rho2_k)
     """
-    def __init__(self):
+    def __init__(self, T, K, U, dt):
+        """
+        Set up basic constants for the model. 
+        """
         pass
 

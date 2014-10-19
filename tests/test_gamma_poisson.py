@@ -99,5 +99,5 @@ class Test_Gamma_Poisson:
         self.fr = fr + 1e-5  # in case we get exactly 0
 
     def test_can_instantiate_model_object(self):
-        gpm = gp.GPModel()
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         assert_is_instance(gpm, gp.GPModel)
