@@ -124,52 +124,20 @@ class GPModel:
         self.K = K
         self.U = U
         self.dt = dt
+        self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
+            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
 
     def set_priors(self, **kwargs):
         """
         Set prior parameters for inference. See definitions above.
         """
-        if 'cc' not in kwargs:
-            self.cc = np.ones((self.K, self.U))
-        elif kwargs['cc'].shape == (self.K, self.U):
-                self.cc = kwargs['cc']
-        else:
-            raise ValueError('cc prior parameter has incorrect shape')
-
-        if 'dd' not in kwargs:
-            self.dd = np.ones((self.K, self.U))
-        elif kwargs['dd'].shape == (self.K, self.U):
-                self.dd = kwargs['dd']
-        else:
-            raise ValueError('dd prior parameter has incorrect shape')
-
-        if 'nu1' not in kwargs:
-            self.nu1 = np.ones((2, self.K))
-        elif kwargs['nu1'].shape == (2, self.K):
-                self.nu1 = kwargs['nu1']
-        else:
-            raise ValueError('nu1 prior parameter has incorrect shape')
-
-        if 'nu2' not in kwargs:
-            self.nu2 = np.ones((2, self.K))
-        elif kwargs['nu2'].shape == (2, self.K):
-                self.nu2 = kwargs['nu2']
-        else:
-            raise ValueError('nu2 prior parameter has incorrect shape')
-
-        if 'rho1' not in kwargs:
-            self.rho1 = np.ones((self.K,))
-        elif kwargs['rho1'].shape == (self.K,):
-                self.rho1 = kwargs['rho1']
-        else:
-            raise ValueError('rho1 prior parameter has incorrect shape')
-
-        if 'rho2' not in kwargs:
-            self.rho2 = np.ones((self.K,))
-        elif kwargs['rho2'].shape == (self.K,):
-                self.rho2 = kwargs['rho2']
-        else:
-            raise ValueError('rho2 prior parameter has incorrect shape')
-
+        for var, shape in self.prior_pars.iteritems():
+            if var not in kwargs:
+                setattr(self, var, np.ones(shape))
+            elif kwargs[var].shape == shape:
+                setattr(self, var, kwargs[var])
+            else:
+                raise ValueError(
+                    'Prior on parameter {} has incorrect shape'.format(var))
 
 
