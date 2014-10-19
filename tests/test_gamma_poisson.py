@@ -1,13 +1,13 @@
 """
 Tests for Gamma Poisson model.
 """
-from nose.tools import assert_equals, assert_true
+from nose.tools import assert_equals, assert_true, assert_is_instance
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
 import gamma_poisson as gp
 
-class Test_Gamma_Poisson():
+class Test_Gamma_Poisson:
     @classmethod
     def setup_class(self):
         """
@@ -98,3 +98,6 @@ class Test_Gamma_Poisson():
         fr = np.exp(self.chain.T.dot(np.log(lam))) * self.dt
         self.fr = fr + 1e-5  # in case we get exactly 0
 
+    def test_can_instantiate_model_object(self):
+        gpm = gp.GPModel()
+        assert_is_instance(gpm, gp.GPModel)

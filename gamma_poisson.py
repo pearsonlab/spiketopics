@@ -89,3 +89,32 @@ def fb_infer(y, lam, A, pi0):
 
     return gamma, np.sum(logZ), Xi
 
+class GPModel:
+    """
+    This class represents and fits a Gamma-Poisson model via variational
+    inference. Variables are as follows:
+    T: number of (discrete) times
+    U: number of observation units
+    K: number of latent categories to fit
+
+    N: T x U array of count observations
+    lam: K x U array of _multiplicative_ effects; lam[0] is baseline
+    z: T x K array of latent states in the Markov chain (0 or 1)
+    A: 2 x 2 x K array of column-stochastic Markov transition matrices (one
+        per chain)
+    pi0: 2 x K array of initial chain state probabilities
+
+    Model is defined as:
+    N_{tu}|z ~ Poisson(prod_k mu_{ku}^z_{tk})
+    lam_{ku}|z ~ Gamma(alpha_{ku}, beta_{ku})
+    A(k)_{i -> 1} ~ Beta(gamma1_{ik}, gamma2_{ik})
+    pi0(k)_1 ~ Beta(delta1_k, delta2_k)
+
+    Priors are:
+    lam_{ku}|z ~ Gamma(c_{ku}, d_{ku})
+    A(k)_{i -> 1} ~ Beta(nu1_{ik}, nu2_{ik})
+    pi0(k)_1 ~ Beta(rho1_k, rho2_k)
+    """
+    def __init__(self):
+        pass
+
