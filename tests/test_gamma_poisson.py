@@ -1,7 +1,7 @@
 """
 Tests for Gamma Poisson model.
 """
-from nose.tools import assert_equals, assert_true, assert_is_instance
+from nose.tools import assert_equals, assert_is_instance, assert_raises
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
@@ -101,3 +101,52 @@ class Test_Gamma_Poisson:
     def test_can_instantiate_model_object(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         assert_is_instance(gpm, gp.GPModel)
+        assert_equals(gpm.U, self.U)
+        assert_equals(gpm.T, self.T)
+        assert_equals(gpm.K, self.K)
+        assert_equals(gpm.dt, self.dt)
+
+    def test_can_set_priors(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        cctest = np.random.rand(self.K, self.U)
+        ddtest = np.random.rand(self.K, self.U)
+        nu1test = np.random.rand(2, self.K)
+        nu2test = np.random.rand(2, self.K)
+        rho1test = np.random.rand(self.K)
+        rho2test = np.random.rand(self.K)
+        gpm.set_priors(cc=cctest, dd=ddtest, nu1=nu1test, nu2=nu2test,
+            rho1=rho1test, rho2=rho2test)
+        npt.assert_array_equal(gpm.cc, cctest)
+        npt.assert_array_equal(gpm.dd, ddtest)
+        npt.assert_array_equal(gpm.nu1, nu1test)
+        npt.assert_array_equal(gpm.nu2, nu2test)
+        npt.assert_array_equal(gpm.rho1, rho1test)
+        npt.assert_array_equal(gpm.rho2, rho2test)
+
+    def test_no_arguments_sets_default_priors(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors()
+        assert_equals(gpm.cc.shape, (self.K, self.U))
+        assert_equals(gpm.dd.shape, (self.K, self.U))
+        assert_equals(gpm.nu1.shape, (2, self.K))
+        assert_equals(gpm.nu2.shape, (2, self.K))
+        assert_equals(gpm.rho1.shape, (self.K,))
+        assert_equals(gpm.rho2.shape, (self.K,))
+
+    def test_invalid_prior_shapes_raises_error(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        assert_raises(ValueError, gpm.set_priors, 
+            cc=np.ones((self.K + 1, self.U)))
+        assert_raises(ValueError, gpm.set_priors, 
+            dd=np.ones((self.K + 1, self.U)))
+        assert_raises(ValueError, gpm.set_priors, 
+            nu1=np.ones((self.K + 1, self.U)))
+        assert_raises(ValueError, gpm.set_priors, 
+            nu2=np.ones((1, self.U)))
+        assert_raises(ValueError, gpm.set_priors, 
+            rho1=np.ones((1, self.K)))
+        assert_raises(ValueError, gpm.set_priors, 
+            rho2=np.ones((2, self.K, 1)))
+
+
+
