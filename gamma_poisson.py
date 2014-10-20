@@ -148,6 +148,8 @@ class GPModel:
                 raise ValueError(
                     'Prior on parameter {} has incorrect shape'.format(var))
 
+        return self
+
     def set_inits(self, **kwargs):
         """
         Set variational parameters for inference. See definitions above.
@@ -164,3 +166,20 @@ class GPModel:
         # normalize Xi
         self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
 
+        return self
+
+    @classmethod
+    def F_prod(self, z, w, log=False):
+        """
+        Given z (T x K) and w (K x U), returns the product
+        prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
+        """
+        zz = z[..., np.newaxis]
+        vv = 1 - zz + zz * w
+        dd = np.sum(np.log(vv), 1, keepdims=True)
+        log_ans =  dd - np.log(vv)
+
+        if log:
+            return log_ans
+        else:
+            return np.exp(log_ans)

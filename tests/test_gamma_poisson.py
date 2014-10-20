@@ -206,3 +206,18 @@ class Test_Gamma_Poisson:
             delta2=np.ones((2, self.K, 1)))
         assert_raises(ValueError, gpm.set_inits, 
             xi=np.ones((self.T, self.K, 1)))
+
+    def test_F_prod(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        z = np.random.rand(5, 8)
+        w = np.random.rand(8, 3)
+        assert_equals(gpm.F_prod(z, w).shape, (5, 8, 3))
+        npt.assert_allclose(gpm.F_prod(z, w), 
+            np.exp(gpm.F_prod(z, w, log=True)))
+
+        # test whether we can get the same entry in every element by
+        # multiplying through by the one part each lacks
+        unnorm = 1 - z[..., np.newaxis] + z[..., np.newaxis] * w
+        allprod = unnorm * gpm.F_prod(z, w)
+        npt.assert_allclose(allprod[0, 0, 0], allprod[0, 1, 0])
+        npt.assert_allclose(allprod[-1, 0, 2], allprod[-1, -1, 2])
