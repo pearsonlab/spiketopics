@@ -221,3 +221,9 @@ class Test_Gamma_Poisson:
         allprod = unnorm * gpm.F_prod(z, w)
         npt.assert_allclose(allprod[0, 0, 0], allprod[0, 1, 0])
         npt.assert_allclose(allprod[-1, 0, 2], allprod[-1, -1, 2])
+        npt.assert_allclose(allprod[:, 0, :], gpm.F_prod(z, w, exclude=False))
+
+    def test_L(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits()
+        gpm.L()        

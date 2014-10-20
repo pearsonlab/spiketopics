@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.stats as stats
+from scipy.special import digamma
+from scipy.special import gamma as Gamma
 
 def calculate_observation_probs(y, pars, rate_min=1e-200):
     """
@@ -169,17 +171,49 @@ class GPModel:
         return self
 
     @staticmethod
-    def F_prod(z, w, log=False):
+    def F_prod(z, w, log=False, exclude=True):
         """
         Given z (T x K) and w (K x U), returns the product
         prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
+        log = True returns the log of the result
+        exclude = True returns the product over all k;
+            as a result, it is T x U instead of T x K x U
         """
         zz = z[..., np.newaxis]
         vv = 1 - zz + zz * w
-        dd = np.sum(np.log(vv), 1, keepdims=True)
-        log_ans =  dd - np.log(vv)
+        dd = np.sum(np.log(vv), 1, keepdims=exclude)
+
+        if exclude:
+            log_ans =  dd - np.log(vv)
+        else:
+            log_ans = dd
 
         if log:
             return log_ans
         else:
             return np.exp(log_ans)
+
+    def L(self):
+        """
+        Calculate E[log p - log q] in the variational approximation.
+        """
+        Nbar_zbar = (self.xi[..., np.newaxis] * self.mu) * self.F_prod(self.xi, self.mu)
+
+        bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+
+        L = np.sum(Nbar_zbar * bar_log_lambda, axis=1)
+        L -= self.F_prod(self.xi, self.alpha / self.beta, exclude=False)
+
+        H_lambda = (self.alpha - np.log(self.beta) + 
+            np.log(Gamma(self.alpha)) + 
+            (1 - self.alpha) * digamma(self.alpha))
+
+        L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
+        L -= np.sum(Nbar_zbar * np.log(self.mu), axis=1)
+        L += self.F_prod(self.xi, self.mu, exclude=False)
+
+        # there are other contributions to L from the Markov chain,
+        # but they vanish identically upon updating the Markov 
+        # parameters in the variational ansatz, so we ignore them here        
+
+        return L
