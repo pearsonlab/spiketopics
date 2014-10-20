@@ -158,9 +158,10 @@ class Test_Gamma_Poisson:
         delta1test = np.random.rand(self.K)
         delta2test = np.random.rand(self.K)
         xitest = np.random.rand(self.T, self.K)
+        Xitest = np.random.rand(self.T  - 1, self.K, 2, 2)
         gpm.set_inits(mu=mutest, alpha=alphatest, beta=betatest, 
             gamma1=gamma1test, gamma2=gamma2test, delta1=delta1test,
-            delta2=delta2test, xi=xitest)
+            delta2=delta2test, xi=xitest, Xi=Xitest)
         npt.assert_array_equal(gpm.mu, mutest)
         npt.assert_array_equal(gpm.alpha, alphatest)
         npt.assert_array_equal(gpm.beta, betatest)
@@ -169,6 +170,12 @@ class Test_Gamma_Poisson:
         npt.assert_array_equal(gpm.delta1, delta1test)
         npt.assert_array_equal(gpm.delta2, delta2test)
         npt.assert_array_equal(gpm.xi, xitest)
+
+        # Xi will have been normalized
+        Xinorm = Xitest / np.sum(Xitest, axis=(-1, -2), keepdims=True)
+        npt.assert_allclose(gpm.Xi, Xinorm)
+        npt.assert_allclose(np.sum(gpm.Xi, axis=(-1, -2)), 
+            np.ones((self.T - 1, self.K)))
 
     def test_no_arguments_sets_default_inits(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)

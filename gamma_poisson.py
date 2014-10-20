@@ -118,7 +118,7 @@ class GPModel:
 
     Derived parameters:
     xi_{tk} = E[z_{tk}]
-    Xi_{t+1, t}[j, i] = p(z_{t+1}=j, z_t=1)
+    Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=1)
     """
     def __init__(self, T, K, U, dt):
         """
@@ -132,7 +132,8 @@ class GPModel:
             'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
         self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
-            'delta1': (K,), 'delta2': (K,), 'xi': (T, K)})
+            'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
+            'Xi': (T - 1, K, 2, 2)})
 
     def set_priors(self, **kwargs):
         """
@@ -159,4 +160,7 @@ class GPModel:
             else:
                 raise ValueError(
                     'Prior on variational parameter {} has incorrect shape'.format(var))
+
+        # normalize Xi
+        self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
 
