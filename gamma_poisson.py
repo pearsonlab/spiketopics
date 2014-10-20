@@ -168,8 +168,8 @@ class GPModel:
 
         return self
 
-    @classmethod
-    def F_prod(self, z, w, log=False):
+    @staticmethod
+    def F_prod(z, w, log=False):
         """
         Given z (T x K) and w (K x U), returns the product
         prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
