@@ -148,5 +148,54 @@ class Test_Gamma_Poisson:
         assert_raises(ValueError, gpm.set_priors, 
             rho2=np.ones((2, self.K, 1)))
 
+    def test_can_set_inits(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        mutest = np.random.rand(self.K, self.U)
+        alphatest = np.random.rand(self.K, self.U)
+        betatest = np.random.rand(self.K, self.U)
+        gamma1test = np.random.rand(2, self.K)
+        gamma2test = np.random.rand(2, self.K)
+        delta1test = np.random.rand(self.K)
+        delta2test = np.random.rand(self.K)
+        xitest = np.random.rand(self.T, self.K)
+        gpm.set_inits(mu=mutest, alpha=alphatest, beta=betatest, 
+            gamma1=gamma1test, gamma2=gamma2test, delta1=delta1test,
+            delta2=delta2test, xi=xitest)
+        npt.assert_array_equal(gpm.mu, mutest)
+        npt.assert_array_equal(gpm.alpha, alphatest)
+        npt.assert_array_equal(gpm.beta, betatest)
+        npt.assert_array_equal(gpm.gamma1, gamma1test)
+        npt.assert_array_equal(gpm.gamma2, gamma2test)
+        npt.assert_array_equal(gpm.delta1, delta1test)
+        npt.assert_array_equal(gpm.delta2, delta2test)
+        npt.assert_array_equal(gpm.xi, xitest)
 
+    def test_no_arguments_sets_default_inits(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_inits()
+        assert_equals(gpm.mu.shape, (self.K, self.U))
+        assert_equals(gpm.alpha.shape, (self.K, self.U))
+        assert_equals(gpm.beta.shape, (self.K, self.U))
+        assert_equals(gpm.gamma1.shape, (2, self.K))
+        assert_equals(gpm.gamma2.shape, (2, self.K))
+        assert_equals(gpm.delta1.shape, (self.K,))
+        assert_equals(gpm.delta2.shape, (self.K,))
 
+    def test_invalid_init_shapes_raises_error(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        assert_raises(ValueError, gpm.set_inits, 
+            mu=np.ones((self.K + 1, self.U)))
+        assert_raises(ValueError, gpm.set_inits, 
+            alpha=np.ones((self.K, self.U, 1)))
+        assert_raises(ValueError, gpm.set_inits, 
+            beta=np.ones((self.K,)))
+        assert_raises(ValueError, gpm.set_inits, 
+            gamma1=np.ones((self.K + 1, self.U)))
+        assert_raises(ValueError, gpm.set_inits, 
+            gamma2=np.ones((1, self.U)))
+        assert_raises(ValueError, gpm.set_inits, 
+            delta1=np.ones((1, self.K)))
+        assert_raises(ValueError, gpm.set_inits, 
+            delta2=np.ones((2, self.K, 1)))
+        assert_raises(ValueError, gpm.set_inits, 
+            xi=np.ones((self.T, self.K, 1)))

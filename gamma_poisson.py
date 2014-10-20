@@ -115,6 +115,10 @@ class GPModel:
     lam_{ku}|z ~ Gamma(cc_{ku}, dd_{ku})
     A(k)_{i -> 1} ~ Beta(nu1_{ik}, nu2_{ik})
     pi0(k)_1 ~ Beta(rho1_k, rho2_k)
+
+    Derived parameters:
+    xi_{tk} = E[z_{tk}]
+    Xi_{t+1, t}[j, i] = p(z_{t+1}=j, z_t=1)
     """
     def __init__(self, T, K, U, dt):
         """
@@ -126,6 +130,9 @@ class GPModel:
         self.dt = dt
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
             'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
+        self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
+            'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
+            'delta1': (K,), 'delta2': (K,), 'xi': (T, K)})
 
     def set_priors(self, **kwargs):
         """
@@ -140,4 +147,16 @@ class GPModel:
                 raise ValueError(
                     'Prior on parameter {} has incorrect shape'.format(var))
 
+    def set_inits(self, **kwargs):
+        """
+        Set variational parameters for inference. See definitions above.
+        """
+        for var, shape in self.variational_pars.iteritems():
+            if var not in kwargs:
+                setattr(self, var, np.ones(shape))
+            elif kwargs[var].shape == shape:
+                setattr(self, var, kwargs[var])
+            else:
+                raise ValueError(
+                    'Prior on variational parameter {} has incorrect shape'.format(var))
 
