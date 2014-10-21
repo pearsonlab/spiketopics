@@ -238,7 +238,6 @@ class Test_Gamma_Poisson:
         L0 = gpm.L()
         L1 = gpm.update_chain_rates(0).L()
         L2 = gpm.update_chain_rates(0).L()
-        # set_trace()
         assert_true(L1 < np.inf)
         assert_equals(L1, L2)
         assert_true(L0 <= gpm.L())
