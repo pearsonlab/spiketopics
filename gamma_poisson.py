@@ -200,12 +200,10 @@ class GPModel:
         """
         Calculate E[log p - log q] in the variational approximation.
         """
-        Nbar_zbar = (self.xi[..., np.newaxis] * self.mu) * self.F_prod(self.xi, self.mu)
-
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
 
         # piece from E[log p] for lambda
-        L = np.sum(Nbar_zbar * bar_log_lambda, axis=1)
+        L = self.N * self.xi.dot(bar_log_lambda)
         L -= self.F_prod(self.xi, self.alpha / self.beta, exclude=False)
 
         # piece from same for lambda prior
@@ -218,10 +216,6 @@ class GPModel:
             (1 - self.alpha) * digamma(self.alpha))
         L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
 
-        # piece from E[-log q] of gamma for mu
-        L -= np.sum(Nbar_zbar * np.log(self.mu), axis=1)
-        L += self.F_prod(self.xi, self.mu, exclude=False)
-
         # there are other contributions to L from the Markov chain,
         # but they vanish identically upon updating the Markov 
         # parameters in the variational ansatz, so we ignore them here        
@@ -229,7 +223,11 @@ class GPModel:
         return np.mean(L)
 
     def update_chain_rates(self, k):
-        self.alpha[k] = self.cc[k] + np.sum(self.N, axis=0)[k] + 1
-        self.beta[k] = np.sum(self.F_prod(self.xi, self.alpha / self.beta), axis=0)[k] + self.dd[k]
+        Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
+        zz = np.sum(self.xi, axis=0)
+        Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
+
+        self.alpha[k] = self.cc[k] + (Nz[k] / zz[k]) + 1
+        self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
