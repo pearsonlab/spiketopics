@@ -1,7 +1,8 @@
 """
 Tests for Gamma Poisson model.
 """
-from nose.tools import assert_equals, assert_is_instance, assert_raises
+from __future__ import division
+from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, set_trace
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
@@ -224,6 +225,20 @@ class Test_Gamma_Poisson:
         npt.assert_allclose(allprod[:, 0, :], gpm.F_prod(z, w, exclude=False))
 
     def test_L(self):
+        # just test that we can run the function without errors
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         gpm.set_priors().set_inits()
-        gpm.L()        
+        L0 = gpm.L()
+        assert_equals(L0.shape, ())
+
+    def test_update_alpha(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits().set_data(self.N)
+        L0 = gpm.L()
+        L1 = gpm.update_chain_rates(0).L()
+        L2 = gpm.update_chain_rates(0).L()
+        # set_trace()
+        print "\nL0: {}\nL1: {}\nL2: {}".format(L0, L1, L2)
+        assert_true(L1 < np.inf)
+        assert_equals(L1, L2)
+        assert_true(L0 <= gpm.L())

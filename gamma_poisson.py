@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.stats as stats
-from scipy.special import digamma
-from scipy.special import gamma as Gamma
+from scipy.special import digamma, gammaln
 
 def calculate_observation_probs(y, pars, rate_min=1e-200):
     """
@@ -170,6 +169,10 @@ class GPModel:
 
         return self
 
+    def set_data(self, N):
+        self.N = N
+        return self
+
     @staticmethod
     def F_prod(z, w, log=False, exclude=True):
         """
@@ -201,14 +204,21 @@ class GPModel:
 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
 
+        # piece from E[log p] for lambda
         L = np.sum(Nbar_zbar * bar_log_lambda, axis=1)
         L -= self.F_prod(self.xi, self.alpha / self.beta, exclude=False)
 
-        H_lambda = (self.alpha - np.log(self.beta) + 
-            np.log(Gamma(self.alpha)) + 
-            (1 - self.alpha) * digamma(self.alpha))
+        # piece from same for lambda prior
+        L += self.xi.dot(self.cc * bar_log_lambda)
+        L -= self.xi.dot(self.dd * (self.alpha / self.beta))
 
+        # piece from entropy of gamma distributions in q = E[-log q]
+        H_lambda = (self.alpha - np.log(self.beta) + 
+            gammaln(self.alpha) + 
+            (1 - self.alpha) * digamma(self.alpha))
         L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
+
+        # piece from E[-log q] of gamma for mu
         L -= np.sum(Nbar_zbar * np.log(self.mu), axis=1)
         L += self.F_prod(self.xi, self.mu, exclude=False)
 
@@ -216,4 +226,10 @@ class GPModel:
         # but they vanish identically upon updating the Markov 
         # parameters in the variational ansatz, so we ignore them here        
 
-        return L
+        return np.mean(L)
+
+    def update_chain_rates(self, k):
+        self.alpha[k] = self.cc[k] + np.sum(self.N, axis=0)[k] + 1
+        self.beta[k] = np.sum(self.F_prod(self.xi, self.alpha / self.beta), axis=0)[k] + self.dd[k]
+        self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
+        return self
