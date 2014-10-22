@@ -241,8 +241,13 @@ class GPModel:
         zz = np.sum(self.xi, axis=0)
         Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
 
-        self.alpha[k] = self.cc[k] + (Nz[k] / zz[k]) + 1
-        self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
+        if zz[k] > 0:
+            self.alpha[k] = self.cc[k] + (Nz[k] / zz[k]) + 1
+            self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
+        else:
+            self.alpha[k] = self.cc[k] + 1
+            self.beta[k] = self.dd[k]
+
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
 
@@ -269,14 +274,13 @@ class GPModel:
         lam[..., 1] = eta[:, k, :] * self.mu[k]        
 
         # do forward-backward inference and assign results
-        if k == 0 and self.include_baseline is False:
+        if k == 0 and self.include_baseline is True:
             # inits were set and should stay
             pass
         else:
             post, logZ, Xi = fb_infer(self.N, lam, A, pi0)
             self.xi[:, k] = post[:, 1]
             self.Xi[:, k] = Xi
-
 
         return self
 
@@ -298,22 +302,31 @@ class GPModel:
         """
         for k in xrange(self.K):
             self.update_chain_rates(k)
+            print "chain {}: updated chain rates: L = {}".format(k, self.L())
+        for k in xrange(self.K):
             self.update_chain_states(k)
+            print "chain {}: updated chain states: L = {}".format(k, self.L())
             self.update_chain_pars(k)
+            print "chain {}: updated chain pars: L = {}".format(k, self.L())
 
-    def do_inference(self, tol=1e-7):
+    def do_inference(self, silent=False, tol=1e-7):
         """
         Perform variational inference by minimizing free energy.
         """
         self.Lvalues.append(self.L())
         delta = 1
+        idx = 0
 
         while delta > tol:
+            if not silent:
+                print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
+
             self.iterate()
             self.Lvalues.append(self.L())
 
             delta = np.abs(self.Lvalues[-1] - self.Lvalues[-2] / 
                 self.Lvalues[-1])
+            idx += 1 
 
 
 

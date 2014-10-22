@@ -297,10 +297,10 @@ class Test_Gamma_Poisson:
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         gpm.set_priors().set_inits().set_data(self.N)
         L0 = gpm.L()
-        gpm.update_chain_pars(0).L()
-        L2 = gpm.update_chain_states(0).L()
-        L3 = gpm.update_chain_pars(0).L()
-        L4 = gpm.update_chain_pars(0).L()
+        gpm.update_chain_pars(1).L()
+        L2 = gpm.update_chain_states(1).L()
+        L3 = gpm.update_chain_pars(1).L()
+        L4 = gpm.update_chain_pars(1).L()
         assert_true(L2 < np.inf)
         assert_equals(L3, L4)
         assert_true(L0 <= gpm.L())
@@ -308,9 +308,12 @@ class Test_Gamma_Poisson:
     def test_iteration_increases_L(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         gpm.set_priors().set_inits().set_data(self.N)
-        L0 = gpm.L()
-        gpm.iterate()
-        assert_true(L0 <= gpm.L())
+        Lvals = [gpm.L()]
+        for _ in xrange(5):
+            gpm.iterate()
+            Lvals.append(gpm.L())
+        set_trace()
+        assert_true(np.all(np.diff(Lvals) >= 0))
 
     def test_inference_appends_to_Lvalues(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
