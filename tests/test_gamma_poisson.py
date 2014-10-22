@@ -232,7 +232,7 @@ class Test_Gamma_Poisson:
         assert_equals(L0.shape, ())
         assert_true(L0 <= 0)  # since L is -KL divergence
 
-    def test_update_alpha(self):
+    def test_update_chain_rates(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         gpm.set_priors().set_inits().set_data(self.N)
         L0 = gpm.L()
@@ -241,3 +241,17 @@ class Test_Gamma_Poisson:
         assert_true(L1 < np.inf)
         assert_equals(L1, L2)
         assert_true(L0 <= gpm.L())
+
+    def test_update_chain_states(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits().set_data(self.N)
+        L0 = gpm.L()
+        L1 = gpm.update_chain_states(0).L()
+        L2 = gpm.update_chain_states(0).L()
+        assert_true(np.max(gpm.xi[:, 0] <= 1))
+        assert_true(np.min(gpm.xi[:, 0] >= 0))
+        assert_true(L1 < np.inf)
+        assert_equals(L1, L2)
+        assert_true(L0 <= gpm.L())
+
+

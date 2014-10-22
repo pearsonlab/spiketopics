@@ -223,6 +223,10 @@ class GPModel:
         return np.mean(L)
 
     def update_chain_rates(self, k):
+        """
+        Update parameters corresponding to emission parameters for 
+        each Markov chain.
+        """
         Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
         zz = np.sum(self.xi, axis=0)
         Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
@@ -231,3 +235,36 @@ class GPModel:
         self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
+
+    def update_chain_states(self, k):
+        """
+        Update estimates of hidden states for given chain, along with
+        two-slice marginals.
+        """
+        # start by constructing parameters to use when running chain inference
+        log_A_vec = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
+        log_A = np.empty((2, 2))
+        log_A[1] = log_A_vec[:, k]
+        log_A[0] = 1 - log_A[1]
+        A = np.exp(log_A)
+
+        pi0 = np.empty(2)
+        pi0[1] = self.delta1[k] / (self.delta1[k] + self.delta2[k])
+        pi0[0] = 1 - pi0[1] 
+
+        # now calculate effective rates for z = 0 and z = 1
+        lam = np.empty((self.T, self.U, 2))
+        eta = self.F_prod(self.xi, self.mu)
+        lam[..., 0] = eta[:, k, :]
+        lam[..., 1] = eta[:, k, :] * self.mu[k]        
+
+        # do forward-backward inference and assign results
+        post, logZ, Xi = fb_infer(self.N, lam, A, pi0)
+        self.xi[:, k] = post[:, 1]
+        self.Xi[:, k] = Xi
+        
+        return self
+
+
+
+
