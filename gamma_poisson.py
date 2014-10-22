@@ -262,9 +262,20 @@ class GPModel:
         post, logZ, Xi = fb_infer(self.N, lam, A, pi0)
         self.xi[:, k] = post[:, 1]
         self.Xi[:, k] = Xi
-        
+
         return self
 
+    def update_chain_pars(self, k):
+        """
+        Update Markov chain variational parameters for given chain.
+        """
+        self.gamma1[:, k] = self.nu1[:, k] + np.sum(self.Xi[:, k, 1, :], axis=0)
+        self.gamma2[:, k] = self.nu2[:, k] + np.sum(self.Xi[:, k, 0, :], axis=0)
+
+        self.delta1[k] = self.rho1[k] + self.xi[0, k]
+        self.delta2[k] = self.rho2[k] + 1 - self.xi[0, k]
+
+        return self
 
 
 

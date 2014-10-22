@@ -254,4 +254,17 @@ class Test_Gamma_Poisson:
         assert_equals(L1, L2)
         assert_true(L0 <= gpm.L())
 
+    def test_update_chain_pars(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits().set_data(self.N)
+        L0 = gpm.L()
+        gpm.update_chain_pars(0).L()
+        L2 = gpm.update_chain_states(0).L()
+        L3 = gpm.update_chain_pars(0).L()
+        L4 = gpm.update_chain_pars(0).L()
+        set_trace()
+        assert_true(L2 < np.inf)
+        assert_equals(L3, L4)
+        assert_true(L0 <= gpm.L())
+
 
