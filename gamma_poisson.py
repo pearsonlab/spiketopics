@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.stats as stats
 from scipy.special import digamma, gammaln
+import pdb
 
 def calculate_observation_probs(y, pars, rate_min=1e-200):
     """
@@ -242,7 +243,13 @@ class GPModel:
             (1 - self.alpha) * digamma(self.alpha))
         L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
 
-        return np.mean(L)
+        # this is the contributino from log Z = E[z^T log A z + z0^T pi0]
+        # divide by L.size = T * U so its total contribution is maintained
+        # when the array is broadcast
+        # L += np.sum(self.logZ) / L.size
+
+
+        return np.sum(L)
 
     def update_chain_rates(self, k):
         """
@@ -257,8 +264,10 @@ class GPModel:
             self.alpha[k] = self.cc[k] + (Nz[k] / zz[k]) + 1
             self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
         else:
-            self.alpha[k] = self.cc[k] + 1
-            self.beta[k] = self.dd[k]
+            pass
+            # pdb.set_trace()
+            # self.alpha[k] = self.cc[k] + 1
+            # self.beta[k] = self.dd[k]
 
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
@@ -308,11 +317,15 @@ class GPModel:
         Do one iteration of variational inference, updating each chain in turn.
         """
         for k in xrange(self.K):
-            self.update_chain_rates(k)
-            self.update_chain_pars(k)
             self.update_chain_states(k)
+            print "chain {}: updated chain states: L = {}".format(k, self.L())
+        for k in xrange(self.K):
+            self.update_chain_rates(k)
+            print "chain {}: updated chain rates: L = {}".format(k, self.L())
+            self.update_chain_pars(k)
+            print "chain {}: updated chain pars: L = {}".format(k, self.L())
 
-    def do_inference(self, silent=False, tol=1e-7):
+    def do_inference(self, silent=False, tol=1e-3):
         """
         Perform variational inference by minimizing free energy.
         """
@@ -323,11 +336,12 @@ class GPModel:
         while delta > tol:
             if not silent:
                 print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
+                print "delta = " + str(delta)
 
             self.iterate()
             self.Lvalues.append(self.L())
 
-            delta = np.abs(self.Lvalues[-1] - self.Lvalues[-2] / 
+            delta = np.abs((self.Lvalues[-1] - self.Lvalues[-2]) / 
                 self.Lvalues[-1])
             idx += 1 
 
