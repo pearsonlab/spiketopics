@@ -106,6 +106,7 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.T, self.T)
         assert_equals(gpm.K, self.K)
         assert_equals(gpm.dt, self.dt)
+        assert_is_instance(gpm.Lvalues, list)
 
     def test_can_set_priors(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
@@ -159,7 +160,45 @@ class Test_Gamma_Poisson:
         delta1test = np.random.rand(self.K)
         delta2test = np.random.rand(self.K)
         xitest = np.random.rand(self.T, self.K)
+        xitest_normed = xitest.copy()
+        xitest_normed[:, 0] = 1
         Xitest = np.random.rand(self.T  - 1, self.K, 2, 2)
+
+        gpm.set_inits(mu=mutest, alpha=alphatest, beta=betatest, 
+            gamma1=gamma1test, gamma2=gamma2test, delta1=delta1test,
+            delta2=delta2test, xi=xitest, Xi=Xitest)
+        npt.assert_array_equal(gpm.mu, mutest)
+        npt.assert_array_equal(gpm.alpha, alphatest)
+        npt.assert_array_equal(gpm.beta, betatest)
+        npt.assert_array_equal(gpm.gamma1, gamma1test)
+        npt.assert_array_equal(gpm.gamma2, gamma2test)
+        npt.assert_array_equal(gpm.delta1, delta1test)
+        npt.assert_array_equal(gpm.delta2, delta2test)
+        npt.assert_array_equal(gpm.xi, xitest_normed)
+
+        # Xi will have been normalized, and since baseline category is 
+        # included by default, Xi[:, k] = [[0, 0] , [0, 1]]
+        Xinorm = Xitest / np.sum(Xitest, axis=(-1, -2), keepdims=True)
+        Xinorm[:, 0] = 0
+        Xinorm[:, 0, 1, 1] = 1
+        npt.assert_allclose(gpm.Xi, Xinorm)
+        npt.assert_allclose(np.sum(gpm.Xi, axis=(-1, -2)), 
+            np.ones((self.T - 1, self.K)))
+
+    def test_can_set_inits_no_baseline(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt, include_baseline=False)
+        mutest = np.random.rand(self.K, self.U)
+        alphatest = np.random.rand(self.K, self.U)
+        betatest = np.random.rand(self.K, self.U)
+        gamma1test = np.random.rand(2, self.K)
+        gamma2test = np.random.rand(2, self.K)
+        delta1test = np.random.rand(self.K)
+        delta2test = np.random.rand(self.K)
+        xitest = np.random.rand(self.T, self.K)
+        xitest_normed = xitest.copy()
+        xitest_normed[:, 0] = 1
+        Xitest = np.random.rand(self.T  - 1, self.K, 2, 2)
+
         gpm.set_inits(mu=mutest, alpha=alphatest, beta=betatest, 
             gamma1=gamma1test, gamma2=gamma2test, delta1=delta1test,
             delta2=delta2test, xi=xitest, Xi=Xitest)
@@ -262,9 +301,20 @@ class Test_Gamma_Poisson:
         L2 = gpm.update_chain_states(0).L()
         L3 = gpm.update_chain_pars(0).L()
         L4 = gpm.update_chain_pars(0).L()
-        set_trace()
         assert_true(L2 < np.inf)
         assert_equals(L3, L4)
         assert_true(L0 <= gpm.L())
 
+    def test_iteration_increases_L(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits().set_data(self.N)
+        L0 = gpm.L()
+        gpm.iterate()
+        assert_true(L0 <= gpm.L())
 
+    def test_inference_appends_to_Lvalues(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        assert_equals(len(gpm.Lvalues), 0)
+        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.do_inference(tol=1)
+        assert_equals(len(gpm.Lvalues), 1)

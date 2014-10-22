@@ -121,7 +121,7 @@ class GPModel:
     xi_{tk} = E[z_{tk}]
     Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=1)
     """
-    def __init__(self, T, K, U, dt):
+    def __init__(self, T, K, U, dt, include_baseline=True):
         """
         Set up basic constants for the model. 
         """
@@ -129,12 +129,14 @@ class GPModel:
         self.K = K
         self.U = U
         self.dt = dt
+        self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
             'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
         self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
             'Xi': (T - 1, K, 2, 2)})
+        self.Lvalues = []
 
     def set_priors(self, **kwargs):
         """
@@ -166,6 +168,14 @@ class GPModel:
 
         # normalize Xi
         self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
+
+        # make sure baseline category turned on
+        if self.include_baseline:
+            self.xi[:, 0] = 1
+
+            # ensure p(z_{t+1}=1, z_t=1) = 1
+            self.Xi[:, 0] = 0
+            self.Xi[:, 0, 1, 1] = 1
 
         return self
 
@@ -259,9 +269,14 @@ class GPModel:
         lam[..., 1] = eta[:, k, :] * self.mu[k]        
 
         # do forward-backward inference and assign results
-        post, logZ, Xi = fb_infer(self.N, lam, A, pi0)
-        self.xi[:, k] = post[:, 1]
-        self.Xi[:, k] = Xi
+        if k == 0 and self.include_baseline is False:
+            # inits were set and should stay
+            pass
+        else:
+            post, logZ, Xi = fb_infer(self.N, lam, A, pi0)
+            self.xi[:, k] = post[:, 1]
+            self.Xi[:, k] = Xi
+
 
         return self
 
@@ -276,6 +291,32 @@ class GPModel:
         self.delta2[k] = self.rho2[k] + 1 - self.xi[0, k]
 
         return self
+
+    def iterate(self):
+        """
+        Do one iteration of variational inference, updating each chain in turn.
+        """
+        for k in xrange(self.K):
+            self.update_chain_rates(k)
+            self.update_chain_states(k)
+            self.update_chain_pars(k)
+
+    def do_inference(self, tol=1e-7):
+        """
+        Perform variational inference by minimizing free energy.
+        """
+        self.Lvalues.append(self.L())
+        delta = 1
+
+        while delta > tol:
+            self.iterate()
+            self.Lvalues.append(self.L())
+
+            delta = np.abs(self.Lvalues[-1] - self.Lvalues[-2] / 
+                self.Lvalues[-1])
+
+
+
 
 
 
