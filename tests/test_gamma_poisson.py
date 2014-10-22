@@ -263,6 +263,13 @@ class Test_Gamma_Poisson:
         npt.assert_allclose(allprod[-1, 0, 2], allprod[-1, -1, 2])
         npt.assert_allclose(allprod[:, 0, :], gpm.F_prod(z, w, exclude=False))
 
+    def test_calc_A(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_inits()
+        A = gpm.calc_A()
+        assert_equals(A.shape, (2, 2, self.K))
+        npt.assert_allclose(np.sum(A, 0), np.ones((2, self.K)))
+
     def test_L(self):
         # just test that we can run the function without errors
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
@@ -312,7 +319,6 @@ class Test_Gamma_Poisson:
         for _ in xrange(5):
             gpm.iterate()
             Lvals.append(gpm.L())
-        set_trace()
         assert_true(np.all(np.diff(Lvals) >= 0))
 
     def test_inference_appends_to_Lvalues(self):

@@ -76,11 +76,12 @@ def fb_infer(y, lam, A, pi0):
     gamma = gamma / np.sum(gamma, 1, keepdims=True)
     
     # two-slice marginal matrix: xi = p(z_{t+1}, z_t|y_{1:T})
+    # for t = 1:T
     beta_shift = np.expand_dims(np.roll(beta * psi, shift=-1, axis=0), 2)
 
     # take outer product; make sure t axis on alpha < T
     # and t+1 axis on bp > 0
-    Xi = beta_shift[1:] * alpha[:-1, np.newaxis, :]
+    Xi = beta_shift[0:(T - 1)] * alpha[1:, np.newaxis, :]
 
     #normalize
     Xi = Xi / np.sum(Xi, axis=(1, 2), keepdims=True)
@@ -166,6 +167,8 @@ class GPModel:
                 raise ValueError(
                     'Prior on variational parameter {} has incorrect shape'.format(var))
 
+        self.logZ = np.zeros(self.K)  # normalization constant for each chain
+
         # normalize Xi
         self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
 
@@ -206,6 +209,19 @@ class GPModel:
         else:
             return np.exp(log_ans)
 
+    def calc_A(self):
+        """
+        Calculate E[log A] with A the Markov chain transition matrix.
+        Return exp(E[log A]), which is the parameter value to be used 
+        in calculating updates to the latent states.
+        """
+        log_A_vec = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
+        log_A = np.empty((2, 2, self.K))
+        log_A[1] = log_A_vec
+        A = np.exp(log_A)
+        A[0] = 1 - A[1]
+        return A
+
     def L(self):
         """
         Calculate E[log p - log q] in the variational approximation.
@@ -225,10 +241,6 @@ class GPModel:
             gammaln(self.alpha) + 
             (1 - self.alpha) * digamma(self.alpha))
         L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
-
-        # there are other contributions to L from the Markov chain,
-        # but they vanish identically upon updating the Markov 
-        # parameters in the variational ansatz, so we ignore them here        
 
         return np.mean(L)
 
@@ -257,12 +269,6 @@ class GPModel:
         two-slice marginals.
         """
         # start by constructing parameters to use when running chain inference
-        log_A_vec = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
-        log_A = np.empty((2, 2))
-        log_A[1] = log_A_vec[:, k]
-        log_A[0] = 1 - log_A[1]
-        A = np.exp(log_A)
-
         pi0 = np.empty(2)
         pi0[1] = self.delta1[k] / (self.delta1[k] + self.delta2[k])
         pi0[0] = 1 - pi0[1] 
@@ -278,8 +284,9 @@ class GPModel:
             # inits were set and should stay
             pass
         else:
-            post, logZ, Xi = fb_infer(self.N, lam, A, pi0)
+            post, logZ, Xi = fb_infer(self.N, lam, self.calc_A()[..., k], pi0)
             self.xi[:, k] = post[:, 1]
+            self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
         return self
@@ -302,12 +309,8 @@ class GPModel:
         """
         for k in xrange(self.K):
             self.update_chain_rates(k)
-            print "chain {}: updated chain rates: L = {}".format(k, self.L())
-        for k in xrange(self.K):
-            self.update_chain_states(k)
-            print "chain {}: updated chain states: L = {}".format(k, self.L())
             self.update_chain_pars(k)
-            print "chain {}: updated chain pars: L = {}".format(k, self.L())
+            self.update_chain_states(k)
 
     def do_inference(self, silent=False, tol=1e-7):
         """
