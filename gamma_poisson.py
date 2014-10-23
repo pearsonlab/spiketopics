@@ -25,8 +25,6 @@ def calculate_observation_probs(y, pars, rate_min=1e-200):
     # z = 1
     logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, rates[..., 1]), axis=1)
 
-    # take 
-    
     # take care of underflow
     logpsi = logpsi - np.amax(logpsi, 1, keepdims=True)
     psi = np.exp(logpsi)
@@ -148,7 +146,7 @@ class GPModel:
             if var not in kwargs:
                 setattr(self, var, np.ones(shape))
             elif kwargs[var].shape == shape:
-                setattr(self, var, kwargs[var])
+                setattr(self, var, kwargs[var].copy())
             else:
                 raise ValueError(
                     'Prior on parameter {} has incorrect shape'.format(var))
@@ -163,7 +161,7 @@ class GPModel:
             if var not in kwargs:
                 setattr(self, var, np.ones(shape))
             elif kwargs[var].shape == shape:
-                setattr(self, var, kwargs[var])
+                setattr(self, var, kwargs[var].copy())
             else:
                 raise ValueError(
                     'Prior on variational parameter {} has incorrect shape'.format(var))
@@ -243,12 +241,6 @@ class GPModel:
             (1 - self.alpha) * digamma(self.alpha))
         L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
 
-        # this is the contributino from log Z = E[z^T log A z + z0^T pi0]
-        # divide by L.size = T * U so its total contribution is maintained
-        # when the array is broadcast
-        # L += np.sum(self.logZ) / L.size
-
-
         return np.sum(L)
 
     def update_chain_rates(self, k):
@@ -263,11 +255,6 @@ class GPModel:
         if zz[k] > 0:
             self.alpha[k] = self.cc[k] + (Nz[k] / zz[k]) + 1
             self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
-        else:
-            pass
-            # pdb.set_trace()
-            # self.alpha[k] = self.cc[k] + 1
-            # self.beta[k] = self.dd[k]
 
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
@@ -333,7 +320,7 @@ class GPModel:
         delta = 1
         idx = 0
 
-        while delta > tol:
+        while np.abs(delta) > tol:
             if not silent:
                 print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
                 print "delta = " + str(delta)
@@ -341,7 +328,7 @@ class GPModel:
             self.iterate()
             self.Lvalues.append(self.L())
 
-            delta = np.abs((self.Lvalues[-1] - self.Lvalues[-2]) / 
+            delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
                 self.Lvalues[-1])
             idx += 1 
 
