@@ -276,7 +276,6 @@ class Test_Gamma_Poisson:
         gpm.set_priors().set_inits().set_data(self.N)
         L0 = gpm.L()
         assert_equals(L0.shape, ())
-        assert_true(L0 <= 0)  # since L is -KL divergence
 
     def test_update_chain_rates(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
