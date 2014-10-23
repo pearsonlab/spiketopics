@@ -221,6 +221,15 @@ class GPModel:
         A[0] = 1 - A[1]
         return A
 
+    @staticmethod
+    def H_gamma(alpha, beta):
+        """
+        Calculate entropy of gamma distribution given array parameters
+        alpha and beta.
+        """
+        H = alpha - np.log(beta) + gammaln(alpha) + (1 - alpha) * digamma(alpha)
+        return H
+
     def L(self):
         """
         Calculate E[log p - log q] in the variational approximation.
@@ -231,15 +240,13 @@ class GPModel:
         L = self.N * self.xi.dot(bar_log_lambda)
         L -= self.F_prod(self.xi, self.alpha / self.beta, exclude=False)
 
-        # piece from same for lambda prior
-        L += self.xi.dot(self.cc * bar_log_lambda)
-        L -= self.xi.dot(self.dd * (self.alpha / self.beta))
+        # mu pieces
+        L -= self.N * self.xi.dot(np.log(self.mu))
+        L += self.F_prod(self.xi, self.mu, exclude=False)
 
         # piece from entropy of gamma distributions in q = E[-log q]
-        H_lambda = (self.alpha - np.log(self.beta) + 
-            gammaln(self.alpha) + 
-            (1 - self.alpha) * digamma(self.alpha))
-        L += np.sum(self.xi[:, :, np.newaxis] * H_lambda, axis=1)
+        H_lambda = self.H_gamma(self.alpha, self.beta)
+        L += np.sum(H_lambda, axis=0)
 
         return np.sum(L)
 
@@ -253,8 +260,8 @@ class GPModel:
         Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
 
         if zz[k] > 0:
-            self.alpha[k] = self.cc[k] + (Nz[k] / zz[k]) + 1
-            self.beta[k] = (Fz[k] / zz[k]) + self.dd[k]
+            self.alpha[k] = Nz[k] + self.cc[k] + 1
+            self.beta[k] = Fz[k] + self.dd[k]
 
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
