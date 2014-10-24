@@ -240,13 +240,20 @@ class GPModel:
         L = self.N * self.xi.dot(bar_log_lambda)
         L -= self.F_prod(self.xi, self.alpha / self.beta, exclude=False)
 
+        # piece for priors
+        # since priors only occur for each (k, u), parcel contribution 
+        # out over all times
+        L += (1 / self.T) * np.sum((self.cc - 1) * bar_log_lambda, axis=0)
+        L -= (1 / self.T) * np.sum(self.dd * (self.alpha / self.beta), axis=0)
+
         # mu pieces
         L -= self.N * self.xi.dot(np.log(self.mu))
         L += self.F_prod(self.xi, self.mu, exclude=False)
 
         # piece from entropy of gamma distributions in q = E[-log q]
+        # same as for priors: need to spread over all times
         H_lambda = self.H_gamma(self.alpha, self.beta)
-        L += np.sum(H_lambda, axis=0)
+        L += (1 / self.T) * np.sum(H_lambda, axis=0)
 
         return np.sum(L)
 
@@ -256,12 +263,10 @@ class GPModel:
         each Markov chain.
         """
         Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
-        zz = np.sum(self.xi, axis=0)
         Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
 
-        if zz[k] > 0:
-            self.alpha[k] = Nz[k] + self.cc[k] + 1
-            self.beta[k] = Fz[k] + self.dd[k]
+        self.alpha[k] = Nz[k] + self.cc[k] 
+        self.beta[k] = Fz[k] + self.dd[k]
 
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         return self
