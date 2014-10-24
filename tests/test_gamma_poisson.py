@@ -87,7 +87,6 @@ class Test_Gamma_Poisson:
         """
         Make matrix of firing rates (categories x units)
         """        
-
         aa = 3, 1
         bb = 2, 1
         lam = stats.gamma.rvs(a=aa[1], scale=bb[1], size=(self.K, self.U))

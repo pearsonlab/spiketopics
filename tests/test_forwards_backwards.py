@@ -1,6 +1,7 @@
 """
 Tests for Forwards-Backwards inference model.
 """
+from __future__ import division
 from nose.tools import assert_equals, assert_true, set_trace
 import numpy as np
 import scipy.stats as stats
