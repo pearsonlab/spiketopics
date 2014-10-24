@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import scipy.stats as stats
 from scipy.special import digamma, gammaln
@@ -135,7 +136,7 @@ class GPModel:
         self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2)})
+            'Xi': (T - 1, K, 2, 2), 'eta': (T, K, U)})
         self.Lvalues = []
 
     def set_priors(self, **kwargs):
@@ -235,27 +236,31 @@ class GPModel:
         Calculate E[log p - log q] in the variational approximation.
         """
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+        zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
 
         # piece from E[log p] for lambda
-        L = self.N * self.xi.dot(bar_log_lambda)
-        L -= self.F_prod(self.xi, self.alpha / self.beta, exclude=False)
+        L = np.sum(self.N * self.xi.dot(bar_log_lambda))
+        L -= np.sum(self.F_prod(self.xi, 
+            self.alpha / self.beta, exclude=False))
 
         # piece for priors
-        # since priors only occur for each (k, u), parcel contribution 
-        # out over all times
-        L += (1 / self.T) * np.sum((self.cc - 1) * bar_log_lambda, axis=0)
-        L -= (1 / self.T) * np.sum(self.dd * (self.alpha / self.beta), axis=0)
+        L += np.sum((self.cc - 1) * bar_log_lambda)
+        L -= np.sum(self.dd * (self.alpha / self.beta))
 
-        # mu pieces
-        L -= self.N * self.xi.dot(np.log(self.mu))
-        L += self.F_prod(self.xi, self.mu, exclude=False)
+        # mu and eta pieces
+        L -= np.sum(self.N * self.xi.dot(np.log(self.mu)))
+        L -= np.sum(self.N[:, np.newaxis, :] * np.log(self.eta))
+        L += np.sum(self.eta * zbar_mu) 
+        # L += np.sum(self.F_prod(self.xi, self.mu, exclude=False))
 
         # piece from entropy of gamma distributions in q = E[-log q]
-        # same as for priors: need to spread over all times
         H_lambda = self.H_gamma(self.alpha, self.beta)
-        L += (1 / self.T) * np.sum(H_lambda, axis=0)
+        L += np.sum(H_lambda)
 
-        return np.sum(L)
+        # piece from the HMM
+        L += np.sum(self.logZ)
+
+        return L
 
     def update_chain_rates(self, k):
         """
@@ -269,6 +274,7 @@ class GPModel:
         self.beta[k] = Fz[k] + self.dd[k]
 
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
+        self.eta = self.F_prod(self.xi, self.alpha / self.beta)
         return self
 
     def update_chain_states(self, k):
@@ -283,9 +289,8 @@ class GPModel:
 
         # now calculate effective rates for z = 0 and z = 1
         lam = np.empty((self.T, self.U, 2))
-        eta = self.F_prod(self.xi, self.mu)
-        lam[..., 0] = eta[:, k, :]
-        lam[..., 1] = eta[:, k, :] * self.mu[k]        
+        lam[..., 0] = self.eta[:, k, :]
+        lam[..., 1] = self.eta[:, k, :] * self.mu[k]        
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
@@ -316,13 +321,13 @@ class GPModel:
         Do one iteration of variational inference, updating each chain in turn.
         """
         for k in xrange(self.K):
-            self.update_chain_states(k)
-            print "chain {}: updated chain states: L = {}".format(k, self.L())
-        for k in xrange(self.K):
             self.update_chain_rates(k)
             print "chain {}: updated chain rates: L = {}".format(k, self.L())
             self.update_chain_pars(k)
             print "chain {}: updated chain pars: L = {}".format(k, self.L())
+        # for k in xrange(self.K):
+            self.update_chain_states(k)
+            print "chain {}: updated chain states: L = {}".format(k, self.L())
 
     def do_inference(self, silent=False, tol=1e-3):
         """
