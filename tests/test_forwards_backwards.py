@@ -119,22 +119,12 @@ class Test_Forwards_Backwards:
         assert_equals(psi.shape, (self.T, self.mu_test.shape[-1]))
         npt.assert_array_equal(psi >= 0, np.ones_like(psi, dtype='bool'))
 
-    def test_observation_probs_corrects_impossible_baseline(self):
-        # set up a case were N is nonzero probability, baseline is 
-        # 0, and function corrects this 
-        Ntest = self.N_test.copy()
-        Ntest[0] = 1 
-        mutest = self.mu_test.copy()
-        mutest[0, 0] = 0
-        psi = gp.calculate_observation_probs(Ntest, mutest)
-        npt.assert_allclose(psi[0, :], np.array([0.0, 1.0]), atol=1e-10)        
     def test_fb_returns_consistent(self):
         gamma, logZ, Xi = gp.fb_infer(self.N_test, self.mu_test, self.A_test, 
             self.pi0_test) 
         assert_equals(gamma.shape, (self.T, 2))
         npt.assert_allclose(np.sum(gamma, 1), np.ones((self.T,)))
         assert_equals(logZ.shape, ())
-        assert_true(logZ >= 0)
         assert_equals(Xi.shape, (self.T - 1, 2, 2))
         npt.assert_allclose(np.sum(Xi, axis=(1, 2)), np.ones((self.T - 1, )))
 

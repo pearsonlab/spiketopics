@@ -278,7 +278,7 @@ class Test_Gamma_Poisson:
 
     def test_update_chain_rates(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.set_priors().set_inits().set_data(self.N).iterate()
         L0 = gpm.L()
         L1 = gpm.update_chain_rates(0).L()
         L2 = gpm.update_chain_rates(0).L()
@@ -288,7 +288,7 @@ class Test_Gamma_Poisson:
 
     def test_update_chain_states(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.set_priors().set_inits().set_data(self.N).iterate()
         L0 = gpm.L()
         L1 = gpm.update_chain_states(0).L()
         L2 = gpm.update_chain_states(0).L()
@@ -300,7 +300,7 @@ class Test_Gamma_Poisson:
 
     def test_update_chain_pars(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.set_priors().set_inits().set_data(self.N).iterate()
         L0 = gpm.L()
         gpm.update_chain_pars(1).L()
         L2 = gpm.update_chain_states(1).L()
@@ -312,7 +312,7 @@ class Test_Gamma_Poisson:
 
     def test_iteration_increases_L(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.set_priors().set_inits().set_data(self.N).iterate()
         Lvals = [gpm.L()]
         for _ in xrange(5):
             gpm.iterate()

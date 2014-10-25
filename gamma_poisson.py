@@ -320,9 +320,14 @@ class GPModel:
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
+        bar_log_A = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
+        bar_log_Ac = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
+        bar_log_pi0 = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
+        bar_log_pi0c = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
 
-        ############### E[log p] ################ 
         L = 0
+        ############### E[log p] ################ 
+
         # E[log p] for lambda
         L += np.sum(self.N * self.xi.dot(bar_log_lambda))
         L -= np.sum(self.F_prod(self.xi, 
@@ -332,9 +337,9 @@ class GPModel:
         L += np.sum((self.cc - 1) * bar_log_lambda)
         L -= np.sum(self.dd * (self.alpha / self.beta))
         
-        # # HMM parameter priors
-        # L += np.sum(self.nu1 * bar_log_A + self.nu2 * bar_log_Ac)
-        # L += np.sum(self.rho1 * bar_log_pi0 + self.rho2 * bar_log_pi0c)
+        # HMM parameter priors
+        L += np.sum(self.nu1 * bar_log_A + self.nu2 * bar_log_Ac)
+        L += np.sum(self.rho1 * bar_log_pi0 + self.rho2 * bar_log_pi0c)
 
         ############### E[log q] ################ 
 
@@ -414,13 +419,9 @@ class GPModel:
         """
         for k in xrange(self.K):
             self.update_chain_rates(k)
-            # print "chain {}: updated chain rates: L = {}".format(k, self.L())
             self.update_chain_pars(k)
-            # print "chain {}: updated chain pars: L = {}".format(k, self.L())
+        for k in xrange(self.K):
             self.update_chain_states(k)
-            # print "chain {}: updated chain states: L = {}".format(k, self.L())
-
-        print "L = {}".format(self.L())
 
     def do_inference(self, silent=False, tol=1e-3):
         """
