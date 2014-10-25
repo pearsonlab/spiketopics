@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import scipy.stats as stats
-from scipy.special import digamma, gammaln
+from scipy.special import digamma, gammaln, betaln
 import pdb
 
 def calculate_observation_probs(y, pars, rate_min=1e-200):
@@ -26,8 +26,6 @@ def calculate_observation_probs(y, pars, rate_min=1e-200):
     # z = 1
     logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, rates[..., 1]), axis=1)
 
-    # take care of underflow
-    logpsi = logpsi - np.amax(logpsi, 1, keepdims=True)
     psi = np.exp(logpsi)
 
     if np.any(np.isnan(psi)):
@@ -63,7 +61,7 @@ def fb_infer(y, lam, A, pi0):
     # forwards
     for t in xrange(1, T):
         a = psi[t, :] * (A.dot(alpha[t - 1, :]))
-        logZ[t] = np.sum(a)
+        logZ[t] = np.log(np.sum(a))
         alpha[t, :] = a / np.sum(a)
         
     # backwards
@@ -222,42 +220,139 @@ class GPModel:
         A[0] = 1 - A[1]
         return A
 
+    def calc_pi0(self):
+        """
+        Calculate E[log pi0] with pi0 the Markov chain initial state 
+        probability. Return exp of this, which is the parameter value to
+        be used in calculating updates to the latent states.
+        """ 
+        log_pi0 = np.empty((2, self.K))
+        log_pi0[1] = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
+        pi0 = np.exp(log_pi0)
+        pi0[0] = 1 - pi0[1] 
+        return pi0
+
     @staticmethod
     def H_gamma(alpha, beta):
         """
         Calculate entropy of gamma distribution given array parameters
         alpha and beta.
         """
-        H = alpha - np.log(beta) + gammaln(alpha) + (1 - alpha) * digamma(alpha)
+        H = (alpha - np.log(beta) + gammaln(alpha) + (1 - alpha) * digamma(alpha))
         return H
+
+    @staticmethod
+    def H_beta(alpha, beta):
+        """
+        Calculate entropy of beta distribution with parameters alpha and beta.
+        """
+        H = (betaln(alpha, beta) - (alpha - 1) * digamma(alpha) - 
+            (beta - 1) * digamma(beta) + 
+            (alpha + beta -2) * digamma(alpha + beta)) 
+        return H
+
+    # def L(self):
+    #     """
+    #     Calculate E[log p - log q] in the variational approximation.
+    #     """
+
+    #     ############### useful expectations ################ 
+    #     bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+    #     zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
+    #     bar_log_A = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
+    #     bar_log_Ac = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
+    #     bar_log_pi0 = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
+    #     bar_log_pi0c = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
+
+    #     ############### E[log p] ################ 
+
+    #     # E[log p] for lambda
+    #     L = np.sum(self.N * self.xi.dot(bar_log_lambda))
+    #     L -= np.sum(self.F_prod(self.xi, 
+    #         self.alpha / self.beta, exclude=False))
+
+    #     # E[log p] for HMM 
+    #     log_A = np.log(self.calc_A())
+    #     # want tr(log_A^T * Xi); A is (2, 2, K), Xi is (T-1, K, 2, 2)
+    #     # thus log_A.T has K index in front, followed by transpose of log(A)
+    #     # this matches Xi in all but first index
+    #     L += np.sum(log_A.T[np.newaxis, ...] * self.Xi)
+    #     log_pi0 = np.log(self.calc_pi0())
+    #     xi0_vec = np.vstack([1 - self.xi[0], self.xi[0]])
+    #     L += np.sum(xi0_vec * log_pi0)
+
+    #     # lambda priors
+    #     L += np.sum((self.cc - 1) * bar_log_lambda)
+    #     L -= np.sum(self.dd * (self.alpha / self.beta))
+
+    #     # HMM parameter priors
+    #     L += np.sum(self.nu1 * bar_log_A + self.nu2 * bar_log_Ac)
+    #     L += np.sum(self.rho1 * bar_log_pi0 + self.rho2 * bar_log_pi0c)
+
+    #     ############### E[log q] ################ 
+
+    #     # mu and eta 
+    #     L -= np.sum(self.N * self.xi.dot(np.log(self.mu)))
+    #     L -= np.sum(self.N[:, np.newaxis, :] * np.log(self.eta))
+    #     L += np.sum(self.eta * zbar_mu) 
+
+    #     # entropy of gamma distributions in q = E[-log q]
+    #     H_lambda = self.H_gamma(self.alpha, self.beta)
+    #     L += np.sum(H_lambda)
+
+    #     # entropy of beta distributions for HMM params
+    #     H_A = self.H_beta(self.gamma1, self.gamma2)
+    #     H_pi0 = self.H_beta(self.delta1, self.delta2)
+    #     L += np.sum(H_A) + np.sum(H_pi0)
+
+    #     # normalization of the HMM
+    #     L += np.sum(self.logZ)
+
+    #     return L
 
     def L(self):
         """
         Calculate E[log p - log q] in the variational approximation.
+        Here, we only want terms that don't cancel identically in the 
+        variational updates. This leaves terms involving the approximation
+        of the product of chains by a sum over chains.
         """
+        ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
 
-        # piece from E[log p] for lambda
-        L = np.sum(self.N * self.xi.dot(bar_log_lambda))
+        ############### E[log p] ################ 
+        L = 0
+        # E[log p] for lambda
+        L += np.sum(self.N * self.xi.dot(bar_log_lambda))
         L -= np.sum(self.F_prod(self.xi, 
             self.alpha / self.beta, exclude=False))
 
-        # piece for priors
+        # lambda priors
         L += np.sum((self.cc - 1) * bar_log_lambda)
         L -= np.sum(self.dd * (self.alpha / self.beta))
+        
+        # # HMM parameter priors
+        # L += np.sum(self.nu1 * bar_log_A + self.nu2 * bar_log_Ac)
+        # L += np.sum(self.rho1 * bar_log_pi0 + self.rho2 * bar_log_pi0c)
 
-        # mu and eta pieces
+        ############### E[log q] ################ 
+
+        # mu and eta 
         L -= np.sum(self.N * self.xi.dot(np.log(self.mu)))
         L -= np.sum(self.N[:, np.newaxis, :] * np.log(self.eta))
         L += np.sum(self.eta * zbar_mu) 
-        # L += np.sum(self.F_prod(self.xi, self.mu, exclude=False))
 
-        # piece from entropy of gamma distributions in q = E[-log q]
+        # entropy of gamma distributions in q = E[-log q]
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L += np.sum(H_lambda)
 
-        # piece from the HMM
+        # entropy of beta distributions for HMM params
+        H_A = self.H_beta(self.gamma1, self.gamma2)
+        H_pi0 = self.H_beta(self.delta1, self.delta2)
+        L += np.sum(H_A) + np.sum(H_pi0)
+
+        # normalization of the HMM
         L += np.sum(self.logZ)
 
         return L
@@ -282,11 +377,6 @@ class GPModel:
         Update estimates of hidden states for given chain, along with
         two-slice marginals.
         """
-        # start by constructing parameters to use when running chain inference
-        pi0 = np.empty(2)
-        pi0[1] = self.delta1[k] / (self.delta1[k] + self.delta2[k])
-        pi0[0] = 1 - pi0[1] 
-
         # now calculate effective rates for z = 0 and z = 1
         lam = np.empty((self.T, self.U, 2))
         lam[..., 0] = self.eta[:, k, :]
@@ -294,10 +384,10 @@ class GPModel:
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
-            # inits were set and should stay
-            pass
+            # update logZ[0] = log p(evidence)
+            self.logZ[0] = np.sum(stats.poisson.logpmf(self.N, lam[..., 1]))
         else:
-            post, logZ, Xi = fb_infer(self.N, lam, self.calc_A()[..., k], pi0)
+            post, logZ, Xi = fb_infer(self.N, lam, self.calc_A()[..., k], self.calc_pi0()[..., k])
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
@@ -308,8 +398,10 @@ class GPModel:
         """
         Update Markov chain variational parameters for given chain.
         """
-        self.gamma1[:, k] = self.nu1[:, k] + np.sum(self.Xi[:, k, 1, :], axis=0)
-        self.gamma2[:, k] = self.nu2[:, k] + np.sum(self.Xi[:, k, 0, :], axis=0)
+        Xibar = np.sum(self.Xi[:, k], axis=0)
+
+        self.gamma1[:, k] = self.nu1[:, k] + Xibar[1] 
+        self.gamma2[:, k] = self.nu2[:, k] + Xibar[0]
 
         self.delta1[k] = self.rho1[k] + self.xi[0, k]
         self.delta2[k] = self.rho2[k] + 1 - self.xi[0, k]
@@ -322,12 +414,13 @@ class GPModel:
         """
         for k in xrange(self.K):
             self.update_chain_rates(k)
-            print "chain {}: updated chain rates: L = {}".format(k, self.L())
+            # print "chain {}: updated chain rates: L = {}".format(k, self.L())
             self.update_chain_pars(k)
-            print "chain {}: updated chain pars: L = {}".format(k, self.L())
-        # for k in xrange(self.K):
+            # print "chain {}: updated chain pars: L = {}".format(k, self.L())
             self.update_chain_states(k)
-            print "chain {}: updated chain states: L = {}".format(k, self.L())
+            # print "chain {}: updated chain states: L = {}".format(k, self.L())
+
+        print "L = {}".format(self.L())
 
     def do_inference(self, silent=False, tol=1e-3):
         """
