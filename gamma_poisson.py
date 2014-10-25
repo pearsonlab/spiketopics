@@ -211,25 +211,30 @@ class GPModel:
         """
         Calculate E[log A] with A the Markov chain transition matrix.
         Return exp(E[log A]), which is the parameter value to be used 
-        in calculating updates to the latent states.
+        in calculating updates to the latent states. Note that this 
+        A is NOT column stochastic, since its E[log A] is set via 
+        the variational update rules (cf Beal, 2003).
         """
-        log_A_vec = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
+        # as per Beal's thesis, these are subadditive, but this is 
+        # compensated for by normalization in fb algorithm
+        # necessary to correctly calculate logZ
         log_A = np.empty((2, 2, self.K))
-        log_A[1] = log_A_vec
+        log_A[1]  = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
+        log_A[0]  = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
         A = np.exp(log_A)
-        A[0] = 1 - A[1]
         return A
 
     def calc_pi0(self):
         """
         Calculate E[log pi0] with pi0 the Markov chain initial state 
         probability. Return exp of this, which is the parameter value to
-        be used in calculating updates to the latent states.
+        be used in calculating updates to the latent states. Note that this 
+        does NOT return a probability (does not sum to one). Cf. Beal 2003.
         """ 
         log_pi0 = np.empty((2, self.K))
         log_pi0[1] = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
+        log_pi0[0] = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
         pi0 = np.exp(log_pi0)
-        pi0[0] = 1 - pi0[1] 
         return pi0
 
     @staticmethod
@@ -419,9 +424,14 @@ class GPModel:
         """
         for k in xrange(self.K):
             self.update_chain_rates(k)
+            print "chain {}: updated chain rates: L = {}".format(k, self.L())
             self.update_chain_pars(k)
+            print "chain {}: updated chain pars: L = {}".format(k, self.L())
         for k in xrange(self.K):
             self.update_chain_states(k)
+            print "chain {}: updated chain states: L = {}".format(k, self.L())
+
+        print "L = {}".format(self.L())
 
     def do_inference(self, silent=False, tol=1e-3):
         """

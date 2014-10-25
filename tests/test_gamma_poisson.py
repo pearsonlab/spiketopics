@@ -267,7 +267,6 @@ class Test_Gamma_Poisson:
         gpm.set_inits()
         A = gpm.calc_A()
         assert_equals(A.shape, (2, 2, self.K))
-        npt.assert_allclose(np.sum(A, 0), np.ones((2, self.K)))
 
     def test_L(self):
         # just test that we can run the function without errors
