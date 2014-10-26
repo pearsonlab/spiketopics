@@ -120,7 +120,7 @@ class GPModel:
     xi_{tk} = E[z_{tk}]
     Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=1)
     """
-    def __init__(self, T, K, U, dt, include_baseline=True):
+    def __init__(self, T, K, U, dt, include_baseline=False):
         """
         Set up basic constants for the model. 
         """
@@ -134,8 +134,10 @@ class GPModel:
         self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'eta': (T, K, U)})
-        self.Lvalues = []
+            'Xi': (T - 1, K, 2, 2), 'eta': (T, K, U), 
+            'B': (2, 2, K), 'phi': (2, K)})
+        self.log = []  # for debugging
+        self.Lvalues = []  # for recording value of optimization objective
 
     def set_priors(self, **kwargs):
         """
@@ -256,118 +258,71 @@ class GPModel:
             (alpha + beta -2) * digamma(alpha + beta)) 
         return H
 
-    # def L(self):
-    #     """
-    #     Calculate E[log p - log q] in the variational approximation.
-    #     """
-
-    #     ############### useful expectations ################ 
-    #     bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
-    #     zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
-    #     bar_log_A = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
-    #     bar_log_Ac = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
-    #     bar_log_pi0 = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
-    #     bar_log_pi0c = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
-
-    #     ############### E[log p] ################ 
-
-    #     # E[log p] for lambda
-    #     L = np.sum(self.N * self.xi.dot(bar_log_lambda))
-    #     L -= np.sum(self.F_prod(self.xi, 
-    #         self.alpha / self.beta, exclude=False))
-
-    #     # E[log p] for HMM 
-    #     log_A = np.log(self.calc_A())
-    #     # want tr(log_A^T * Xi); A is (2, 2, K), Xi is (T-1, K, 2, 2)
-    #     # thus log_A.T has K index in front, followed by transpose of log(A)
-    #     # this matches Xi in all but first index
-    #     L += np.sum(log_A.T[np.newaxis, ...] * self.Xi)
-    #     log_pi0 = np.log(self.calc_pi0())
-    #     xi0_vec = np.vstack([1 - self.xi[0], self.xi[0]])
-    #     L += np.sum(xi0_vec * log_pi0)
-
-    #     # lambda priors
-    #     L += np.sum((self.cc - 1) * bar_log_lambda)
-    #     L -= np.sum(self.dd * (self.alpha / self.beta))
-
-    #     # HMM parameter priors
-    #     L += np.sum(self.nu1 * bar_log_A + self.nu2 * bar_log_Ac)
-    #     L += np.sum(self.rho1 * bar_log_pi0 + self.rho2 * bar_log_pi0c)
-
-    #     ############### E[log q] ################ 
-
-    #     # mu and eta 
-    #     L -= np.sum(self.N * self.xi.dot(np.log(self.mu)))
-    #     L -= np.sum(self.N[:, np.newaxis, :] * np.log(self.eta))
-    #     L += np.sum(self.eta * zbar_mu) 
-
-    #     # entropy of gamma distributions in q = E[-log q]
-    #     H_lambda = self.H_gamma(self.alpha, self.beta)
-    #     L += np.sum(H_lambda)
-
-    #     # entropy of beta distributions for HMM params
-    #     H_A = self.H_beta(self.gamma1, self.gamma2)
-    #     H_pi0 = self.H_beta(self.delta1, self.delta2)
-    #     L += np.sum(H_A) + np.sum(H_pi0)
-
-    #     # normalization of the HMM
-    #     L += np.sum(self.logZ)
-
-    #     return L
-
-    def L(self):
+    def L(self, keeplog=False):
         """
         Calculate E[log p - log q] in the variational approximation.
-        Here, we only want terms that don't cancel identically in the 
-        variational updates. This leaves terms involving the approximation
-        of the product of chains by a sum over chains.
+        Here, we calculate by appending to a list and then returning the 
+        sum. This is slower, but better for debugging.
         """
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
-        bar_log_A = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
-        bar_log_Ac = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
-        bar_log_pi0 = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
-        bar_log_pi0c = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
 
-        L = 0
+        L = [] 
         ############### E[log p] ################ 
 
         # E[log p] for lambda
-        L += np.sum(self.N * self.xi.dot(bar_log_lambda))
-        L -= np.sum(self.F_prod(self.xi, 
-            self.alpha / self.beta, exclude=False))
+        L.append(np.sum(self.N * self.xi.dot(bar_log_lambda)))
+        L.append(-np.sum(self.F_prod(self.xi, 
+            self.alpha / self.beta, exclude=False)))
 
         # lambda priors
-        L += np.sum((self.cc - 1) * bar_log_lambda)
-        L -= np.sum(self.dd * (self.alpha / self.beta))
+        L.append(np.sum((self.cc - 1) * bar_log_lambda))
+        L.append(-np.sum(self.dd * (self.alpha / self.beta)))
         
+        # HMM states
+        logA = np.log(self.calc_A())
+        L.append(np.sum(np.sum(self.Xi, axis=0) * logA.T))
+        logpi0 = np.log(self.calc_pi0())
+        L.append(np.sum((1 - self.xi[0]) * logpi0[0] + 
+            self.xi[0] * logpi0[1]))
+
         # HMM parameter priors
-        L += np.sum(self.nu1 * bar_log_A + self.nu2 * bar_log_Ac)
-        L += np.sum(self.rho1 * bar_log_pi0 + self.rho2 * bar_log_pi0c)
+        L.append(np.sum(self.nu1 * logA[1] + self.nu2 * logA[0]))
+        L.append(np.sum(self.rho1 * logpi0[1] + self.rho2 * logpi0[0]))
 
         ############### E[log q] ################ 
 
         # mu and eta 
-        L -= np.sum(self.N * self.xi.dot(np.log(self.mu)))
-        L -= np.sum(self.N[:, np.newaxis, :] * np.log(self.eta))
-        L += np.sum(self.eta * zbar_mu) 
+        L.append(-np.sum(self.N * self.xi.dot(np.log(self.mu))))
+        L.append(-np.sum(self.N[:, np.newaxis, :] * np.log(self.eta)))
+        L.append(np.sum(self.eta * zbar_mu))
 
         # entropy of gamma distributions in q = E[-log q]
         H_lambda = self.H_gamma(self.alpha, self.beta)
-        L += np.sum(H_lambda)
+        L.append(np.sum(H_lambda))
 
         # entropy of beta distributions for HMM params
         H_A = self.H_beta(self.gamma1, self.gamma2)
         H_pi0 = self.H_beta(self.delta1, self.delta2)
-        L += np.sum(H_A) + np.sum(H_pi0)
+        L.append(np.sum(H_A) + np.sum(H_pi0))
+
+        # HMM states
+        logB = np.log(self.B)
+        L.append(-np.sum(np.sum(self.Xi, axis=0) * logB.T))
+        logphi = np.log(self.phi)
+        L.append(-np.sum((1 - self.xi[0]) * logphi[0] + 
+            self.xi[0] * logphi[1]))
 
         # normalization of the HMM
-        L += np.sum(self.logZ)
+        L.append(np.sum(self.logZ))
 
-        return L
+        if keeplog:
+            self.log.append(L)
 
-    def update_chain_rates(self, k):
+        return np.sum(L)
+
+    def update_lambda(self, k):
         """
         Update parameters corresponding to emission parameters for 
         each Markov chain.
@@ -378,15 +333,17 @@ class GPModel:
         self.alpha[k] = Nz[k] + self.cc[k] 
         self.beta[k] = Fz[k] + self.dd[k]
 
-        self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
-        self.eta = self.F_prod(self.xi, self.alpha / self.beta)
         return self
 
-    def update_chain_states(self, k):
+    def update_z(self, k):
         """
         Update estimates of hidden states for given chain, along with
         two-slice marginals.
         """
+        self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
+        self.eta[:, k, :] = self.F_prod(self.xi, self.alpha / self.beta)[:, k, :]
+        self.B[..., k] = self.calc_A()[..., k] 
+        self.phi[..., k] = self.calc_pi0()[..., k]
         # now calculate effective rates for z = 0 and z = 1
         lam = np.empty((self.T, self.U, 2))
         lam[..., 0] = self.eta[:, k, :]
@@ -397,14 +354,14 @@ class GPModel:
             # update logZ[0] = log p(evidence)
             self.logZ[0] = np.sum(stats.poisson.logpmf(self.N, lam[..., 1]))
         else:
-            post, logZ, Xi = fb_infer(self.N, lam, self.calc_A()[..., k], self.calc_pi0()[..., k])
+            post, logZ, Xi = fb_infer(self.N, lam, self.B[..., k], self.phi[..., k])
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
         return self
 
-    def update_chain_pars(self, k):
+    def update_A(self, k):
         """
         Update Markov chain variational parameters for given chain.
         """
@@ -413,27 +370,44 @@ class GPModel:
         self.gamma1[:, k] = self.nu1[:, k] + Xibar[1] 
         self.gamma2[:, k] = self.nu2[:, k] + Xibar[0]
 
+        return self
+
+    def update_pi0(self, k):
+        """
+        Update Markov chain variational parameters for given chain.
+        """
         self.delta1[k] = self.rho1[k] + self.xi[0, k]
         self.delta2[k] = self.rho2[k] + 1 - self.xi[0, k]
 
         return self
 
-    def iterate(self):
+    def iterate(self, silent=True, keeplog=False):
         """
         Do one iteration of variational inference, updating each chain in turn.
         """
         for k in xrange(self.K):
-            self.update_chain_rates(k)
-            print "chain {}: updated chain rates: L = {}".format(k, self.L())
-            self.update_chain_pars(k)
-            print "chain {}: updated chain pars: L = {}".format(k, self.L())
-        for k in xrange(self.K):
-            self.update_chain_states(k)
-            print "chain {}: updated chain states: L = {}".format(k, self.L())
 
-        print "L = {}".format(self.L())
+            self.update_lambda(k)
+            Lval = self.L(keeplog=keeplog) 
+            if not silent:
+                print "chain {}: updated lambda: L = {}".format(k, Lval)
 
-    def do_inference(self, silent=False, tol=1e-3):
+            self.update_A(k)
+            Lval = self.L(keeplog=keeplog) 
+            if not silent:
+                print "chain {}: updated A: L = {}".format(k, Lval)
+
+            self.update_pi0(k)
+            Lval = self.L(keeplog=keeplog) 
+            if not silent:
+                print "chain {}: updated pi0: L = {}".format(k, Lval)
+                
+            self.update_z(k)
+            Lval = self.L(keeplog=keeplog) 
+            if not silent:
+                print "chain {}: updated z: L = {}".format(k, Lval)
+
+    def do_inference(self, silent=True, tol=1e-3, keeplog=False):
         """
         Perform variational inference by minimizing free energy.
         """
@@ -446,7 +420,7 @@ class GPModel:
                 print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
                 print "delta = " + str(delta)
 
-            self.iterate()
+            self.iterate(silent=silent, keeplog=keeplog)
             self.Lvalues.append(self.L())
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
