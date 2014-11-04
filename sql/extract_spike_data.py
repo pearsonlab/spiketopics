@@ -44,3 +44,6 @@ evts_plus_spikes['time_in_trial'] = evts_plus_spikes['spikeTime'] - evts_plus_sp
 frames_per_second = 30
 evts_plus_spikes['frame_in_trial'] = (evts_plus_spikes['time_in_trial'] * frames_per_second).astype('int') 
 
+# count spikes per frame
+spkcount = evts_plus_spikes.groupby(['trialId', 'frame_in_trial']).count()['time_in_trial'].reset_index()
+spkcount = spkcount.rename(columns={'time_in_trial': 'count'})
