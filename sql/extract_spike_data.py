@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import pandas.io.sql as sql
 import subprocess
+import sys
 
 def init_sql(connectstr):
     # check if mysql is running
@@ -116,6 +117,10 @@ if __name__ == '__main__':
 
     # set up database connection
     eng = init_sql(connectstr)
+    if not eng:
+        sys.exit('Closing shop')
+    
+    # get all combinations of units and runs        
     unit_run_df = get_all_runs_all_units(eng)
 
     # initialize dataframe
