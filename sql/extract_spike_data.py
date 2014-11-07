@@ -108,6 +108,7 @@ def get_spike_counts(unit, run, eng):
 
     spkcount = count_spikes(spkmerge)
 
+    spkcount = spkcount.rename(columns={'frame_in_trial': 'frameClipNumber'})
     return spkcount
 
 if __name__ == '__main__':

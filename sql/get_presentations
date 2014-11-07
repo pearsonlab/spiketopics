@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+mysql -u root surfer < get_presentations.sql > presentations.tsv
+tr "\t" "," < presentations.tsv > presentations.csv
+rm presentations.tsv
