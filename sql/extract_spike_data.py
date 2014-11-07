@@ -137,4 +137,4 @@ if __name__ == '__main__':
     # clean up and write out
     outfile = 'spikecounts.csv'
     df[['unitId', 'trialId']] = df[['unitId', 'trialId']].astype('int')
-    df.to_csv(outfile)
+    df.to_csv(outfile, index=False)
