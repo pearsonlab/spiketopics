@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 from scipy.special import digamma, gammaln, betaln
 import pdb
@@ -10,7 +11,7 @@ def calculate_observation_probs(y, pars, rate_min=1e-200):
     p(y_t|z_t, pars). Calculates on the log scale to avoid overflow/underflow 
     issues.
     """
-    T = y.shape[0]  # number of observations
+    T = pars.shape[0]  # number of observations
     M = pars.shape[-1]  # last index is for values of z
     logpsi = np.empty((T, M))
 
@@ -21,10 +22,10 @@ def calculate_observation_probs(y, pars, rate_min=1e-200):
     # Poisson observation model
     # observation matrix is times x units
     # z = 0
-    logpsi[:, 0] = np.sum(stats.poisson.logpmf(y, rates[..., 0]), axis=1)
-
-    # z = 1
-    logpsi[:, 1] = np.sum(stats.poisson.logpmf(y, rates[..., 1]), axis=1)
+    N = y.copy()
+    N['lam0'] = stats.poisson.logpmf(N['count'], rates[N['time'], N['unit'] - 1, 0])
+    N['lam1'] = stats.poisson.logpmf(N['count'], rates[N['time'], N['unit'] - 1, 1])
+    logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
     psi = np.exp(logpsi)
 
@@ -42,7 +43,7 @@ def fb_infer(y, lam, A, pi0):
     A is a matrix of transition probabilities that acts to the right:
     new_state = A * old_state, so that columns of A sum to 1
     """
-    T = y.shape[0]
+    T = lam.shape[0]
     M = A.shape[0]
 
     # initialize empty variables
@@ -187,13 +188,20 @@ class GPModel:
         Nframe is a dataframe containing columns unit, movie, frame, and 
         count. 
         """
-        self.Nframe = Nframe
 
         # make an array of all spikes for a given time within movie and 
         # unit; this only has to be done once
-        countframe = Nframe.groupby(['movie', 'frame', 'unit']).sum()
-        countarr = countframe.unstack(level=2).values
-        self.N = np.ma.masked_where(np.isnan(countarr), countarr)
+        countframe = Nframe.groupby(['movie', 'frame', 'unit']).sum().unstack(level=2)
+        countarr = countframe.values
+        self.N = np.ma.masked_where(np.isnan(countarr), countarr).astype('int')
+
+        # make a dataframe linking movie and frame to a unique time index
+        self.t_index = Nframe.drop(['unit', 'count'], axis=1).drop_duplicates().reset_index(drop=True)
+        self.t_index.index.name = 'time'
+        self.t_index = self.t_index.reset_index()
+
+        # make a frame of presentations linked to time index
+        self.Nframe = pd.merge(self.t_index, Nframe).drop(['movie', 'frame'], axis=1)
         return self
 
     @staticmethod
@@ -340,7 +348,7 @@ class GPModel:
         Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
         Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
 
-        self.alpha[k] = Nz[k] + self.cc[k] 
+        self.alpha[k] = (Nz[k] + self.cc[k]).data
         self.beta[k] = Fz[k] + self.dd[k]
 
         return self
@@ -364,7 +372,7 @@ class GPModel:
             # update logZ[0] = log p(evidence)
             self.logZ[0] = np.sum(stats.poisson.logpmf(self.N, lam[..., 1]))
         else:
-            post, logZ, Xi = fb_infer(self.N, lam, self.B[..., k], self.phi[..., k])
+            post, logZ, Xi = fb_infer(self.Nframe, lam, self.B[..., k], self.phi[..., k])
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
