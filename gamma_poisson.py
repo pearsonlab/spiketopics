@@ -182,8 +182,18 @@ class GPModel:
 
         return self
 
-    def set_data(self, N):
-        self.N = N
+    def set_data(self, Nframe):
+        """
+        Nframe is a dataframe containing columns unit, movie, frame, and 
+        count. 
+        """
+        self.Nframe = Nframe
+
+        # make an array of all spikes for a given time within movie and 
+        # unit; this only has to be done once
+        countframe = Nframe.groupby(['movie', 'frame', 'unit']).sum()
+        countarr = countframe.unstack(level=2).values
+        self.N = np.ma.masked_where(np.isnan(countarr), countarr)
         return self
 
     @staticmethod
