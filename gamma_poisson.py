@@ -432,7 +432,8 @@ class GPModel:
             if not silent:
                 print "chain {}: updated z: L = {}".format(k, Lval)
 
-    def do_inference(self, silent=True, tol=1e-3, keeplog=False):
+    def do_inference(self, silent=True, tol=1e-3, keeplog=False, 
+        maxiter=np.inf):
         """
         Perform variational inference by minimizing free energy.
         """
@@ -440,7 +441,7 @@ class GPModel:
         delta = 1
         idx = 0
 
-        while np.abs(delta) > tol:
+        while np.abs(delta) > tol and idx < maxiter:
             if not silent:
                 print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
                 print "delta = " + str(delta)
