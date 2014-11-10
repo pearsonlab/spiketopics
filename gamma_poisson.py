@@ -403,25 +403,32 @@ class GPModel:
         """
         Do one iteration of variational inference, updating each chain in turn.
         """
+        # M step
         for k in xrange(self.K):
 
             self.update_lambda(k)
-            Lval = self.L(keeplog=keeplog) 
+            if (not silent) or keeplog:
+                Lval = self.L(keeplog=keeplog) 
             if not silent:
                 print "chain {}: updated lambda: L = {}".format(k, Lval)
 
             self.update_A(k)
-            Lval = self.L(keeplog=keeplog) 
+            if (not silent) or keeplog:
+                Lval = self.L(keeplog=keeplog) 
             if not silent:
                 print "chain {}: updated A: L = {}".format(k, Lval)
 
             self.update_pi0(k)
-            Lval = self.L(keeplog=keeplog) 
+            if (not silent) or keeplog:
+                Lval = self.L(keeplog=keeplog) 
             if not silent:
                 print "chain {}: updated pi0: L = {}".format(k, Lval)
-                
+
+        # E step        
+        for k in xrange(self.K):
             self.update_z(k)
-            Lval = self.L(keeplog=keeplog) 
+            if (not silent) or keeplog:
+                Lval = self.L(keeplog=keeplog) 
             if not silent:
                 print "chain {}: updated z: L = {}".format(k, Lval)
 

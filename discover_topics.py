@@ -82,3 +82,7 @@ gpm.set_priors(**priors).set_inits(**inits)
 ############## fit model
 print "Fitting model..."
 gpm.do_inference(silent=False, tol=1e-3)
+
+print "Writing to disk..."
+ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
+ethoframe.to_csv('inferred_etho.csv', index=False)
