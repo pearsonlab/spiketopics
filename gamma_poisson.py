@@ -281,58 +281,33 @@ class GPModel:
         Calculate E[log p - log q] in the variational approximation.
         Here, we calculate by appending to a list and then returning the 
         sum. This is slower, but better for debugging.
+        This result is only valid immediately after the E-step (i.e, updating
+        E[z] in forward-backward). For a discussion of cancellations that 
+        occur in this context, cf. Beal (2003) ~ (3.79).
         """
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
-        zbar_mu = (1 - self.xi[..., np.newaxis] + self.xi[..., np.newaxis] * self.mu)
 
         L = [] 
-        ############### E[log p] ################ 
+        ############### E[log (p(pi) / q(pi))] #############
+        logpi0 = np.log(self.calc_pi0())
+        L.append(np.sum(self.rho1 * logpi0[1] + self.rho2 * logpi0[0]))
+        H_pi0 = self.H_beta(self.delta1, self.delta2)
+        L.append(np.sum(H_pi0))
 
-        # E[log p] for lambda
-        L.append(np.sum(self.N * self.xi.dot(bar_log_lambda)))
-        L.append(-np.sum(self.F_prod(self.xi, 
-            self.alpha / self.beta, exclude=False)))
+        ############### E[log (p(A) / q(A))] #############
+        logA = np.log(self.calc_A())
+        L.append(np.sum(self.nu1 * logA[1] + self.nu2 * logA[0]))
+        H_A = self.H_beta(self.gamma1, self.gamma2)
+        L.append(np.sum(H_A))
 
-        # lambda priors
+        ############### E[log (p(lambda) / q(lambda))] #############
         L.append(np.sum((self.cc - 1) * bar_log_lambda))
         L.append(-np.sum(self.dd * (self.alpha / self.beta)))
-        
-        # HMM states
-        logA = np.log(self.calc_A())
-        L.append(np.sum(np.sum(self.Xi, axis=0) * logA.T))
-        logpi0 = np.log(self.calc_pi0())
-        L.append(np.sum((1 - self.xi[0]) * logpi0[0] + 
-            self.xi[0] * logpi0[1]))
-
-        # HMM parameter priors
-        L.append(np.sum(self.nu1 * logA[1] + self.nu2 * logA[0]))
-        L.append(np.sum(self.rho1 * logpi0[1] + self.rho2 * logpi0[0]))
-
-        ############### E[log q] ################ 
-
-        # mu and eta 
-        L.append(-np.sum(self.N * self.xi.dot(np.log(self.mu))))
-        L.append(-np.sum(self.N[:, np.newaxis, :] * np.log(self.eta)))
-        L.append(np.sum(self.eta * zbar_mu))
-
-        # entropy of gamma distributions in q = E[-log q]
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
 
-        # entropy of beta distributions for HMM params
-        H_A = self.H_beta(self.gamma1, self.gamma2)
-        H_pi0 = self.H_beta(self.delta1, self.delta2)
-        L.append(np.sum(H_A) + np.sum(H_pi0))
-
-        # HMM states
-        logB = np.log(self.B)
-        L.append(-np.sum(np.sum(self.Xi, axis=0) * logB.T))
-        logphi = np.log(self.phi)
-        L.append(-np.sum((1 - self.xi[0]) * logphi[0] + 
-            self.xi[0] * logphi[1]))
-
-        # normalization of the HMM
+        ############### log Z #############
         L.append(np.sum(self.logZ))
 
         if keeplog:
