@@ -135,8 +135,7 @@ class GPModel:
         self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'eta': (T, K, U), 
-            'B': (2, 2, K), 'phi': (2, K)})
+            'Xi': (T - 1, K, 2, 2), 'eta': (T, K, U) })
         self.log = []  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
@@ -335,8 +334,6 @@ class GPModel:
         """
         self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
         self.eta[:, k, :] = self.F_prod(self.xi, self.alpha / self.beta)[:, k, :]
-        self.B[..., k] = self.calc_A()[..., k] 
-        self.phi[..., k] = self.calc_pi0()[..., k]
         # now calculate effective rates for z = 0 and z = 1
         lam = np.empty((self.T, self.U, 2))
         lam[..., 0] = self.eta[:, k, :]
@@ -347,7 +344,7 @@ class GPModel:
             # update logZ[0] = log p(evidence)
             self.logZ[0] = np.sum(stats.poisson.logpmf(self.N, lam[..., 1]))
         else:
-            post, logZ, Xi = fb_infer(self.Nframe, lam, self.B[..., k], self.phi[..., k])
+            post, logZ, Xi = fb_infer(self.Nframe, lam, self.calc_A()[..., k], self.calc_pi0()[..., k])
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
