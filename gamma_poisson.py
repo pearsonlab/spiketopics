@@ -235,12 +235,21 @@ class GPModel:
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
         Fk = self.F_prod(self.xi, bar_lambda)[:, k, :]
+        xik = self.xi.copy()
+        xik[:, k] = 0  # everything but current k
+        # will use this for \sum N * xi * \bar{log lambda} for j != k
+        xi_bar_log_lambda_rest = xik.dot(bar_log_lambda)
 
         # need to account for multiple observations of same frame by same
         # unit, so use Nframe
         N = self.Nframe.copy()
-        N['lam0'] = -Fk[N['time'], N['unit'] - 1]
-        N['lam1'] = N['count'] * bar_log_lambda[k, N['unit'] - 1] - Fk[N['time'], N['unit'] - 1] * bar_lambda[k, N['unit'] - 1]
+        nn = N['count']
+        tt = N['time']
+        uu = N['unit'] - 1
+        N['lam0'] = nn * xi_bar_log_lambda_rest[tt, uu] - Fk[tt, uu]
+        N['lam1'] = (nn * bar_log_lambda[k, uu] + 
+            nn * xi_bar_log_lambda_rest[tt, uu] - 
+            Fk[tt, uu] * bar_lambda[k, uu])
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
