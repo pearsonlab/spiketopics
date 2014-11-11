@@ -262,7 +262,7 @@ class GPModel:
         """
         H = (betaln(alpha, beta) - (alpha - 1) * digamma(alpha) - 
             (beta - 1) * digamma(beta) + 
-            (alpha + beta -2) * digamma(alpha + beta)) 
+            (alpha + beta - 2) * digamma(alpha + beta)) 
         return H
 
     def L(self, keeplog=False):
@@ -361,7 +361,6 @@ class GPModel:
         """
         # M step
         for k in xrange(self.K):
-
             self.update_lambda(k)
             if (not silent) or keeplog:
                 Lval = self.L(keeplog=keeplog) 
