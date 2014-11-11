@@ -1,49 +1,20 @@
 from __future__ import division
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
 from scipy.special import digamma, gammaln, betaln
 import pdb
 
-def calculate_observation_probs(y, pars, rate_min=1e-200):
-    """
-    Calculates the probability of the observations given the hidden state: 
-    p(y_t|z_t, pars). Calculates on the log scale to avoid overflow/underflow 
-    issues.
-    """
-    T = pars.shape[0]  # number of observations
-    M = pars.shape[-1]  # last index is for values of z
-    logpsi = np.empty((T, M))
-
-    # sanitize inputs, since logpmf(lam = 0) = nan
-    rates = pars.copy()
-    rates[rates == 0] = rate_min
-
-    # Poisson observation model
-    # observation matrix is times x units
-    # z = 0
-    N = y.copy()
-    N['lam0'] = stats.poisson.logpmf(N['count'], rates[N['time'], N['unit'] - 1, 0])
-    N['lam1'] = stats.poisson.logpmf(N['count'], rates[N['time'], N['unit'] - 1, 1])
-    logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
-
-    psi = np.exp(logpsi)
-
-    if np.any(np.isnan(psi)):
-        raise ValueError('NaNs appear in observation probabilities.')
-
-    return psi
-
-
-def fb_infer(y, lam, A, pi0):
+def fb_infer(A, pi0, psi):
     """
     Implement the forward-backward inference algorithm.
-    y is a times x units matrix of observations (counts)
-    lam is a times x units x states array of Poisson rates
     A is a matrix of transition probabilities that acts to the right:
     new_state = A * old_state, so that columns of A sum to 1
+    psi is the vector of evidence: p(y_t|z_t); it does not need to be
+    normalized, but the lack of normalization will be reflected in logZ
+    such that the end result using the given psi will be properly normalized
+    when using the returned value of Z
     """
-    T = lam.shape[0]
+    T = psi.shape[0]
     M = A.shape[0]
 
     # initialize empty variables
@@ -52,8 +23,6 @@ def fb_infer(y, lam, A, pi0):
     gamma = np.empty((T, M))  # p(z_t|y_{1:T}) (posterior)
     logZ = np.empty(T)  # log partition function
 
-    psi = calculate_observation_probs(y, lam)
-    
     # initialize
     alpha[0, :] = pi0
     beta[-1, :] = 1
@@ -256,6 +225,27 @@ class GPModel:
         pi0 = np.exp(log_pi0)
         return pi0
 
+    def calculate_evidence(self, k):
+        """
+        Calculate emission probabilities for use in forward-backward 
+        algorithm. These are not properly normalized, but that will
+        be compensated for in the logZ value returned by fb_infer.
+        """
+        logpsi = np.empty((self.T, 2))
+        bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+        bar_lambda = self.alpha / self.beta
+        Fk = self.F_prod(self.xi, bar_lambda)[:, k, :]
+
+        # need to account for multiple observations of same frame by same
+        # unit, so use Nframe
+        N = self.Nframe.copy()
+        N['lam0'] = -Fk[N['time'], N['unit'] - 1]
+        N['lam1'] = N['count'] * bar_log_lambda[k, N['unit'] - 1] - Fk[N['time'], N['unit'] - 1] * bar_lambda[k, N['unit'] - 1]
+
+        logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
+
+        return np.exp(logpsi)
+
     @staticmethod
     def H_gamma(alpha, beta):
         """
@@ -332,19 +322,13 @@ class GPModel:
         Update estimates of hidden states for given chain, along with
         two-slice marginals.
         """
-        self.mu[k] = np.exp(digamma(self.alpha[k]) - np.log(self.beta[k]))
-        self.eta[:, k, :] = self.F_prod(self.xi, self.alpha / self.beta)[:, k, :]
-        # now calculate effective rates for z = 0 and z = 1
-        lam = np.empty((self.T, self.U, 2))
-        lam[..., 0] = self.eta[:, k, :]
-        lam[..., 1] = self.eta[:, k, :] * self.mu[k]        
+        psi = self.calculate_evidence(k)
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
-            # update logZ[0] = log p(evidence)
-            self.logZ[0] = np.sum(stats.poisson.logpmf(self.N, lam[..., 1]))
+            pass
         else:
-            post, logZ, Xi = fb_infer(self.Nframe, lam, self.calc_A()[..., k], self.calc_pi0()[..., k])
+            post, logZ, Xi = fb_infer(self.calc_A()[..., k], self.calc_pi0()[..., k], psi)
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
