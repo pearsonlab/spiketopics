@@ -101,10 +101,10 @@ class GPModel:
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
             'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
-        self.variational_pars = ({'mu': (K, U), 'alpha': (K, U), 
+        self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'eta': (T, K, U) })
+            'Xi': (T - 1, K, 2, 2), 'eta': (T, K)})
         self.log = []  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
@@ -178,8 +178,8 @@ class GPModel:
         Given z (T x K) and w (K x U), returns the product
         prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
         log = True returns the log of the result
-        exclude = True returns the product over all k;
-            as a result, it is T x U instead of T x K x U
+        exclude = True returns the product over all k
+        as a result, it is T x U instead of T x K x U
         """
         zz = z[..., np.newaxis]
         vv = 1 - zz + zz * w
@@ -235,10 +235,6 @@ class GPModel:
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
         Fk = self.F_prod(self.xi, bar_lambda)[:, k, :]
-        xik = self.xi.copy()
-        xik[:, k] = 0  # everything but current k
-        # will use this for \sum N * xi * \bar{log lambda} for j != k
-        xi_bar_log_lambda_rest = xik.dot(bar_log_lambda)
 
         # need to account for multiple observations of same frame by same
         # unit, so use Nframe
@@ -246,9 +242,8 @@ class GPModel:
         nn = N['count']
         tt = N['time']
         uu = N['unit'] - 1
-        N['lam0'] = nn * xi_bar_log_lambda_rest[tt, uu] - Fk[tt, uu]
+        N['lam0'] = -Fk[tt, uu] 
         N['lam1'] = (nn * bar_log_lambda[k, uu] + 
-            nn * xi_bar_log_lambda_rest[tt, uu] - 
             Fk[tt, uu] * bar_lambda[k, uu])
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
@@ -305,6 +300,11 @@ class GPModel:
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
 
+        ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
+        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]))
+        L.append(-np.sum(self.F_prod(self.xi, self.alpha / self.beta, exclude=False)))
+        L.append(-np.sum(self.eta))
+
         ############### log Z #############
         L.append(np.sum(self.logZ))
 
@@ -332,6 +332,7 @@ class GPModel:
         two-slice marginals.
         """
         psi = self.calculate_evidence(k)
+        logpsi = np.log(psi)
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
@@ -341,6 +342,8 @@ class GPModel:
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
+
+        self.eta[:, k] = (1 - self.xi[:, k]) * logpsi[:, 0] + self.xi[:, k] * logpsi[:, 1]
 
         return self
 
@@ -414,7 +417,7 @@ class GPModel:
             self.Lvalues.append(self.L())
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
-                self.Lvalues[-1])
+                np.abs(self.Lvalues[-1]))
             idx += 1 
 
 
