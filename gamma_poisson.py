@@ -104,7 +104,7 @@ class GPModel:
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'eta': (T, K)})
+            'Xi': (T - 1, K, 2, 2), 'eta': (T, K), 'kappa': (K,)})
         self.log = []  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
@@ -195,7 +195,7 @@ class GPModel:
         else:
             return np.exp(log_ans)
 
-    def calc_A(self):
+    def calc_log_A(self):
         """
         Calculate E[log A] with A the Markov chain transition matrix.
         Return exp(E[log A]), which is the parameter value to be used 
@@ -209,21 +209,22 @@ class GPModel:
         log_A = np.empty((2, 2, self.K))
         log_A[1]  = digamma(self.gamma1) - digamma(self.gamma1 + self.gamma2)
         log_A[0]  = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
-        A = np.exp(log_A)
-        return A
+        return log_A
 
-    def calc_pi0(self):
+    def calc_log_pi0(self):
         """
         Calculate E[log pi0] with pi0 the Markov chain initial state 
         probability. Return exp of this, which is the parameter value to
         be used in calculating updates to the latent states. Note that this 
         does NOT return a probability (does not sum to one). Cf. Beal 2003.
         """ 
+        # as per Beal's thesis, these are subadditive, but this is 
+        # compensated for by normalization in fb algorithm
+        # necessary to correctly calculate logZ
         log_pi0 = np.empty((2, self.K))
         log_pi0[1] = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
         log_pi0[0] = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
-        pi0 = np.exp(log_pi0)
-        return pi0
+        return log_pi0
 
     def calculate_evidence(self, k):
         """
@@ -283,13 +284,13 @@ class GPModel:
 
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
-        logpi0 = np.log(self.calc_pi0())
-        L.append(np.sum(self.rho1 * logpi0[1] + self.rho2 * logpi0[0]))
+        logpi0 = self.calc_log_pi0()
+        L.append(np.sum((self.rho1 - 1) * logpi0[1] + (self.rho2 - 1) * logpi0[0]))
         H_pi0 = self.H_beta(self.delta1, self.delta2)
         L.append(np.sum(H_pi0))
 
         ############### E[log (p(A) / q(A))] #############
-        logA = np.log(self.calc_A())
+        logA = self.calc_log_A()
         L.append(np.sum(self.nu1 * logA[1] + self.nu2 * logA[0]))
         H_A = self.H_beta(self.gamma1, self.gamma2)
         L.append(np.sum(H_A))
@@ -303,7 +304,12 @@ class GPModel:
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
         L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]))
         L.append(-np.sum(self.F_prod(self.xi, self.alpha / self.beta, exclude=False)))
+        logpi0 = self.calc_log_pi0()
+        L.append(np.sum((1 - self.xi[0]) * logpi0[0] + self.xi[0] * logpi0[1]))
+        logA = self.calc_log_A()
+        L.append(np.sum(self.Xi * logA.transpose((2, 0, 1))))
         L.append(-np.sum(self.eta))
+        L.append(-np.sum(self.kappa))
 
         ############### log Z #############
         L.append(np.sum(self.logZ))
@@ -333,18 +339,20 @@ class GPModel:
         """
         psi = self.calculate_evidence(k)
         logpsi = np.log(psi)
+        logA = self.calc_log_A()[..., k]
+        logpi0 = self.calc_log_pi0()[..., k]
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
             pass
         else:
-            post, logZ, Xi = fb_infer(self.calc_A()[..., k], self.calc_pi0()[..., k], psi)
+            post, logZ, Xi = fb_infer(np.exp(logA), np.exp(logpi0), psi)
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
         self.eta[:, k] = (1 - self.xi[:, k]) * logpsi[:, 0] + self.xi[:, k] * logpsi[:, 1]
-
+        self.kappa[k] = ((1 - self.xi[0, k]) * logpi0[0] + self.xi[0, k] * logpi0[1] +  np.sum(self.Xi[:, k] * logA))
         return self
 
     def update_A(self, k):
