@@ -170,6 +170,12 @@ class GPModel:
 
         # make a frame of presentations linked to time index
         self.Nframe = pd.merge(self.t_index, Nframe).drop(['movie', 'frame'], axis=1)
+
+        # make a masked array counting the number of observations of each 
+        # (time, unit) pair
+        Nobs = self.Nframe.groupby(['time', 'unit']).count().unstack()
+        self.Nobs = np.ma.masked_where(np.isnan(Nobs), Nobs).astype('int')
+
         return self
 
     @staticmethod
@@ -303,7 +309,7 @@ class GPModel:
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
         L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]))
-        L.append(-np.sum(self.F_prod(self.xi, self.alpha / self.beta, exclude=False)))
+        L.append(-np.sum(self.Nobs * self.F_prod(self.xi, self.alpha / self.beta, exclude=False)))
         logpi0 = self.calc_log_pi0()
         L.append(np.sum((1 - self.xi[0]) * logpi0[0] + self.xi[0] * logpi0[1]))
         logA = self.calc_log_A()
@@ -325,10 +331,10 @@ class GPModel:
         each Markov chain.
         """
         Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
-        Fz = np.sum(self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis], axis=0)
+        Fz = self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis]
 
         self.alpha[k] = (Nz[k] + self.cc[k]).data
-        self.beta[k] = Fz[k] + self.dd[k]
+        self.beta[k] = np.sum(self.Nobs * Fz[:, k, :], axis=0) + self.dd[k]
 
         return self
 
