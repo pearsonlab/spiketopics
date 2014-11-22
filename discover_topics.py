@@ -19,9 +19,9 @@ df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame',
     'movieId': 'movie'})
 
 ######## for testing only ################
-df = df.query('movie <= 50')
+# df = df.query('movie <= 50')
 # and renumber units consecutively
-df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
+# df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 ######## for testing only ################
 
 # set up params 
