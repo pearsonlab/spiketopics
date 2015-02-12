@@ -3,3 +3,7 @@
 *.pdf
 *.?sv
 *.stats
+*.aux
+*.fdb*
+*.log
+*.synctex*

@@ -1,0 +1,50 @@
+\documentclass[11pt]{article}
+\usepackage{amssymb,amsmath}
+
+\begin{document}
+\title{The Gamma-Poisson Model}
+\author{John Pearson}
+\maketitle
+
+\section{Observation Model}
+We assume a Poisson process with $T$ observation times, $N$ observation units, and $K$ latent states. The counts for each unit at each time are then given by 
+
+\begin{equation}
+    N_{tu} \sim {\mathrm Poisson}(\mu_{tu})    
+\end{equation}
+with 
+\begin{equation}
+   \mu_{tu} = (ZB)_{tu} = \sum_k z_{tk} b_{ku} 
+\end{equation}
+wit $z$ the time series of latent states (assumed binary) and $b$ the regression coefficients. In addition, we assume the $z_t$ have independent Markov transition dynamics within each latent state (see below).
+
+In addition, it will be more convenient for our purposes to rewrite the above expression using $b_{ku} = \log \lambda_{ku}$, so that 
+\begin{equation}
+    p(N_{tu}|\lambda, z) = \frac{\prod_k \lambda_{ku}^{N_{tu} z_{tk}}}{N_{tu}!} e^{-\prod_k \lambda_{ku}^{z_{tk}}}
+\end{equation}
+which can be rewritten
+\begin{equation}
+    \log p(N_{tu}|\lambda, z) = N_{tu} \sum_k z_{tk} \log \lambda_{ku} - \prod_k \lambda_{ku}^{z_{tk}} - \log N_{tu}!
+\end{equation}
+Clearly, if we treat $N$ and $z$ as constants, we have
+\begin{equation}
+    \lambda_{ku}|N, z \sim {\mathrm Gamma}(\sum_t N_{tu}z_{tk} + 1, \sum_t\prod_{k'\neq k} \lambda_{k'u}^{z_{tk'}})
+\end{equation}
+
+\section{Variational Ansatz}
+We would like to approximate the joint posterior density
+\begin{equation}
+    p(\lambda, z|N) \propto p(N|\lambda, z) p(\lambda|z) p(z)
+\end{equation}
+with the structured mean field form
+\begin{equation}
+     q(\lambda, z) = \prod_{ku} q(\lambda_{ku})q(z_k)
+\end{equation} 
+with the ansatz
+\begin{align} 
+    q(\lambda_{ku}) &\sim {\mathrm Gamma}(\alpha_{ku}, \beta_{ku}) \\
+    q(z_k) &\sim \mathrm{HMM}(k)
+\end{align}
+where $\mathrm{HMM}(k)$ denotes a Hidden Markov Model with poisson observations for each latent state.
+
+\end{document}
