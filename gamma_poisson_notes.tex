@@ -28,7 +28,7 @@ which can be rewritten
 \end{equation}
 Clearly, if we treat $N$ and $z$ as constants, we have
 \begin{equation}
-    \lambda_{ku}|N, z \sim {\mathrm Gamma}(\sum_t N_{tu}z_{tk} + 1, \sum_t\prod_{k'\neq k} \lambda_{k'u}^{z_{tk'}})
+    \lambda_{ku}|N, z \sim \mathrm{Gamma}(\sum_t N_{tu}z_{tk} + 1, \sum_t\prod_{k'\neq k} \lambda_{k'u}^{z_{tk'}})
 \end{equation}
 
 \section{Variational Ansatz}
@@ -42,9 +42,39 @@ with the structured mean field form
 \end{equation} 
 with the ansatz
 \begin{align} 
-    q(\lambda_{ku}) &\sim {\mathrm Gamma}(\alpha_{ku}, \beta_{ku}) \\
+    q(\lambda_{ku}) &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
     q(z_k) &\sim \mathrm{HMM}(k)
 \end{align}
-where $\mathrm{HMM}(k)$ denotes a Hidden Markov Model with poisson observations for each latent state.
+where $\mathrm{HMM}(k)$ denotes a Hidden Markov Model with poisson observations for each latent state. As we shall see, $q(z_k)$ is straightforward to calculate via the forward-backward algorithm.
+
+\section{$\mathbb{E}_q[\log p]$}
+We would like to choose the variational parameters, $\alpha$ and $\beta$, to minimize the KL divergence between $p$ and $q$ (which is the same as maximizing the evidence lower bound, $\mathcal{L}$). To do so, we make use of the following properties of Gamma distributions with shape $\alpha$ and rate $\beta$:
+\begin{align}
+   \mathbb{E}[\lambda] &= \frac{\alpha}{\beta} \\
+   \mathbb{E}[\log \lambda] &= \psi(\alpha) - \log \beta \\
+   H \equiv \mathbb{E}[\log q] &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha)\psi(\alpha) 
+\end{align}
+Using these, we can write the portion of the evidence lower bound depending on $p$ as 
+\begin{equation}
+    \mathbb{E}_q[\log p] = \sum_{ktu} N_{tk}\bar{z}_{tk}(\psi(\alpha_{ku}) -\log \beta_{ku}) - \sum_{tu} \prod_k \left( 1 - \bar{z}_{tk} + \bar{z}_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
+\end{equation}
+
+\section{Hidden Markov Model}
+Here, we assume a hidden Markov model for each latent state. That is, we assume
+\begin{align}
+    A_{ij} &\equiv p(z_{t+1}=i|z_t = j) \\
+    \pi_i &\equiv p(z_0 = i)
+\end{align}
+(Note that this means that the \emph{columns} of $A$ sum to 1, which is the opposite of the usual convention. In other words, in matrix notation, $z_{t+1} = A \cdot z_t$.)
+
+As above, we will assume an independent posterior distribution over $z_t$ for each latent state that takes the form of an HMM. 
+
+\section{Priors}
+We would also like to put priors on the parameters of the model. For $\lambda$, this is straightforward:
+\begin{equation}
+    \lambda_{ku} \sim \mathrm{Gamma}(c_{ku}, d_{ku})
+\end{equation}
+
+Priors on $z$ will be discussed below in the section on HMM inference.
 
 \end{document}
