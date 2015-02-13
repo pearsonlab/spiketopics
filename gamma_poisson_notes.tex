@@ -71,7 +71,7 @@ with a structured mean field form that factorizes over chains:
 Given the form taken by the model above, we can readily write down the ansatz
 \begin{align} 
     \lambda_{ku} &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
-    z_{1:T, k} &\sim \mathrm{HMM}(\tilde{N}, \tilde{\lambda}_{k\bullet}, \tilde{A}_k, \tilde{\pi}_k) \\
+    z_{1:T, k} &\sim \mathrm{HMM}(\varepsilon_k, \tilde{A}_k, \tilde{\pi}_k) \\
     A_{k1i} &\sim \mathrm{Beta}(\gamma_{ki1}, \gamma_{ki2}) \\
     \pi_k &\sim \mathrm{Beta}(\delta_{k1}, \delta_{k2})
 \end{align}
@@ -79,7 +79,7 @@ where $\mathrm{HMM}(\ldots)$ denotes the joint posterior over hidden states at e
 \begin{equation}
     p(z_{1:T}|N, \theta) = \frac{p(z_{1:T}, N|\theta)}{Z}
 \end{equation}
-where $Z \equiv p(N|\theta)$ and $\theta \equiv (\lambda, A, \pi)$. As we shall see, this posterior is straightforward to calculate via the forward-backward algorithm.
+where $Z \equiv p(N|\theta)$ and $\theta \equiv (\varepsilon, A, \pi)$. As we shall see, this posterior is straightforward to calculate via the forward-backward algorithm.
 
 \section{HMM Inference}
 Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backward Algorithm returns the following:
@@ -127,7 +127,7 @@ with $H_b$ the entropy of the beta distribution:
 Similarly,
 \begin{equation}
     \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
-\sum_{ik} \left[ (\nu_{ik1} - 1) \overline{\log A_{k1i}} + (\nu_{ik2} - 1) \overline{\log A_{k0i}} + H(A_{k1i}) \right]
+\sum_{ik} \left[ (\nu_{ki1} - 1) \overline{\log A_{k1i}} + (\nu_{ki2} - 1) \overline{\log A_{k0i}} + H(A_{k1i}) \right]
 \end{equation}
 where 
 \begin{align}
@@ -164,12 +164,29 @@ Finally, we would like to calculate
     \\
     - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
 \end{multline}
-where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. Finally, gathering terms, we can write
+where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. 
 
 \section{Variational Updates}
-Because several of our assumed variational distributions are conjugate within the exponential family, we can immediately write down the optimal values of several variational paramters:
+Technically, the variational parameters above are $(\alpha, \beta, \gamma, \delta, \varepsilon, \tilde{A}, \tilde{\pi})$. However, $\xi = \xi(\varepsilon, \tilde{A}, \tilde{\pi})$ and $\Xi = \Xi(\varepsilon, \tilde{A}, \tilde{\pi})$ so we can instead treat these as the effective variational parameters. This then readily gives as updates:
 \begin{align}
-foo    
+\varepsilon_{tk} &\leftarrow \sum_u N_{tu} \overline{\log \lambda_{ku}} + 
+\sum_u \left( 1 - \frac{\alpha_{ku}}{\beta_{ku}}\right) F_{tku} \\
+\tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
+\tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
 \end{align}
+where we define
+\begin{equation}
+    F_{tku} \equiv \prod_{j \neq k} \left( 1 - \xi_{tj} + \xi_{tj} \frac{\alpha_{ju}}{\beta_{ju}}\right)
+\end{equation}
+Similarly, variation with respect to the prior parameters for $(\lambda, A, \pi)$ gives
+\begin{align}
+    \alpha_{ku} &\leftarrow \sum_t N_{tu} \xi_{tk} + c_{ku} \\
+    \beta_{ku} &\leftarrow \sum_t F_{tku}\xi_{tk} + d_{ku} \\
+    \gamma_{ki1} &\leftarrow \nu_{ki1} + \sum_t \Xi_{kt, 1i} \\
+    \gamma_{ki2} &\leftarrow \nu_{ki2} + \sum_t \Xi_{kt, 0i} \\
+    \delta_{k1} &\leftarrow \rho_{k1} + \xi_{0k} \\
+    \delta_{k2} &\leftarrow \rho_{k2} + 1 - \xi_{0k} 
+\end{align}
+These, then, give the proper updates for coordinate ascent.
 
 \end{document}
