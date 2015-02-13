@@ -52,11 +52,11 @@ We would also like to put priors on the parameters of the model. For $\lambda$, 
 
 For the parameters of the Markov chain, we have the restriction that the columns must sum to 1, so we place priors on the probability of $z_{0k} = 1$
 \begin{equation}
-    \pi^{(k)}_1 \sim \mathrm{Beta}(\rho_{k1}, \rho_{k2})
+    \pi_{k} \sim \mathrm{Beta}(\rho_{k1}, \rho_{k2})
 \end{equation}
 and the probabilities of transition \emph{into} the $z_{tk} = 1$ state:
 \begin{equation}
-    A^{(k)}_{1i} \sim \mathrm{Beta}(\nu_{ik1}, \nu_{ik2})
+    A_{k1i} \sim \mathrm{Beta}(\nu_{ki1}, \nu_{ki2})
 \end{equation}
 
 \section{Variational Ansatz}
@@ -66,14 +66,14 @@ We would like to approximate the joint posterior density
 \end{equation}
 with a structured mean field form that factorizes over chains:
 \begin{equation}
-     q(\lambda, z, A, \pi) = \prod_{ku} q(\lambda_{ku}) q(z_k) q(A^{(k)}) q(\pi^{(k)})
+     q(\lambda, z, A, \pi) = \prod_{ku} q(\lambda_{ku}) q(z_k) q(A_k) q(\pi_k)
 \end{equation} 
 Given the form taken by the model above, we can readily write down the ansatz
 \begin{align} 
     \lambda_{ku} &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
-    z_{1:T, k} &\sim \mathrm{HMM}(\tilde{N}, \tilde{\lambda}_{k\bullet}, \tilde{A}^{(k)}, \tilde{\pi}^{(k)}) \\
-    A^{(k)}_{1i} &\sim \mathrm{Beta}(\gamma_{ik1}, \gamma_{ik2}) \\
-    \pi^{(k)} &\sim \mathrm{Beta}(\delta_{k1}, \delta_{k2})
+    z_{1:T, k} &\sim \mathrm{HMM}(\tilde{N}, \tilde{\lambda}_{k\bullet}, \tilde{A}_k, \tilde{\pi}_k) \\
+    A_{k1i} &\sim \mathrm{Beta}(\gamma_{ki1}, \gamma_{ki2}) \\
+    \pi_k &\sim \mathrm{Beta}(\delta_{k1}, \delta_{k2})
 \end{align}
 where $\mathrm{HMM}(\ldots)$ denotes the joint posterior over hidden states at each moment in time:
 \begin{equation}
@@ -85,7 +85,7 @@ where $Z \equiv p(N|\theta)$ and $\theta \equiv (\lambda, A, \pi)$. As we shall 
 Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backward Algorithm returns the following:
 \begin{align}
     \xi_{tk} \equiv p(z_{tk}|N, \theta) \qquad &\text{posterior marginals}\\
-    \Xi^{(k)}_{t, ij} \equiv p(z_{t+1,k} = j, z_{tk} = i|N, \theta) \qquad &\text{two-slice marginals}\\
+    \Xi_{kt, ij} \equiv p(z_{t+1,k} = j, z_{tk} = i|N, \theta) \qquad &\text{two-slice marginals}\\
     \log Z_t^{(k)} = \log p(N_{t+1, \bullet}|N_{t\bullet}, \theta) \qquad &\text{partition function}
 \end{align}
 The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z^{({k})} = \sum_t \log Z_t^{(k)} = \log p(N_{1:T}|\theta)$. 
@@ -94,7 +94,7 @@ The first two will be helpful in calculating expections with respect to $q(z)$, 
 We begin by writing the joint distribution of the data:
 \begin{multline}
     \log p(N, \lambda, z, A,\pi) = \sum_{ktu}\left[ N_{tu} z_{tk} \log \lambda_{ku} - \prod_k \lambda_{ku}^{z_{tk}} - \log N_{tu}!\right] \\
-    + \sum_{tk} \log A^{(k)}_{z_{t+1, k} z_{t, k}} + \log \pi^{(k)}_{z_{0k}} \\
+    + \sum_{tk} \log (A_k)_{z_{t+1, k} z_{t, k}} + \log (\pi_k)_{z_{0k}} \\
     + \log p(\lambda) + \log p(A) + \log p(\pi) 
 \end{multline}
 
@@ -107,16 +107,16 @@ which we will do in pieces.
 \subsection{$\pi$}
 First, we have
 \begin{equation}
-    \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] = \sum_k \left[(\rho_{k1} - 1)\overline{\log \pi_1^{(k)}} + (\rho_{k2} - 1) \overline{\log \pi_0^{(k)}} + H(\pi^{(k)}) \right]
+    \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] = \sum_k \left[(\rho_{k1} - 1)\overline{\log \pi_{k1}} + (\rho_{k2} - 1) \overline{\log \pi_{k0}} + H(\pi_k) \right]
 \end{equation}
 with
 \begin{align}
-    \overline{\log \pi_1^{(k)}} &= \psi(\delta_{k1}) - \psi(\delta_{k1} + \delta_{k2}) \\
-    \overline{\log \pi_0^{(k)}} &= \psi(\delta_{k2}) - \psi(\delta_{k1} + \delta_{k2})
+    \overline{\log \pi_{k1}} &= \psi(\delta_{k1}) - \psi(\delta_{k1} + \delta_{k2}) \\
+    \overline{\log \pi_{k0}} &= \psi(\delta_{k2}) - \psi(\delta_{k1} + \delta_{k2})
 \end{align}
 with $\psi$ the digamma function and 
 \begin{equation}
-    H(\pi^{(k)}) = H_b(\delta_{k1}, \delta_{k2})
+    H(\pi_k) = H_b(\delta_{k1}, \delta_{k2})
 \end{equation}
 with $H_b$ the entropy of the beta distribution:
 \begin{equation}
@@ -127,16 +127,16 @@ with $H_b$ the entropy of the beta distribution:
 Similarly,
 \begin{equation}
     \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
-\sum_{ik} \left[ (\nu_{ik1} - 1) \overline{\log A_{1i}^{(k)}} + (\nu_{ik2} - 1) \overline{\log A_{0i}^{(k)}} + H(A_{1i}^{(k)}) \right]
+\sum_{ik} \left[ (\nu_{ik1} - 1) \overline{\log A_{k1i}} + (\nu_{ik2} - 1) \overline{\log A_{k0i}} + H(A_{k1i}) \right]
 \end{equation}
 where 
 \begin{align}
-    \overline{\log A_{1i}^{(k)}} &= \psi(\gamma_{ik1}) - \psi(\gamma_{ik1} + \gamma_{ik2}) \\
-    \overline{\log A_{0i}^{(k)}} &= \psi(\gamma_{ik2}) - \psi(\gamma_{ik1} + \gamma_{ik2})
+    \overline{\log A_{k1i}} &= \psi(\gamma_{ki1}) - \psi(\gamma_{ki1} + \gamma_{ki2}) \\
+    \overline{\log A_{k0i}} &= \psi(\gamma_{ki2}) - \psi(\gamma_{ki1} + \gamma_{ki2})
 \end{align}
 and again
 \begin{equation}
-    H(A_{1i}^{(k)}) = H_b(\gamma_{ik1}, \gamma_{ik2})
+    H(A_{k1i}) = H_b(\gamma_{ki1}, \gamma_{ki2})
 \end{equation}
 
 \subsection{$\lambda$}
@@ -158,14 +158,18 @@ with
 \subsection{Observation model}
 Finally, we would like to calculate
 \begin{multline}
-    \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] = \sum_{ktu} N_{tu}\xi_{tk}(\psi(\alpha_{ku}) -\log \beta_{ku}) - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) 
+    \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] = \sum_{ktu} N_{tu}\xi_{tk}\overline{\log \lambda_{ku}} - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) 
     \\
-    + \sum_{kt} \left[\mathrm{tr}\left(\Xi^{(k)}_{t+1, t} \overline{\log A^T}\right) + \xi_{0k}^T \overline{\log \pi} \right]
+    + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right]
     \\
-    - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi^{(k)}_{t+1, t} \tilde{A^T}\right) + \xi_{0k}^T \tilde{\pi} - \log Z^{(k)}_t \right]
+    - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A_k^T}\right) + \xi_{0k}^T \tilde{\pi_k} - \log Z^{(k)}_t \right]
 \end{multline}
-where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. 
+where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. Finally, gathering terms, we can write
 
 \section{Variational Updates}
+Because several of our assumed variational distributions are conjugate within the exponential family, we can immediately write down the optimal values of several variational paramters:
+\begin{align}
+foo    
+\end{align}
 
 \end{document}
