@@ -84,11 +84,11 @@ where $Z \equiv p(N|\theta)$ and $\theta \equiv (\lambda, A, \pi)$. As we shall 
 \section{HMM Inference}
 Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backward Algorithm returns the following:
 \begin{align}
-    \xi_{tk} \equiv p(z_{tk}|N, \theta) \qquad &\text{posterior marginals}\\
-    \Xi_{kt, ij} \equiv p(z_{t+1,k} = j, z_{tk} = i|N, \theta) \qquad &\text{two-slice marginals}\\
-    \log Z_t^{(k)} = \log p(N_{t+1, \bullet}|N_{t\bullet}, \theta) \qquad &\text{partition function}
+    \xi_{t} \equiv p(z_{t}|N, \theta) \qquad &\text{posterior marginals}\\
+    \Xi_{t, ij} \equiv p(z_{t+1} = j, z_{t} = i|N, \theta) \qquad &\text{two-slice marginals}\\
+    \log Z_{t} = \log p(N_{t+1, \bullet}|N_{t\bullet}, \theta) \qquad &\text{partition function}
 \end{align}
-The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z^{({k})} = \sum_t \log Z_t^{(k)} = \log p(N_{1:T}|\theta)$. 
+The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z = \sum_t \log Z_{t} = \log p(N_{1:T}|\theta)$. 
 
 \section{Evidence Lower Bound}
 We begin by writing the joint distribution of the data:
@@ -162,7 +162,7 @@ Finally, we would like to calculate
     \\
     + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right]
     \\
-    - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A_k^T}\right) + \xi_{0k}^T \tilde{\pi_k} - \log Z^{(k)}_t \right]
+    - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
 \end{multline}
 where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. Finally, gathering terms, we can write
 
