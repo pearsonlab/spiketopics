@@ -152,14 +152,20 @@ to write
 \end{equation}
 with
 \begin{equation}
-    \overline{\log \lambda_{ku}} = \psi(\alpha_ku) - \log \beta_{ku}
+    \overline{\log \lambda_{ku}} = \psi(\alpha_{ku}) - \log \beta_{ku}
 \end{equation}
 
 \subsection{Observation model}
 Finally, we would like to calculate
-\begin{align}
-    \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] = \sum_{ktu} N_{tk}\xi_{tk}(\psi(\alpha_{ku}) -\log \beta_{ku}) - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) 
-\end{align}
-where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $A$, $\pi$, $\xi$, and $\Xi$.
+\begin{multline}
+    \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] = \sum_{ktu} N_{tu}\xi_{tk}(\psi(\alpha_{ku}) -\log \beta_{ku}) - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) 
+    \\
+    + \sum_{kt} \left[\mathrm{tr}\left(\Xi^{(k)}_{t+1, t} \overline{\log A^T}\right) + \xi_{0k}^T \overline{\log \pi} \right]
+    \\
+    - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi^{(k)}_{t+1, t} \tilde{A^T}\right) + \xi_{0k}^T \tilde{\pi} - \log Z^{(k)}_t \right]
+\end{multline}
+where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. 
+
+\section{Variational Updates}
 
 \end{document}
