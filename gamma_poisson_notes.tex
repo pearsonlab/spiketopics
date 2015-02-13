@@ -10,7 +10,7 @@
 We assume a Poisson process with $T$ observation times, $N$ observation units, and $K$ latent states. The counts for each unit at each time are then given by 
 
 \begin{equation}
-    N_{tu} \sim {\mathrm Poisson}(\mu_{tu})    
+    N_{tu} \sim \mathrm{Poisson}(\mu_{tu})    
 \end{equation}
 with 
 \begin{equation}
@@ -31,43 +31,18 @@ Clearly, if we treat $N$ and $z$ as constants, we have
     \lambda_{ku}|N, z \sim \mathrm{Gamma}(\sum_t N_{tu}z_{tk} + 1, \sum_t\prod_{k'\neq k} \lambda_{k'u}^{z_{tk'}})
 \end{equation}
 
-\section{Variational Ansatz}
-We would like to approximate the joint posterior density
-\begin{equation}
-    p(\lambda, z|N) \propto p(N|\lambda, z) p(\lambda|z) p(z)
-\end{equation}
-with the structured mean field form
-\begin{equation}
-     q(\lambda, z) = \prod_{ku} q(\lambda_{ku})q(z_k)
-\end{equation} 
-with the ansatz
-\begin{align} 
-    q(\lambda_{ku}) &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
-    q(z_k) &\sim \mathrm{HMM}(k)
-\end{align}
-where $\mathrm{HMM}(k)$ denotes a Hidden Markov Model with poisson observations for each latent state. As we shall see, $q(z_k)$ is straightforward to calculate via the forward-backward algorithm.
-
-\section{$\mathbb{E}_q[\log p]$}
-We would like to choose the variational parameters, $\alpha$ and $\beta$, to minimize the KL divergence between $p$ and $q$ (which is the same as maximizing the evidence lower bound, $\mathcal{L}$). To do so, we make use of the following properties of Gamma distributions with shape $\alpha$ and rate $\beta$:
-\begin{align}
-   \mathbb{E}[\lambda] &= \frac{\alpha}{\beta} \\
-   \mathbb{E}[\log \lambda] &= \psi(\alpha) - \log \beta \\
-   H \equiv \mathbb{E}[\log q] &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha)\psi(\alpha) 
-\end{align}
-Using these, we can write the portion of the evidence lower bound depending on $p$ as 
-\begin{equation}
-    \mathbb{E}_q[\log p] = \sum_{ktu} N_{tk}\bar{z}_{tk}(\psi(\alpha_{ku}) -\log \beta_{ku}) - \sum_{tu} \prod_k \left( 1 - \bar{z}_{tk} + \bar{z}_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
-\end{equation}
-
 \section{Hidden Markov Model}
-Here, we assume a hidden Markov model for each latent state. That is, we assume
+Here, we assume a hidden Markov model for each latent state. That is, we take
 \begin{align}
     A_{ij} &\equiv p(z_{t+1}=i|z_t = j) \\
     \pi_i &\equiv p(z_0 = i)
 \end{align}
 (Note that this means that the \emph{columns} of $A$ sum to 1, which is the opposite of the usual convention. In other words, in matrix notation, $z_{t+1} = A \cdot z_t$.)
 
-As above, we will assume an independent posterior distribution over $z_t$ for each latent state that takes the form of an HMM. 
+Given this notation, it is straightforward to write the probability of a sequence of hidden states, conditioned on the chain parameters
+\begin{equation}
+    \log p(z|A, \pi) = \sum_t \log A_{z_{t+1} z_t} + \log \pi_{z_0}
+\end{equation}
 
 \section{Priors}
 We would also like to put priors on the parameters of the model. For $\lambda$, this is straightforward:
@@ -75,6 +50,110 @@ We would also like to put priors on the parameters of the model. For $\lambda$, 
     \lambda_{ku} \sim \mathrm{Gamma}(c_{ku}, d_{ku})
 \end{equation}
 
-Priors on $z$ will be discussed below in the section on HMM inference.
+For the parameters of the Markov chain, we have the restriction that the columns must sum to 1, so we place priors on the probability of $z_{0k} = 1$
+\begin{equation}
+    \pi^{(k)}_1 \sim \mathrm{Beta}(\rho_{k1}, \rho_{k2})
+\end{equation}
+and the probabilities of transition \emph{into} the $z_{tk} = 1$ state:
+\begin{equation}
+    A^{(k)}_{1i} \sim \mathrm{Beta}(\nu_{ik1}, \nu_{ik2})
+\end{equation}
+
+\section{Variational Ansatz}
+We would like to approximate the joint posterior density
+\begin{equation}
+    p(\lambda, z, A, \pi|N) \propto p(N, z|\lambda, A, \pi) p(\lambda) p(A) p(\pi)
+\end{equation}
+with a structured mean field form that factorizes over chains:
+\begin{equation}
+     q(\lambda, z, A, \pi) = \prod_{ku} q(\lambda_{ku}) q(z_k) q(A^{(k)}) q(\pi^{(k)})
+\end{equation} 
+Given the form taken by the model above, we can readily write down the ansatz
+\begin{align} 
+    \lambda_{ku} &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
+    z_{1:T, k} &\sim \mathrm{HMM}(\tilde{N}, \tilde{\lambda}_{k\bullet}, \tilde{A}^{(k)}, \tilde{\pi}^{(k)}) \\
+    A^{(k)}_{1i} &\sim \mathrm{Beta}(\gamma_{ik1}, \gamma_{ik2}) \\
+    \pi^{(k)} &\sim \mathrm{Beta}(\delta_{k1}, \delta_{k2})
+\end{align}
+where $\mathrm{HMM}(\ldots)$ denotes the joint posterior over hidden states at each moment in time:
+\begin{equation}
+    p(z_{1:T}|N, \theta) = \frac{p(z_{1:T}, N|\theta)}{Z}
+\end{equation}
+where $Z \equiv p(N|\theta)$ and $\theta \equiv (\lambda, A, \pi)$.
+a Hidden Markov Model with poisson observations for each latent state. As we shall see, this posterior is straightforward to calculate via the forward-backward algorithm.
+
+\section{HMM Inference}
+Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backward Algorithm returns the following:
+\begin{align}
+    \xi_{tk} \equiv p(z_{tk}|N, \theta) \qquad &\text{posterior marginals}\\
+    \Xi^{(k)}_{t, ij} \equiv p(z_{t+1,k} = j, z_{tk} = i|N, \theta) \qquad &\text{two-slice marginals}\\
+    \log Z_t^{(k)} = \log p(N_{t+1, \bullet}|N_{t\bullet}, \theta) \qquad &\text{partition function}
+\end{align}
+The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z^{({k})} = \sum_t \log Z_t^{(k)} = \log p(N_{1:T}|\theta)$. 
+
+\section{Evidence Lower Bound}
+We begin by writing the joint distribution of the data:
+\begin{multline}
+    \log p(N, \lambda, z, A,\pi) = \sum_{ktu}\left[ N_{tu} z_{tk} \log \lambda_{ku} - \prod_k \lambda_{ku}^{z_{tk}} - \log N_{tu}!\right] \\
+    + \sum_{tk} \log A^{(k)}_{z_{t+1, k} z_{t, k}} + \log \pi^{(k)}_{z_{0k}} \\
+    + \log p(\lambda) + \log p(A) + \log p(\pi) 
+\end{multline}
+
+We would like to calculate 
+\begin{multline}
+    \mathcal{L} = \mathbb{E}_q\left[\log \frac{p}{q}\right] = \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] + \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] + \mathbb{E}_{q(\lambda)} \left[\log \frac{p(\lambda)}{q(\lambda)} \right] \\ + \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] 
+\end{multline}
+which we will do in pieces. First, we have
+\begin{equation}
+    \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] = \sum_k \left[(\rho_{k1} - 1)\overline{\log \pi_1^{(k)}} + (\rho_{k2} - 1) \overline{\log \pi_0^{(k)}} + H(\pi^{(k)}) \right]
+\end{equation}
+with
+\begin{align}
+    \overline{\log \pi_1^{(k)}} &= \psi(\delta_{k1}) - \psi(\delta_{k1} + \delta_{k2}) \\
+    \overline{\log \pi_0^{(k)}} &= \psi(\delta_{k2}) - \psi(\delta_{k1} + \delta_{k2})
+\end{align}
+with $\psi$ the digamma function and 
+\begin{equation}
+    H(\pi^{(k)}) = H_b(\delta_{k1}, \delta_{k2})
+\end{equation}
+with $H_b$ the entropy of the beta distribution. Similarly
+\begin{equation}
+    \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
+\sum_{ik} \left[ (\gamma_{ik1} - 1) \overline{\log A_{1i}^{(k)}} + (\gamma_{ik2} - 1) \overline{\log A_{0i}^{(k)}} + H(A_{1i}^{(k)}) \right]
+\end{equation}
+where 
+\begin{align}
+    \overline{\log A_{1i}^{(k)}} &= \psi(\gamma_{k1}) - \psi(\gamma_{k1} + \gamma_{k2}) \\
+    \overline{\log A_{0i}^{(k)}} &= \psi(\gamma_{k2}) - \psi(\gamma_{k1} + \gamma_{k2})
+\end{align}
+
+We would like to calculate $\mathbb{E}_q[\log p]$. To do this, we will make use of some properties of Gamma distributions
+\begin{align}
+   \mathbb{E}[\lambda] &= \frac{\alpha}{\beta} \\
+   \mathbb{E}[\log \lambda] &= \psi(\alpha) - \log \beta \\
+   H \equiv \mathbb{E}[\log p] &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha)\psi(\alpha) 
+\end{align}
+as well as the outputs of the Forward-Backward algorithm, $\xi$ and $\Xi$. Using these, we can write the portion of the evidence lower bound depending on $p$ as
+\begin{multline}
+    \mathbb{E}_q[\log p] = \sum_{ktu} N_{tk}\xi_{tk}(\psi(\alpha_{ku}) -\log \beta_{ku}) - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) \\
+    + \sum_{tk} \mathrm{tr}\left(\left(\Xi^{(k)}_{t+1, t}\right)^T \overline{\log A^{(k)}} \right) + \sum_{k} \xi^T_{0k} \overline{\log \pi^{(k)}} \\
+    + \sum_{ku} (c_{ku} - 1)\overline{\log \lambda_{ku}} + \sum_{ku} d_{ku} \frac{\alpha_{ku}}{\beta_{ku}} \\
+    + (\rho_{k1} - 1)\overline{\log \pi_1^{(k)}} + (\rho_{k2} - 1) \overline{\log \pi_0^{(k)}} + \sum_i (\gamma_{ik1} - 1) \overline{\log A_{1i}^{(k)}} + (\gamma_{ik2} - 1) \overline{\log A_{0i}^{(k)}}
+\end{multline}
+where we use bars to denote expectation with respect to the variational distribution $q$ and we make use of the vector/matrix representations of $A$, $\pi$, $\xi$, and $\Xi$.
+
+
+\subsection{$q(z)$}
+As above, we will assume an independent posterior distribution over $z_t$ for each latent state that takes the form of an HMM. That is, we will parameterize the variational anstaz for the HMM by the matrices $\tilde{A}^{(k)}_{ij}$, the vectors $\tilde{\pi}^{(k)}_i$ and the observation parameters
+\begin{equation}
+    \tilde{\psi}^{(k)}_t \equiv \prod_u p(N_{tu}|z_{tk}) = \prod_u \frac{\eta_{ku}^{N_{tu}} \mu_{ku}^{N_{tu} z_{tk}}}{N_{tu}!} e^{-\eta_{ku} \mu_{ku}^{z_{tk}}}
+\end{equation}
+That is, the observation probability is given by a Poisson process with baseline rate $\eta$ that, in the presence of $z$, is augmented to $\eta\mu$.
+
+We will assume that the variational distribution for the HMM further factorizes into a piece involving $z$ and a piece involving the parameters of the Markov chain (which factorizes in general), in which case the log likelihood for the variational distribution takes the functional form
+\begin{equation}
+    \log q(z, A, \pi) \approx \log q(z) 
+    + \log q(A) + \log q(\pi) + \log q(\psi)
+\end{equation}
 
 \end{document}

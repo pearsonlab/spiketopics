@@ -297,7 +297,7 @@ class GPModel:
 
         ############### E[log (p(A) / q(A))] #############
         logA = self.calc_log_A()
-        L.append(np.sum(self.nu1 * logA[1] + self.nu2 * logA[0]))
+        L.append(np.sum((self.nu1 - 1) * logA[1] + (self.nu2 - 1) * logA[0]))
         H_A = self.H_beta(self.gamma1, self.gamma2)
         L.append(np.sum(H_A))
 
