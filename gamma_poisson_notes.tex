@@ -178,6 +178,9 @@ where we define
 \begin{equation}
     F_{tku} \equiv \prod_{j \neq k} \left( 1 - \xi_{tj} + \xi_{tj} \frac{\alpha_{ju}}{\beta_{ju}}\right)
 \end{equation}
+We note, after Beal, that as a result of these updates, $\tilde{A}$ and $\tilde{\pi}$ are subadditive (i.e., they do not sum to 1), but that the forward-backward algorithm nonetheless returns a correctly normalized posterior.
+
+
 Similarly, variation with respect to the prior parameters for $(\lambda, A, \pi)$ gives
 \begin{align}
     \alpha_{ku} &\leftarrow \sum_t N_{tu} \xi_{tk} + c_{ku} \\
