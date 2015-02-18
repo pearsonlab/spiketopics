@@ -31,6 +31,6 @@ or as modules by
 ~~~
 nosetests tests/name_of_test_module.py
 ~~~
-}
+
    
 
