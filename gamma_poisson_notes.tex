@@ -71,7 +71,7 @@ with a structured mean field form that factorizes over chains:
 Given the form taken by the model above, we can readily write down the ansatz
 \begin{align} 
     \lambda_{ku} &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
-    z_{1:T, k} &\sim \mathrm{HMM}(\varepsilon_k, \tilde{A}_k, \tilde{\pi}_k) \\
+    z_{1:T, k} &\sim \mathrm{HMM}(\eta_k, \tilde{A}_k, \tilde{\pi}_k) \\
     A_{k1i} &\sim \mathrm{Beta}(\gamma_{ki1}, \gamma_{ki2}) \\
     \pi_k &\sim \mathrm{Beta}(\delta_{k1}, \delta_{k2})
 \end{align}
@@ -79,7 +79,7 @@ where $\mathrm{HMM}(\ldots)$ denotes the joint posterior over hidden states at e
 \begin{equation}
     p(z_{1:T}|N, \theta) = \frac{p(z_{1:T}, N|\theta)}{Z}
 \end{equation}
-where $Z \equiv p(N|\theta)$ and $\theta \equiv (\varepsilon, A, \pi)$. As we shall see, this posterior is straightforward to calculate via the forward-backward algorithm.
+where $Z \equiv p(N|\theta)$ and $\theta \equiv (\lambda, A, \pi)$. As we shall see, this posterior is straightforward to calculate via the forward-backward algorithm.
 
 \section{HMM Inference}
 Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backward Algorithm returns the following:
@@ -162,14 +162,14 @@ Finally, we would like to calculate
     \\
     + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right]
     \\
-    - \sum_{kt} \left[ \xi_{tk}^T \varepsilon_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
+    - \sum_{kt} \left[ \xi_{tk}^T \eta_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
 \end{multline}
-where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\varepsilon$, $\xi$, and $\Xi$. 
+where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\eta$, $\xi$, and $\Xi$. 
 
 \section{Variational Updates}
-Technically, the variational parameters above are $(\alpha, \beta, \gamma, \delta, \varepsilon, \tilde{A}, \tilde{\pi})$. However, $\xi = \xi(\varepsilon, \tilde{A}, \tilde{\pi})$ and $\Xi = \Xi(\varepsilon, \tilde{A}, \tilde{\pi})$ so we can instead treat these as the effective variational parameters. This then readily gives as updates:
+Technically, the variational parameters above are $(\alpha, \beta, \gamma, \delta, \eta, \tilde{A}, \tilde{\pi})$. However, $\xi = \xi(\eta, \tilde{A}, \tilde{\pi})$ and $\Xi = \Xi(\eta, \tilde{A}, \tilde{\pi})$ so we can instead treat these as the effective variational parameters. This then readily gives as updates:
 \begin{align}
-\varepsilon_{tk} &\leftarrow \sum_u N_{tu} \overline{\log \lambda_{ku}} + 
+\eta_{tk} &\leftarrow \sum_u N_{tu} \overline{\log \lambda_{ku}} + 
 \sum_u \left( 1 - \frac{\alpha_{ku}}{\beta_{ku}}\right) F_{tku} \\
 \tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
 \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
