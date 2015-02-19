@@ -131,6 +131,63 @@ class Test_Forwards_Backwards:
         assert_equals(Xi.shape, (self.T - 1, 2, 2))
         npt.assert_allclose(np.sum(Xi, axis=(1, 2)), np.ones((self.T - 1, )))
 
+    def test_rescaling_psi_compensated_by_Z(self):
+        offset = 100
+        psi_r = np.exp(np.log(self.psi_test) + offset)
+        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+
+        gammar, logZr, Xir = gp.fb_infer(self.A_test, self.pi0_test, psi_r)
+
+        npt.assert_allclose(gammar, gamma)
+        npt.assert_allclose(logZr, logZ + self.T * offset)
+        npt.assert_allclose(Xi, Xir)
+
+    def test_rescaling_pi_compensated_by_Z(self):
+        offset = -10
+        pi_r = np.exp(np.log(self.pi0_test) + offset)
+        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+
+        gammar, logZr, Xir = gp.fb_infer(self.A_test, pi_r, self.psi_test)
+
+        npt.assert_allclose(gammar, gamma)
+        npt.assert_allclose(logZr, logZ + offset)
+        npt.assert_allclose(Xi, Xir)
+
+    def test_rescaling_A_compensated_by_Z(self):
+        offset = 10
+        A_r = np.exp(np.log(self.A_test) + offset)
+        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+
+        gammar, logZr, Xir = gp.fb_infer(A_r, self.pi0_test, self.psi_test)
+
+        npt.assert_allclose(gammar, gamma)
+        npt.assert_allclose(logZr, logZ + (self.T - 1) * offset)
+        npt.assert_allclose(Xi, Xir)
+
+    def test_entropy_positive(self):
+        # we want H = -E_q[log q] > 0
+        # this corresponds to log Z - E_q[log likelihood] > 0
+        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        emission_piece = np.sum(gamma * np.log(self.psi_test))
+        initial_piece = np.sum(gamma[0] * np.log(self.pi0_test))
+        transition_piece = np.sum(Xi * np.log(self.A_test))
+        LL = emission_piece + initial_piece + transition_piece
+        assert_true(logZ - LL >= 0)
+
+    def test_entropy_positive_subadditive_pars(self):
+        # same test for positive entropy, but with subadditive A and pi
+        offset = -5
+        log_pi_r = np.log(self.pi0_test) + offset
+        log_A_r = np.log(self.A_test) + offset
+
+        gamma, logZ, Xi = gp.fb_infer(np.exp(log_A_r), np.exp(log_pi_r),
+         self.psi_test)
+        emission_piece = np.sum(gamma * np.log(self.psi_test))
+        initial_piece = np.sum(gamma[0] * log_pi_r)
+        transition_piece = np.sum(Xi * log_A_r)
+        LL = emission_piece + initial_piece + transition_piece
+        assert_true(logZ - LL >= 0)
+
     def fb_infer_integration_test(self):
         gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
         npt.assert_allclose(self.z_test.astype('float')[5:], 
