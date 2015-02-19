@@ -28,6 +28,9 @@ class Test_Forwards_Backwards:
         # make test case for forwards-backwards
         self._setup_fb_data()
 
+        # do a little preprocessing (calculate emission probabilities)
+        self._calc_emission_probs()
+
     @classmethod
     def _setup_constants(self):
         """
@@ -103,6 +106,12 @@ class Test_Forwards_Backwards:
         # initial belief about states
         self.pi0_test = np.array([0.5, 0.5])
 
+    @classmethod
+    def _calc_emission_probs(self):
+        logpsi = np.sum(self.N_test[:, :, np.newaxis] * 
+            np.log(self.mu_test[np.newaxis, ...]), axis=1)
+        self.psi_test = np.exp(logpsi)
+
     def test_class_setup(self):
         assert_equals(self.chain.shape, (self.K, self.T))
         assert_equals(np.max(self.chain), 1)
@@ -114,14 +123,8 @@ class Test_Forwards_Backwards:
         assert_equals(self.A_test.shape, (2, 2))
         assert_equals(self.pi0_test.shape, (2,))
 
-    def test_observation_probs_consistent(self):
-        psi = gp.calculate_observation_probs(self.N_test, self.mu_test)
-        assert_equals(psi.shape, (self.T, self.mu_test.shape[-1]))
-        npt.assert_array_equal(psi >= 0, np.ones_like(psi, dtype='bool'))
-
     def test_fb_returns_consistent(self):
-        gamma, logZ, Xi = gp.fb_infer(self.N_test, self.mu_test, self.A_test, 
-            self.pi0_test) 
+        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
         assert_equals(gamma.shape, (self.T, 2))
         npt.assert_allclose(np.sum(gamma, 1), np.ones((self.T,)))
         assert_equals(logZ.shape, ())
@@ -129,9 +132,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(np.sum(Xi, axis=(1, 2)), np.ones((self.T - 1, )))
 
     def fb_infer_integration_test(self):
-        gamma, logZ, Xi = gp.fb_infer(self.N_test, self.mu_test, self.A_test, 
-            self.pi0_test) 
-        # set_trace()
+        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
         npt.assert_allclose(self.z_test.astype('float')[5:], 
             gamma[5:, 1], atol=1e-3)
         
