@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.special import digamma, gammaln, betaln
 import pdb
 
-def fb_infer(A, pi0, psi):
+def fb_infer(A, pi, psi):
     """
     Implement the forward-backward inference algorithm.
     A is a matrix of transition probabilities that acts to the right:
@@ -24,20 +24,21 @@ def fb_infer(A, pi0, psi):
     logZ = np.empty(T)  # log partition function
 
     # initialize
-    alpha[0, :] = pi0
+    a = psi[0] * pi
+    alpha[0] = a / np.sum(a)
+    logZ[0] = np.log(np.sum(a))
     beta[-1, :] = 1
-    logZ[0] = 0
     
     # forwards
     for t in xrange(1, T):
-        a = psi[t, :] * (A.dot(alpha[t - 1, :]))
+        a = psi[t] * (A.dot(alpha[t - 1]))
+        alpha[t] = a / np.sum(a)
         logZ[t] = np.log(np.sum(a))
-        alpha[t, :] = a / np.sum(a)
         
     # backwards
     for t in xrange(T - 1, 0, -1):
-        b = A.T.dot(beta[t, :] * psi[t, :])
-        beta[t - 1, :] = b / np.sum(b)
+        b = A.T.dot(beta[t] * psi[t])
+        beta[t - 1] = b / np.sum(b)
         
     # posterior
     gamma = alpha * beta
@@ -73,18 +74,18 @@ class GPModel:
     z: T x K array of latent states in the Markov chain (0 or 1)
     A: 2 x 2 x K array of column-stochastic Markov transition matrices (one
         per chain)
-    pi0: 2 x K array of initial chain state probabilities
+    pi: 2 x K array of initial chain state probabilities
 
     Model is defined as:
     N_{tu}|z ~ Poisson(prod_k mu_{ku}^z_{tk})
     lam_{ku}|z ~ Gamma(alpha_{ku}, beta_{ku})
     A(k)_{i -> 1} ~ Beta(gamma1_{ik}, gamma2_{ik})
-    pi0(k)_1 ~ Beta(delta1_k, delta2_k)
+    pi(k)_1 ~ Beta(delta1_k, delta2_k)
 
     Priors are:
     lam_{ku}|z ~ Gamma(cc_{ku}, dd_{ku})
     A(k)_{i -> 1} ~ Beta(nu1_{ik}, nu2_{ik})
-    pi0(k)_1 ~ Beta(rho1_k, rho2_k)
+    pi(k)_1 ~ Beta(rho1_k, rho2_k)
 
     Derived parameters:
     xi_{tk} = E[z_{tk}]
@@ -104,7 +105,7 @@ class GPModel:
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'eta': (T, K), 'kappa': (K,)})
+            'Xi': (T - 1, K, 2, 2), 'kappa': (K,)})
         self.log = []  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
@@ -138,9 +139,6 @@ class GPModel:
 
         self.logZ = np.zeros(self.K)  # normalization constant for each chain
 
-        # normalize Xi
-        self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
-
         # make sure baseline category turned on
         if self.include_baseline:
             self.xi[:, 0] = 1
@@ -148,6 +146,9 @@ class GPModel:
             # ensure p(z_{t+1}=1, z_t=1) = 1
             self.Xi[:, 0] = 0
             self.Xi[:, 0, 1, 1] = 1
+
+        # normalize Xi
+        self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
 
         return self
 
@@ -184,12 +185,12 @@ class GPModel:
         Given z (T x K) and w (K x U), returns the product
         prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
         log = True returns the log of the result
-        exclude = True returns the product over all k
-        as a result, it is T x U instead of T x K x U
+        exclude = False returns the product over all k
+        in which case, the result is T x U instead of T x K x U
         """
         zz = z[..., np.newaxis]
         vv = 1 - zz + zz * w
-        dd = np.sum(np.log(vv), 1, keepdims=exclude)
+        dd = np.sum(np.log(vv), axis=1, keepdims=exclude)
 
         if exclude:
             log_ans =  dd - np.log(vv)
@@ -217,9 +218,9 @@ class GPModel:
         log_A[0]  = digamma(self.gamma2) - digamma(self.gamma1 + self.gamma2)
         return log_A
 
-    def calc_log_pi0(self):
+    def calc_log_pi(self):
         """
-        Calculate E[log pi0] with pi0 the Markov chain initial state 
+        Calculate E[log pi] with pi the Markov chain initial state 
         probability. Return exp of this, which is the parameter value to
         be used in calculating updates to the latent states. Note that this 
         does NOT return a probability (does not sum to one). Cf. Beal 2003.
@@ -227,12 +228,12 @@ class GPModel:
         # as per Beal's thesis, these are subadditive, but this is 
         # compensated for by normalization in fb algorithm
         # necessary to correctly calculate logZ
-        log_pi0 = np.empty((2, self.K))
-        log_pi0[1] = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
-        log_pi0[0] = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
-        return log_pi0
+        log_pi = np.empty((2, self.K))
+        log_pi[1] = digamma(self.delta1) - digamma(self.delta1 + self.delta2)
+        log_pi[0] = digamma(self.delta2) - digamma(self.delta1 + self.delta2)
+        return log_pi
 
-    def calculate_evidence(self, k):
+    def calc_log_evidence(self, k):
         """
         Calculate emission probabilities for use in forward-backward 
         algorithm. These are not properly normalized, but that will
@@ -250,12 +251,11 @@ class GPModel:
         tt = N['time']
         uu = N['unit'] - 1
         N['lam0'] = -Fk[tt, uu] 
-        N['lam1'] = (nn * bar_log_lambda[k, uu] + 
-            Fk[tt, uu] * bar_lambda[k, uu])
+        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu])
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
-        return np.exp(logpsi)
+        return logpsi
 
     @staticmethod
     def H_gamma(alpha, beta):
@@ -290,10 +290,10 @@ class GPModel:
 
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
-        logpi0 = self.calc_log_pi0()
-        L.append(np.sum((self.rho1 - 1) * logpi0[1] + (self.rho2 - 1) * logpi0[0]))
-        H_pi0 = self.H_beta(self.delta1, self.delta2)
-        L.append(np.sum(H_pi0))
+        logpi = self.calc_log_pi()
+        L.append(np.sum((self.rho1 - 1) * logpi[1] + (self.rho2 - 1) * logpi[0]))
+        H_pi = self.H_beta(self.delta1, self.delta2)
+        L.append(np.sum(H_pi))
 
         ############### E[log (p(A) / q(A))] #############
         logA = self.calc_log_A()
@@ -310,11 +310,14 @@ class GPModel:
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
         L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]))
         L.append(-np.sum(self.Nobs * self.F_prod(self.xi, self.alpha / self.beta, exclude=False)))
-        logpi0 = self.calc_log_pi0()
-        L.append(np.sum((1 - self.xi[0]) * logpi0[0] + self.xi[0] * logpi0[1]))
+
+        logpi = self.calc_log_pi()
+        L.append(np.sum((1 - self.xi[0]) * logpi[0] + self.xi[0] * logpi[1]))
+
         logA = self.calc_log_A()
         L.append(np.sum(self.Xi * logA.transpose((2, 0, 1))))
-        L.append(-np.sum(self.eta))
+
+        # subtract the entropy of q(z) HMM
         L.append(-np.sum(self.kappa))
 
         ############### log Z #############
@@ -343,22 +346,23 @@ class GPModel:
         Update estimates of hidden states for given chain, along with
         two-slice marginals.
         """
-        psi = self.calculate_evidence(k)
-        logpsi = np.log(psi)
+        eta = self.calc_log_evidence(k)
         logA = self.calc_log_A()[..., k]
-        logpi0 = self.calc_log_pi0()[..., k]
+        logpi = self.calc_log_pi()[..., k]
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
             pass
         else:
-            post, logZ, Xi = fb_infer(np.exp(logA), np.exp(logpi0), psi)
+            post, logZ, Xi = fb_infer(np.exp(logA), np.exp(logpi), np.exp(eta))
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
-        self.eta[:, k] = (1 - self.xi[:, k]) * logpsi[:, 0] + self.xi[:, k] * logpsi[:, 1]
-        self.kappa[k] = ((1 - self.xi[0, k]) * logpi0[0] + self.xi[0, k] * logpi0[1] +  np.sum(self.Xi[:, k] * logA))
+        emission_piece = np.sum((1 - self.xi[:, k]) * eta[:, 0] + self.xi[:, k] * eta[:, 1])
+        initial_piece = (1 - self.xi[0, k]) * logpi[0] + self.xi[0, k] * logpi[1] 
+        transition_piece = np.sum(self.Xi[:, k] * logA)
+        self.kappa[k] = emission_piece + initial_piece + transition_piece
         return self
 
     def update_A(self, k):
@@ -372,7 +376,7 @@ class GPModel:
 
         return self
 
-    def update_pi0(self, k):
+    def update_pi(self, k):
         """
         Update Markov chain variational parameters for given chain.
         """
@@ -399,11 +403,11 @@ class GPModel:
             if not silent:
                 print "chain {}: updated A: L = {}".format(k, Lval)
 
-            self.update_pi0(k)
+            self.update_pi(k)
             if (not silent) or keeplog:
                 Lval = self.L(keeplog=keeplog) 
             if not silent:
-                print "chain {}: updated pi0: L = {}".format(k, Lval)
+                print "chain {}: updated pi: L = {}".format(k, Lval)
 
         # E step        
         for k in xrange(self.K):
