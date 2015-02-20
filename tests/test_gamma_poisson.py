@@ -5,6 +5,7 @@ from __future__ import division
 from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, set_trace
 import numpy as np
 import scipy.stats as stats
+import pandas as pd
 import numpy.testing as npt
 import gamma_poisson as gp
 
@@ -15,7 +16,7 @@ class Test_Gamma_Poisson:
         Make some sample Markov chain data to run inference on.
         """
 
-        np.random.seed(12345)
+        np.random.seed(12346)
 
         self._setup_constants()
 
@@ -27,8 +28,7 @@ class Test_Gamma_Poisson:
 
         self._make_firing_rates()
 
-        # draw from Poisson
-        self.N = stats.poisson.rvs(self.fr)
+        self._make_count_frame()
 
     @classmethod
     def _setup_constants(self):
@@ -44,14 +44,15 @@ class Test_Gamma_Poisson:
     def _make_transition_probs(self):
         """
         Make a vector of transition probabilities for each category:
-        2 rows x K columns
-        Row 0 contains 0 -> 1 transition probability
-        Row 1 contains 1 -> transition probability
+        K rows x 2 columns
+        Column 0 contains 0 -> 1 transition probability
+        Column 1 contains 1 -> 1 transition probability
         """ 
         # want 0 -> to be rare, 1 -> 1 to be a little less so
         v0 = stats.beta.rvs(1, 200, size=self.K)
         v1 = stats.beta.rvs(100, 1, size=self.K)
         self.trans_probs = np.vstack([v0, v1]).T 
+        assert_equals(self.trans_probs.shape, (self.K, 2))
 
     @classmethod
     def _make_initial_states(self):
@@ -97,6 +98,18 @@ class Test_Gamma_Poisson:
         # calculate rate for each time
         fr = np.exp(self.chain.T.dot(np.log(lam))) * self.dt
         self.fr = fr + 1e-5  # in case we get exactly 0
+
+    @classmethod
+    def _make_count_frame(self):
+        # draw from Poisson
+        N = stats.poisson.rvs(self.fr)
+        df = pd.DataFrame(N)
+        df.index.name = 'frame'
+        df = df.reset_index()
+        df = pd.melt(df, id_vars='frame')
+        df.columns = ['frame', 'unit', 'count']
+        df['movie'] = 1
+        self.N = df
 
     def test_can_instantiate_model_object(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
@@ -151,7 +164,6 @@ class Test_Gamma_Poisson:
 
     def test_can_set_inits(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        mutest = np.random.rand(self.K, self.U)
         alphatest = np.random.rand(self.K, self.U)
         betatest = np.random.rand(self.K, self.U)
         gamma1test = np.random.rand(2, self.K)
@@ -161,10 +173,9 @@ class Test_Gamma_Poisson:
         xitest = np.random.rand(self.T, self.K)
         Xitest = np.random.rand(self.T  - 1, self.K, 2, 2)
 
-        gpm.set_inits(mu=mutest, alpha=alphatest, beta=betatest, 
+        gpm.set_inits(alpha=alphatest, beta=betatest, 
             gamma1=gamma1test, gamma2=gamma2test, delta1=delta1test,
             delta2=delta2test, xi=xitest, Xi=Xitest)
-        npt.assert_array_equal(gpm.mu, mutest)
         npt.assert_array_equal(gpm.alpha, alphatest)
         npt.assert_array_equal(gpm.beta, betatest)
         npt.assert_array_equal(gpm.gamma1, gamma1test)
@@ -182,7 +193,6 @@ class Test_Gamma_Poisson:
 
     def test_can_set_inits_no_baseline(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt, include_baseline=False)
-        mutest = np.random.rand(self.K, self.U)
         alphatest = np.random.rand(self.K, self.U)
         betatest = np.random.rand(self.K, self.U)
         gamma1test = np.random.rand(2, self.K)
@@ -194,10 +204,9 @@ class Test_Gamma_Poisson:
         xitest_normed[:, 0] = 1
         Xitest = np.random.rand(self.T  - 1, self.K, 2, 2)
 
-        gpm.set_inits(mu=mutest, alpha=alphatest, beta=betatest, 
+        gpm.set_inits(alpha=alphatest, beta=betatest, 
             gamma1=gamma1test, gamma2=gamma2test, delta1=delta1test,
             delta2=delta2test, xi=xitest, Xi=Xitest)
-        npt.assert_array_equal(gpm.mu, mutest)
         npt.assert_array_equal(gpm.alpha, alphatest)
         npt.assert_array_equal(gpm.beta, betatest)
         npt.assert_array_equal(gpm.gamma1, gamma1test)
@@ -215,7 +224,6 @@ class Test_Gamma_Poisson:
     def test_no_arguments_sets_default_inits(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         gpm.set_inits()
-        assert_equals(gpm.mu.shape, (self.K, self.U))
         assert_equals(gpm.alpha.shape, (self.K, self.U))
         assert_equals(gpm.beta.shape, (self.K, self.U))
         assert_equals(gpm.gamma1.shape, (2, self.K))
@@ -225,8 +233,6 @@ class Test_Gamma_Poisson:
 
     def test_invalid_init_shapes_raises_error(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        assert_raises(ValueError, gpm.set_inits, 
-            mu=np.ones((self.K + 1, self.U)))
         assert_raises(ValueError, gpm.set_inits, 
             alpha=np.ones((self.K, self.U, 1)))
         assert_raises(ValueError, gpm.set_inits, 
@@ -258,10 +264,17 @@ class Test_Gamma_Poisson:
         npt.assert_allclose(allprod[-1, 0, 2], allprod[-1, -1, 2])
         npt.assert_allclose(allprod[:, 0, :], gpm.F_prod(z, w, exclude=False))
 
+        # test whether scaling up and w[k] has no effect on F_prod[:, k]
+        k = 1
+        wscaled = w.copy()
+        wscaled[k] *= 10
+        npt.assert_allclose(gpm.F_prod(z, w)[:, k], 
+            gpm.F_prod(z, wscaled)[:, k])
+
     def test_calc_A(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         gpm.set_inits()
-        A = gpm.calc_A()
+        A = gpm.calc_log_A()
         assert_equals(A.shape, (2, 2, self.K))
 
     def test_L(self):
@@ -276,8 +289,9 @@ class Test_Gamma_Poisson:
         gpm.set_priors().set_inits().set_data(self.N)
         gpm.iterate()  # need to do this to handle wonky initial conditions
         Lvals = [gpm.L()]
-        for _ in xrange(5):
-            gpm.iterate()
+        niter = 1 
+        for _ in xrange(niter):
+            gpm.iterate(keeplog=True)
             Lvals.append(gpm.L())
 
         # because of inexact solutions to update equations, there may be small
@@ -287,6 +301,18 @@ class Test_Gamma_Poisson:
         percent_change = change / np.abs(Lvals[:-1])
         decreases = percent_change[percent_change < 0]
         assert_true(np.all(np.abs(decreases) <= 0.01))
+
+    def test_HMM_entropy_positive(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.iterate()  # need to do this to handle wonky initial conditions
+
+        niter = 5 
+        for _ in xrange(niter):
+            gpm.iterate(keeplog=True)
+
+        Hvals = np.array(gpm.log['H'])
+        assert_true(np.all(Hvals >= 0))
 
     def test_inference_appends_to_Lvalues(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)

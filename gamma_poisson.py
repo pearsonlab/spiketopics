@@ -2,7 +2,6 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from scipy.special import digamma, gammaln, betaln
-import pdb
 
 def fb_infer(A, pi, psi):
     """
@@ -14,6 +13,11 @@ def fb_infer(A, pi, psi):
     such that the end result using the given psi will be properly normalized
     when using the returned value of Z
     """
+    if np.any(A > 1):
+        raise ValueError('Transition matrix probabilities > 1')
+    if np.any(pi > 1):
+        raise ValueError('Initial state probabilities > 1')
+
     T = psi.shape[0]
     M = A.shape[0]
 
@@ -28,6 +32,7 @@ def fb_infer(A, pi, psi):
     alpha[0] = a / np.sum(a)
     logZ[0] = np.log(np.sum(a))
     beta[-1, :] = 1
+    beta[-1, :] = beta[-1, :] / np.sum(beta[-1, :])
     
     # forwards
     for t in xrange(1, T):
@@ -42,15 +47,10 @@ def fb_infer(A, pi, psi):
         
     # posterior
     gamma = alpha * beta
-    gamma = gamma / np.sum(gamma, 1, keepdims=True)
+    gamma = gamma / np.sum(gamma, axis=1, keepdims=True)
     
-    # two-slice marginal matrix: xi = p(z_{t+1}, z_t|y_{1:T})
-    # for t = 1:T
-    beta_shift = np.expand_dims(np.roll(beta * psi, shift=-1, axis=0), 2)
-
-    # take outer product; make sure t axis on alpha < T
-    # and t+1 axis on bp > 0
-    Xi = beta_shift[0:(T - 1)] * alpha[1:, np.newaxis, :]
+    # calculate 2-slice marginal
+    Xi = ((beta[1:] * psi[1:])[..., np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis, ...]
 
     #normalize
     Xi = Xi / np.sum(Xi, axis=(1, 2), keepdims=True)
@@ -89,7 +89,7 @@ class GPModel:
 
     Derived parameters:
     xi_{tk} = E[z_{tk}]
-    Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=1)
+    Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=i)
     """
     def __init__(self, T, K, U, dt, include_baseline=False):
         """
@@ -106,7 +106,7 @@ class GPModel:
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
             'Xi': (T - 1, K, 2, 2), 'kappa': (K,)})
-        self.log = []  # for debugging
+        self.log = {'L':[], 'H':[]}  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
     def set_priors(self, **kwargs):
@@ -182,7 +182,7 @@ class GPModel:
     @staticmethod
     def F_prod(z, w, log=False, exclude=True):
         """
-        Given z (T x K) and w (K x U), returns the product
+        Given z (T x K) in [0, 1] and w (K x U), returns the product
         prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
         log = True returns the log of the result
         exclude = False returns the product over all k
@@ -249,7 +249,7 @@ class GPModel:
         N = self.Nframe.copy()
         nn = N['count']
         tt = N['time']
-        uu = N['unit'] - 1
+        uu = N['unit'] - np.min(N['unit'])  # make sure unit indexing from 0
         N['lam0'] = -Fk[tt, uu] 
         N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu])
 
@@ -291,13 +291,13 @@ class GPModel:
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
         logpi = self.calc_log_pi()
-        L.append(np.sum((self.rho1 - 1) * logpi[1] + (self.rho2 - 1) * logpi[0]))
+        L.append(np.sum((self.rho1 - 1) * logpi[1] + (self.rho2 - 1) * logpi[0]- betaln(self.rho1, self.rho2)))
         H_pi = self.H_beta(self.delta1, self.delta2)
         L.append(np.sum(H_pi))
 
         ############### E[log (p(A) / q(A))] #############
         logA = self.calc_log_A()
-        L.append(np.sum((self.nu1 - 1) * logA[1] + (self.nu2 - 1) * logA[0]))
+        L.append(np.sum((self.nu1 - 1) * logA[1] + (self.nu2 - 1) * logA[0] - betaln(self.nu1, self.nu2)))
         H_A = self.H_beta(self.gamma1, self.gamma2)
         L.append(np.sum(H_A))
 
@@ -321,10 +321,13 @@ class GPModel:
         L.append(-np.sum(self.kappa))
 
         ############### log Z #############
-        L.append(np.sum(self.logZ))
+        # L.append(np.sum(self.logZ))
+        L.extend(list(self.logZ))
 
         if keeplog:
-            self.log.append(L)
+            self.log['L'].append(L)
+            self.log['H'].append(self.H)
+
 
         return np.sum(L)
 
@@ -352,17 +355,20 @@ class GPModel:
 
         # do forward-backward inference and assign results
         if k == 0 and self.include_baseline is True:
-            pass
+            logZ = self.logZ[k]
+            Xi = self.Xi[:, k]
+            post = np.c_[1 - self.xi[:, k], self.xi[:, k]]
         else:
             post, logZ, Xi = fb_infer(np.exp(logA), np.exp(logpi), np.exp(eta))
             self.xi[:, k] = post[:, 1]
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
-        emission_piece = np.sum((1 - self.xi[:, k]) * eta[:, 0] + self.xi[:, k] * eta[:, 1])
-        initial_piece = (1 - self.xi[0, k]) * logpi[0] + self.xi[0, k] * logpi[1] 
-        transition_piece = np.sum(self.Xi[:, k] * logA)
+        emission_piece = np.sum(post * eta)
+        initial_piece = np.sum(post[0] * logpi)
+        transition_piece = np.sum(Xi * logA)
         self.kappa[k] = emission_piece + initial_piece + transition_piece
+        self.H = -self.kappa + self.logZ
         return self
 
     def update_A(self, k):
