@@ -107,7 +107,7 @@ which we will do in pieces.
 \subsection{$\pi$}
 First, we have
 \begin{equation}
-    \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] = \sum_k \left[(\rho_{k1} - 1)\overline{\log \pi_{k1}} + (\rho_{k2} - 1) \overline{\log \pi_{k0}} + H(\pi_k) \right]
+    \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] = \sum_k \left[(\rho_{k1} - 1)\overline{\log \pi_{k1}} + (\rho_{k2} - 1) \overline{\log \pi_{k0}} - \log B(\rho_{k1}, \rho_{k2}) + H(\pi_k) \right]
 \end{equation}
 with
 \begin{align}
@@ -127,7 +127,7 @@ with $H_b$ the entropy of the beta distribution:
 Similarly,
 \begin{equation}
     \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
-\sum_{ik} \left[ (\nu_{ki1} - 1) \overline{\log A_{k1i}} + (\nu_{ki2} - 1) \overline{\log A_{k0i}} + H(A_{k1i}) \right]
+\sum_{ik} \left[ (\nu_{ki1} - 1) \overline{\log A_{k1i}} + (\nu_{ki2} - 1) \overline{\log A_{k0i}} - \log B(\nu_{ki1}, \nu_{ki2}) + H(A_{k1i}) \right]
 \end{equation}
 where 
 \begin{align}
@@ -169,10 +169,14 @@ where we make use of the outputs of the forward-backward algorithm and the vecto
 \section{Variational Updates}
 Technically, the variational parameters above are $(\alpha, \beta, \gamma, \delta, \eta, \tilde{A}, \tilde{\pi})$. However, $\xi = \xi(\eta, \tilde{A}, \tilde{\pi})$ and $\Xi = \Xi(\eta, \tilde{A}, \tilde{\pi})$ so we can instead treat these as the effective variational parameters. This then readily gives as updates:
 \begin{align}
-\eta_{tk} &\leftarrow \sum_u N_{tu} \overline{\log \lambda_{ku}} + 
-\sum_u \left( 1 - \frac{\alpha_{ku}}{\beta_{ku}}\right) F_{tku} \\
-\tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
-\tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
+    \eta_{tk} &\leftarrow 
+    \begin{pmatrix}
+        -\sum_u F_{tku} \\
+        \sum_u N_{tu} \overline{\log \lambda_{ku}} -
+        \sum_u \frac{\alpha_{ku}}{\beta_{ku}} F_{tku} 
+    \end{pmatrix} \\
+    \tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
+    \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
 \end{align}
 where we define
 \begin{equation}
