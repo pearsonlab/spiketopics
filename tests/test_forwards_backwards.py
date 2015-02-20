@@ -132,18 +132,18 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(np.sum(Xi, axis=(1, 2)), np.ones((self.T - 1, )))
 
     def test_rescaling_psi_compensated_by_Z(self):
-        offset = 100
-        psi_r = np.exp(np.log(self.psi_test) + offset)
+        offset = np.random.normal(size=self.T)
+        psi_r = np.exp(np.log(self.psi_test) + offset[:, np.newaxis])
         gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
 
         gammar, logZr, Xir = gp.fb_infer(self.A_test, self.pi0_test, psi_r)
 
         npt.assert_allclose(gammar, gamma)
-        npt.assert_allclose(logZr, logZ + self.T * offset)
+        npt.assert_allclose(logZr, logZ + np.sum(offset))
         npt.assert_allclose(Xi, Xir)
 
     def test_rescaling_pi_compensated_by_Z(self):
-        offset = -10
+        offset = np.random.normal()
         pi_r = np.exp(np.log(self.pi0_test) + offset)
         gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
 
@@ -154,7 +154,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(Xi, Xir)
 
     def test_rescaling_A_compensated_by_Z(self):
-        offset = 10
+        offset = np.random.normal()
         A_r = np.exp(np.log(self.A_test) + offset)
         gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
 
@@ -176,9 +176,11 @@ class Test_Forwards_Backwards:
 
     def test_entropy_positive_subadditive_pars(self):
         # same test for positive entropy, but with subadditive A and pi
-        offset = -5
-        log_pi_r = np.log(self.pi0_test) + offset
-        log_A_r = np.log(self.A_test) + offset
+        # offset = -5
+        # log_pi_r = np.log(self.pi0_test) + offset
+        # log_A_r = np.log(self.A_test) + offset
+        log_pi_r = np.log(self.pi0_test) - np.random.random(size=self.pi0_test.shape)
+        log_A_r = np.log(self.A_test) - np.random.random(size=self.A_test.shape)
 
         gamma, logZ, Xi = gp.fb_infer(np.exp(log_A_r), np.exp(log_pi_r),
          self.psi_test)
