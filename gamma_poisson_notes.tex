@@ -211,8 +211,8 @@ Clearly, if we group the sum over $m$ into sums over trials at the same stimulus
 \end{align}
 where we have defined
 \begin{align}
-    \hat{N}_{tu} = \sum_{m: t(m) = t} N_{m u} \\
-    M_{tu} = \sum_{m: t(m) = t} 1
+    \hat{N}_{tu} = \sum_{m:\, t(m) = t} N_{m u} \\
+    M_{tu} = \sum_{m:\, t(m) = t} 1
 \end{align}
 as the cumulative spike count and effective number of observations at each stimulus time, respectively. Note that the result of this process has simply been to replace $N \rightarrow \hat{N}$, $F \rightarrow M F$, meaning we can write modified update equations as follows:
 \begin{align}
@@ -227,6 +227,47 @@ as the cumulative spike count and effective number of observations at each stimu
 \end{align}
 In fact, for simplicity in what follows, we will drop the hat notation on $N$, with the understanding that when $N$ appears with a $t$ index, it is the sum over all counts at that time.
 
+\section{Overdispersion}
+To model overdispersion in our count data, we can include an additional moment-by-moment fluctuation in the firing rate of each unit:
+\begin{equation}
+    (\lambda_{\mathrm{eff}})_{tu} = \prod_k \lambda_{ku}^{z_{tk}}\theta_{tu}
+\end{equation}
+If, like $\lambda$, $\theta$ is assumed to be gamma-distributed, then this is equivalent (upon marginalizing $\theta$) to a negative binomial model for the counts $N$. However, it will be simpler for the variational updating if we retain $\theta$ and include additional terms in the pieces of the evidence lower bound above:
+\begin{align}
+    \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{kmu} N_{mu} \xi_{t(m)k} \overline{\log \lambda_{ku}} + \sum_{mu} N_{mu} \overline{\log \theta_{mu}} \\
+    - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow - \sum_{mu} \theta_{mu} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)
+\end{align}
+Note in particular that the overdispersion term is assumed to always be present, and that it is unique to every stimulus presentation ($m$ index), not merely every moment during the stimulus itself ($t$ index). 
 
+Finally, we will need to add a piece to the variational objective combining the prior on $\theta$ and the variational posterior. We will assume that the overdispersion varies across units but not in time:
+\begin{align}
+    p(\theta_{mu}) &= \mathrm{Gamma}(s_u, r_u) \\
+    q(\theta_{mu}) &= \mathrm{Gamma}(\omega_u, \zeta_u)
+\end{align}
+yielding
+\begin{multline}
+    \mathbb{E}_{q(\theta)} \left[ \log \frac{p(\theta)}{q(\theta)} \right] =
+    \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} + r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right] =\\
+    \sum_{u} M_u \left[ (s_u - 1) (\psi(\omega_u) - \log \eta_u) + r_\zeta \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right]
+\end{multline}
+with $M_u \equiv \sum_t M_{tu}$ the total number of observations for unit $u$ across all time and $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $zetaa$
+\begin{align}
+    \omega_u &\leftarrow \sum_m N_{mu} + s_u \\
+    \zeta_u &\leftarrow \sum_{m} F_{t(m)u} + r_u = \sum_{t} M_{tu} F_{tu} + r_u
+\end{align}
+with 
+\begin{equation}
+    F_{tu} \equiv \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
+\end{equation}
+Similarly, the update for the local emission probability, $\eta$ takes the form
+\begin{equation}
+    \eta_{tk} \leftarrow 
+    \begin{pmatrix}
+        -\sum_{u} M_{tu} \frac{\omega_u}{\zeta_u} F_{tku} \\
+        \sum_u N_{tu} \overline{\log \lambda_{ku}} -
+        \sum_u M_{tu} \frac{\omega_u} {\zeta_u}\frac{\alpha_{ku}}{\beta_{ku}} F_{tku} 
+    \end{pmatrix} 
+\end{equation}
+All other updates should remain unchanged.
 
 \end{document}
