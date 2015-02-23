@@ -196,4 +196,37 @@ Similarly, variation with respect to the prior parameters for $(\lambda, A, \pi)
 \end{align}
 These, then, give the proper updates for coordinate ascent.
 
+\section{Multiple observations}
+We have thus far used the time index $t$ assuming no ambiguity between stimulus time and presentation time. In the case that each stimulus is presented once, this presents no problem, but here we extend the analysis to the case where some stimuli are presented multiple times. To do so, we will continue to let $t$ designate the time within the stimulus but introduce an additional index $m$ that takes on a unique value for each stimulus presentation. Thus, different trials will have different values of $m$, but may have the same value of $t$.
+
+We can easily modify the observation model to incorporate this setup. Instead of observing a single count $N_{tu}$ for a given unit at a given stimulus time, we observe a \emph{set} of counts $\{ N_{m u} \vert t(m) = t \}$. (Here, we abuse notation by writing $t$ as both the index and the mapping from presentation index to stimulus time.) If we assume trials are independent, the log likelihoods of these observations simply add, in which case we simply replace sums over $t$ with sums over $m$: 
+\begin{align}
+    \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{km u} N_{m u} \xi_{t(m) k} \overline{\log \lambda_{ku}} \\
+    \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow \sum_{m u} \prod_k \left( 1 - \xi_{t(m) k} + \xi_{t(m) k} \frac{\alpha_{ku}}{\beta_{ku}}\right)
+\end{align}
+Clearly, if we group the sum over $m$ into sums over trials at the same stimulus time $t$, we can easily rewrite these expressions in the form
+\begin{align}
+    \sum_{km u} N_{m u} \xi_{t(m) k} \overline{\log \lambda_{ku}} &= \sum_{ktu} \hat{N}_{tu} \xi_{tk} \overline{\log \lambda_{ku}} \\
+    \sum_{m u} \prod_k \left( 1 - \xi_{t(m) k} + \xi_{t(m) k} \frac{\alpha_{ku}}{\beta_{ku}}\right) &= \sum_{tu} M_{tu}\prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
+\end{align}
+where we have defined
+\begin{align}
+    \hat{N}_{tu} = \sum_{m: t(m) = t} N_{m u} \\
+    M_{tu} = \sum_{m: t(m) = t} 1
+\end{align}
+as the cumulative spike count and effective number of observations at each stimulus time, respectively. Note that the result of this process has simply been to replace $N \rightarrow \hat{N}$, $F \rightarrow M F$, meaning we can write modified update equations as follows:
+\begin{align}
+    \eta_{tk} &\leftarrow 
+    \begin{pmatrix}
+        -\sum_u M_{tu} F_{tku} \\
+        \sum_u \hat{N}_{tu} \overline{\log \lambda_{ku}} -
+        \sum_u M_{tu}\frac{\alpha_{ku}}{\beta_{ku}} F_{tku} 
+    \end{pmatrix} \\
+    \alpha_{ku} &\leftarrow \sum_t \hat{N}_{tu} \xi_{tk} + c_{ku} \\
+    \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku}\xi_{tk} + d_{ku} \\
+\end{align}
+In fact, for simplicity in what follows, we will drop the hat notation on $N$, with the understanding that when $N$ appears with a $t$ index, it is the sum over all counts at that time.
+
+
+
 \end{document}
