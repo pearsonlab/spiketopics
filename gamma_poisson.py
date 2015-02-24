@@ -150,6 +150,9 @@ class GPModel:
         # normalize Xi
         self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
 
+        # initialize F product
+        self.F_prod(update=True)
+
         return self
 
     def set_data(self, Nframe):
@@ -180,7 +183,7 @@ class GPModel:
         return self
 
     @staticmethod
-    def F_prod(z, w, log=False, exclude=True):
+    def _F_prod(z, w, log=False, exclude=True):
         """
         Given z (T x K) in [0, 1] and w (K x U), returns the product
         prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
@@ -201,6 +204,25 @@ class GPModel:
             return log_ans
         else:
             return np.exp(log_ans)
+
+    def F_prod(self, k=None, update=False):
+        """
+        Accessor method to return the value of the F product.
+        If k is specifice, return F_{tku} (product over all but k), 
+        else return F_{tu} (product over all k). If update=True, 
+        recalculate F before returning the result and cache the new 
+        matrix.
+        """
+        if update:
+            self._Ftku = self._F_prod(self.xi, self.alpha / self.beta)
+            self._Ftu = self._F_prod(self.xi, self.alpha / self.beta, 
+                exclude=False)
+
+        if k is not None:
+            return self._Ftku[:, k, :]
+        else:
+            return self._Ftu
+
 
     def calc_log_A(self):
         """
@@ -242,7 +264,7 @@ class GPModel:
         logpsi = np.empty((self.T, 2))
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
-        Fk = self.F_prod(self.xi, bar_lambda)[:, k, :]
+        Fk = self.F_prod(k)
 
         # need to account for multiple observations of same frame by same
         # unit, so use Nframe
@@ -309,7 +331,7 @@ class GPModel:
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
         L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]))
-        L.append(-np.sum(self.Nobs * self.F_prod(self.xi, self.alpha / self.beta, exclude=False)))
+        L.append(-np.sum(self.Nobs * self.F_prod()))
 
         logpi = self.calc_log_pi()
         L.append(np.sum((1 - self.xi[0]) * logpi[0] + self.xi[0] * logpi[1]))
@@ -334,10 +356,11 @@ class GPModel:
         each Markov chain.
         """
         Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
-        Fz = self.F_prod(self.xi, self.alpha / self.beta) * self.xi[:, :, np.newaxis]
+        Fz = self.F_prod(k) * self.xi[:, k, np.newaxis]
 
         self.alpha[k] = (Nz[k] + self.cc[k]).data
-        self.beta[k] = np.sum(self.Nobs * Fz[:, k, :], axis=0) + self.dd[k]
+        self.beta[k] = np.sum(self.Nobs * Fz, axis=0) + self.dd[k]
+        self.F_prod(update=True)
 
         return self
 
@@ -361,6 +384,7 @@ class GPModel:
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
+        self.F_prod(update=True)
         emission_piece = np.sum(post * eta)
         initial_piece = np.sum(post[0] * logpi)
         transition_piece = np.sum(Xi * logA)

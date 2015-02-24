@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import gamma_poisson as gp
 
+np.random.seed(12345)
+
 # load up data
 datfile = './sql/spike_presentations.csv'
 

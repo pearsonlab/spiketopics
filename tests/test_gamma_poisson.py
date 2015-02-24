@@ -191,6 +191,9 @@ class Test_Gamma_Poisson:
         npt.assert_allclose(np.sum(gpm.Xi, axis=(-1, -2)), 
             np.ones((self.T - 1, self.K)))
 
+        assert_equals(gpm._Ftu.shape, (gpm.T, gpm.U))
+        assert_equals(gpm._Ftku.shape, (gpm.T, gpm.K, gpm.U))
+
     def test_can_set_inits_no_baseline(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt, include_baseline=False)
         alphatest = np.random.rand(self.K, self.U)
@@ -248,28 +251,37 @@ class Test_Gamma_Poisson:
         assert_raises(ValueError, gpm.set_inits, 
             xi=np.ones((self.T, self.K, 1)))
 
-    def test_F_prod(self):
+    def test_static_F_prod(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
         z = np.random.rand(5, 8)
         w = np.random.rand(8, 3)
-        assert_equals(gpm.F_prod(z, w).shape, (5, 8, 3))
-        npt.assert_allclose(gpm.F_prod(z, w), 
-            np.exp(gpm.F_prod(z, w, log=True)))
+        assert_equals(gpm._F_prod(z, w).shape, (5, 8, 3))
+        npt.assert_allclose(gpm._F_prod(z, w), 
+            np.exp(gpm._F_prod(z, w, log=True)))
 
         # test whether we can get the same entry in every element by
         # multiplying through by the one part each lacks
         unnorm = 1 - z[..., np.newaxis] + z[..., np.newaxis] * w
-        allprod = unnorm * gpm.F_prod(z, w)
+        allprod = unnorm * gpm._F_prod(z, w)
         npt.assert_allclose(allprod[0, 0, 0], allprod[0, 1, 0])
         npt.assert_allclose(allprod[-1, 0, 2], allprod[-1, -1, 2])
-        npt.assert_allclose(allprod[:, 0, :], gpm.F_prod(z, w, exclude=False))
+        npt.assert_allclose(allprod[:, 0, :], gpm._F_prod(z, w, exclude=False))
 
-        # test whether scaling up and w[k] has no effect on F_prod[:, k]
+        # test whether scaling up and w[k] has no effect on _F_prod[:, k]
         k = 1
         wscaled = w.copy()
         wscaled[k] *= 10
-        npt.assert_allclose(gpm.F_prod(z, w)[:, k], 
-            gpm.F_prod(z, wscaled)[:, k])
+        npt.assert_allclose(gpm._F_prod(z, w)[:, k], 
+            gpm._F_prod(z, wscaled)[:, k])
+
+    def test_cached_F_prod(self):
+        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.iterate()
+        npt.assert_allclose(gpm._Ftu, gpm.F_prod())
+        kk = 3
+        npt.assert_allclose(gpm._Ftku[:, kk, :], gpm.F_prod(kk))
+        npt.assert_allclose(gpm.F_prod(kk, update=True), gpm._Ftku[:, kk, :])
 
     def test_calc_A(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
