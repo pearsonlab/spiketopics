@@ -250,7 +250,7 @@ yielding
     \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} + r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right] =\\
     \sum_{u} M_u \left[ (s_u - 1) (\psi(\omega_u) - \log \eta_u) + r_\zeta \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right]
 \end{multline}
-with $M_u \equiv \sum_t M_{tu}$ the total number of observations for unit $u$ across all time and $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $zetaa$
+with $M_u \equiv \sum_t M_{tu}$ the total number of observations for unit $u$ across all time and $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $\zeta$
 \begin{align}
     \omega_u &\leftarrow \sum_m N_{mu} + s_u \\
     \zeta_u &\leftarrow \sum_{m} F_{t(m)u} + r_u = \sum_{t} M_{tu} F_{tu} + r_u
