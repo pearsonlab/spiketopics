@@ -90,7 +90,7 @@ Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backw
 \end{align}
 The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z = \sum_t \log Z_{t} = \log p(N_{1:T}|\theta)$. 
 
-\section{Evidence Lower Bound}
+\section{Evidence Lower Bound (ELBO)}
 We begin by writing the joint distribution of the data:
 \begin{multline}
     \log p(N, \lambda, z, A,\pi) = \sum_{ktu}\left[ N_{tu} z_{tk} \log \lambda_{ku} - \prod_k \lambda_{ku}^{z_{tk}} - \log N_{tu}!\right] \\
@@ -247,8 +247,8 @@ Finally, we will need to add a piece to the variational objective combining the 
 yielding
 \begin{multline}
     \mathbb{E}_{q(\theta)} \left[ \log \frac{p(\theta)}{q(\theta)} \right] =
-    \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} + r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right] =\\
-    \sum_{u} M_u \left[ (s_u - 1) (\psi(\omega_u) - \log \eta_u) + r_\zeta \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right]
+    \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} - r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right] =\\
+    \sum_{u} M_u \left[ (s_u - 1) (\psi(\omega_u) - \log \eta_u) - r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right]
 \end{multline}
 with $M_u \equiv \sum_t M_{tu}$ the total number of observations for unit $u$ across all time and $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $\zeta$
 \begin{align}
@@ -269,5 +269,54 @@ Similarly, the update for the local emission probability, $\eta$ takes the form
     \end{pmatrix} 
 \end{equation}
 All other updates should remain unchanged.
+
+\section{External covariates}
+In addition, we might also want to include external covariates $X(t)$ with a linear effect on log firing rate:
+\begin{equation}
+    \log \lambda (t) \propto X(t) \cdot \mathbf{w}
+\end{equation}
+with $X(t)$ a matrix with one column for each (potentially) time-varying regressor, one row per unit, and $\mathbf{w}$ a column vector of weights. In typical linear models, we would choose a normal prior on the weights, but in this case, with the Poisson observation model, that results in a non-conjugate form of the variational objective (the regression piece in $\lambda$ is log-normal, which is non-conjugate to the Poisson). As such, we will rewrite the above as an $X$-dependent gain change of firing rate:
+\begin{equation}
+    \lambda_{u}(t) \propto \prod_i \upsilon_{iu}^{x_{iu}(t)}
+\end{equation}
+where $i$ indexes the particular regressor. Thus the total expression for firing rate for a given unit $u$ at time $t$ for a given presentation $m$ with overdispersion is
+\begin{equation}
+    \lambda_{mu} = \theta_{mu}\left(\prod_k \lambda_{ku}^{z_{t(m)k}} \right) \left(\prod_i \upsilon_{iu}^{x_{t(m)iu}} \right)
+\end{equation}
+Note that we have discretized $t$ as above and assume that the external covariates $x$ depend only on the stimulus time, not the particular presentation, so that they carry an index $t(m)$, while $\theta$ carries an index particular to each repeated presentation.
+
+It will be convenient for us to assume that both the priors and the variational posterior for $\upsilon$ are gamma in form:
+\begin{align}
+    p(\upsilon_{iu}) &= \mathrm{Gamma}(v_{iu}, w_{iu}) \\
+    q(\upsilon_{iu}) &= \mathrm{Gamma}(a_{iu}, b_{iu}) 
+\end{align}
+This contributes an additional factor to the ELBO
+\begin{multline}
+    \mathbb{E}_{q(\upsilon)} \left[ \log \frac{p(\upsilon)}{q(\upsilon)} \right] =
+    \sum_{iu} \left[ (v_{iu} - 1) \overline{\log \upsilon_{iu}} - w_u \frac{a_{iu}}{b_{iu}} + H_g(a_{iu}, b_{iu}) \right] =\\
+    \sum_{iu} \left[ (v_{iu} - 1) (\psi(a_{iu}) - \log b_{iu}) - w_u \frac{a_{iu}}{b_{iu}} + H_g(a_{iu}, b_{iu}) \right]
+\end{multline}
+plus corrections to the observation probability piece of $\mathbb{E}_q[\log p(N, z|\lambda, A, \pi) / q(z)]$:
+\begin{multline}
+    \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} + \sum_{mu} N_{mu} \overline{\log \theta_{mu}} + \sum_{tiu} N_{tu} x_{tiu} \overline{\log \upsilon_{iu}} \\
+    - \sum_{mu} \theta_{mu} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_i \left(\frac{a_{iu}}{b_{iu}} \right)^{x_{t(m)iu}}
+\end{multline}
+
+This leads straightforwardly to updates for the posterior parameters of $q(\upsilon)$:
+\begin{align}
+    a_{iu} &\leftarrow \sum_t N_{tu} x_{tiu} + v_{iu} \\
+    b_{iu} &\leftarrow b^*_{iu}
+\end{align}
+where $b^*_{iu}$ is the solution to the transcendental equation
+\begin{equation}
+    b_{iu} = w_{iu} + \sum_{m} \left[ \theta_{mu} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j \neq i} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right] \left( \frac{a_{iu}}{b_{iu}}\right)^{x_{t(m)iu} - 1}
+\end{equation}
+
+Possible strategies here:
+\begin{itemize}
+    \item Update $a$ exactly. Use a Newton's Method approach to solve for $b$.
+    \item Update $a$ exactly. Use a single Newton step on $b$.
+    \item Gradient descent on $a$ and $b$ together.
+\end{itemize}
 
 \end{document}
