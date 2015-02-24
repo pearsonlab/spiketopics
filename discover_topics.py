@@ -20,7 +20,7 @@ df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame',
 
 ######## for testing only ################
 # df = df.query('movie <= 50')
-# and renumber units consecutively
+# # and renumber units consecutively
 # df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 ######## for testing only ################
 
@@ -87,7 +87,7 @@ gpm.set_priors(**priors).set_inits(**inits)
 
 ############## fit model
 print "Fitting model..."
-gpm.do_inference(silent=False, tol=1e-3)
+gpm.do_inference(silent=False, tol=5e-3)
 
 print "Writing to disk..."
 ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
