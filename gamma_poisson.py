@@ -105,7 +105,7 @@ class GPModel:
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'kappa': (K,)})
+            'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
         self.log = {'L':[], 'H':[]}  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
@@ -318,10 +318,7 @@ class GPModel:
         L.append(np.sum(self.Xi * logA.transpose((2, 0, 1))))
 
         # subtract the entropy of q(z) HMM
-        L.append(-np.sum(self.kappa))
-
-        ############### log Z #############
-        # L.append(np.sum(self.logZ))
+        L.append(-np.sum(self.logq))
         L.extend(list(self.logZ))
 
         if keeplog:
@@ -367,8 +364,8 @@ class GPModel:
         emission_piece = np.sum(post * eta)
         initial_piece = np.sum(post[0] * logpi)
         transition_piece = np.sum(Xi * logA)
-        self.kappa[k] = emission_piece + initial_piece + transition_piece
-        self.H = -self.kappa + self.logZ
+        self.logq[k] = emission_piece + initial_piece + transition_piece
+        self.H = -self.logq + self.logZ
         return self
 
     def update_A(self, k):
