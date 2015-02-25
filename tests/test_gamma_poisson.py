@@ -282,6 +282,7 @@ class Test_Gamma_Poisson:
         kk = 3
         npt.assert_allclose(gpm._Ftku[:, kk, :], gpm.F_prod(kk))
         npt.assert_allclose(gpm.F_prod(kk, update=True), gpm._Ftku[:, kk, :])
+        npt.assert_allclose(np.prod(gpm._Fpre, axis=1), gpm._Ftu)
 
     def test_calc_A(self):
         gpm = gp.GPModel(self.T, self.K, self.U, self.dt)

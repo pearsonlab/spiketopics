@@ -214,9 +214,21 @@ class GPModel:
         matrix.
         """
         if update:
-            self._Ftku = self._F_prod(self.xi, self.alpha / self.beta)
-            self._Ftu = self._F_prod(self.xi, self.alpha / self.beta, 
-                exclude=False)
+            if k is not None:
+                zz = self.xi[:, k, np.newaxis]
+                w = self.alpha[k] / self.beta[k]
+                vv = 1 - zz + zz * w
+                self._Fpre[:, k, :] = vv
+            else:
+                zz = self.xi[:, :, np.newaxis]
+                w = (self.alpha / self.beta)
+                vv = 1 - zz + zz * w
+                self._Fpre = vv
+
+            # work in log space to avoid over/underflow
+            dd = np.sum(np.log(self._Fpre), axis=1)
+            self._Ftu = np.exp(dd)
+            self._Ftku = np.exp(dd[:, np.newaxis, :] - np.log(self._Fpre))
 
         if k is not None:
             return self._Ftku[:, k, :]
@@ -360,7 +372,7 @@ class GPModel:
 
         self.alpha[k] = (Nz[k] + self.cc[k]).data
         self.beta[k] = np.sum(self.Nobs * Fz, axis=0) + self.dd[k]
-        self.F_prod(update=True)
+        self.F_prod(k, update=True)
 
         return self
 
@@ -384,7 +396,7 @@ class GPModel:
             self.logZ[k] = logZ
             self.Xi[:, k] = Xi
 
-        self.F_prod(update=True)
+        self.F_prod(k, update=True)
         emission_piece = np.sum(post * eta)
         initial_piece = np.sum(post[0] * logpi)
         transition_piece = np.sum(Xi * logA)
