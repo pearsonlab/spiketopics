@@ -235,6 +235,7 @@ To model overdispersion in our count data, we can include an additional moment-b
 If, like $\lambda$, $\theta$ is assumed to be gamma-distributed, then this is equivalent (upon marginalizing $\theta$) to a negative binomial model for the counts $N$. However, it will be simpler for the variational updating if we retain $\theta$ and include additional terms in the pieces of the evidence lower bound above:
 \begin{align}
     \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{kmu} N_{mu} \xi_{t(m)k} \overline{\log \lambda_{ku}} + \sum_{mu} N_{mu} \overline{\log \theta_{mu}} \\
+    &= \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} + \sum_{tu} N_{tu} \overline{\log \theta_{u}} \\
     - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow - \sum_{tu} M_{tu} \frac{\omega_u}{\zeta_u} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
 \end{align}
 Note in particular that the overdispersion term is assumed to always be present, and that it is unique to every stimulus presentation ($m$ index), not merely every moment during the stimulus itself ($t$ index). Nevertheless, the fact that the prior for this term depends only on the unit, $u$, means that we can aggregate sufficient statistics across repetitions, eliminating the $m$ index in favor of $t$.
