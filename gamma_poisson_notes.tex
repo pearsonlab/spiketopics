@@ -252,7 +252,7 @@ yielding
 \end{multline}
 with $M_u \equiv \sum_t M_{tu}$ the total number of observations for unit $u$ across all time and $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $\zeta$
 \begin{align}
-    \omega_u &\leftarrow \sum_m N_{mu} + s_u \\
+    \omega_u &\leftarrow \sum_m N_{mu} + s_u = \sum_t N_{tu} + s_u\\
     \zeta_u &\leftarrow \sum_{m} F_{t(m)u} + r_u = \sum_{t} M_{tu} F_{tu} + r_u
 \end{align}
 with 
