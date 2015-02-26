@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from scipy.special import digamma, gammaln, betaln
+import numexpr as ne
 
 def fb_infer(A, pi, psi):
     """
@@ -217,18 +218,20 @@ class GPModel:
             if k is not None:
                 zz = self.xi[:, k, np.newaxis]
                 w = self.alpha[k] / self.beta[k]
-                vv = 1 - zz + zz * w
+                vv = ne.evaluate("1 - zz + zz * w")
                 self._Fpre[:, k, :] = vv
             else:
                 zz = self.xi[:, :, np.newaxis]
                 w = (self.alpha / self.beta)
-                vv = 1 - zz + zz * w
+                vv = ne.evaluate("1 - zz + zz * w")
                 self._Fpre = vv
 
             # work in log space to avoid over/underflow
-            dd = np.sum(np.log(self._Fpre), axis=1)
-            self._Ftu = np.exp(dd)
-            self._Ftku = np.exp(dd[:, np.newaxis, :] - np.log(self._Fpre))
+            Fpre = self._Fpre
+            dd = ne.evaluate("sum(log(Fpre), axis=1)")
+            self._Ftu = ne.evaluate("exp(dd)")
+            ddd = dd[:, np.newaxis, :]
+            self._Ftku = ne.evaluate("exp(ddd - log(Fpre))")
 
         if k is not None:
             return self._Ftku[:, k, :]
