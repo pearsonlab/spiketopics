@@ -248,7 +248,7 @@ yielding
 \begin{multline}
     \mathbb{E}_{q(\theta)} \left[ \log \frac{p(\theta)}{q(\theta)} \right] =
     \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} - r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right] =\\
-    \sum_{u} M_u \left[ (s_u - 1) (\psi(\omega_u) - \log \eta_u) - r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right]
+    \sum_{u} M_u \left[ (s_u - 1) (\psi(\omega_u) - \log \zeta_u) - r_u \frac{\omega_u}{\zeta_u} + H_g(\omega_u, \zeta_u) \right]
 \end{multline}
 with $M_u \equiv \sum_t M_{tu}$ the total number of observations for unit $u$ across all time and $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $\zeta$
 \begin{align}
