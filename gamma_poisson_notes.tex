@@ -272,11 +272,8 @@ Similarly, the update for the local emission probability, $\eta$ takes the form
 All other updates should remain unchanged.
 
 \section{External covariates}
-In addition, we might also want to include external covariates $X(t)$ with a linear effect on log firing rate:
-\begin{equation}
-    \log \lambda (t) \propto X(t) \cdot \mathbf{w}
-\end{equation}
-with $X(t)$ a matrix with one column for each (potentially) time-varying regressor, one row per unit, and $\mathbf{w}$ a column vector of weights. In typical linear models, we would choose a normal prior on the weights, but in this case, with the Poisson observation model, that results in a non-conjugate form of the variational objective (the regression piece in $\lambda$ is log-normal, which is non-conjugate to the Poisson). As such, we will rewrite the above as an $X$-dependent gain change of firing rate:
+\subsection{Gamma priors}
+In addition, we might also want to include external covariates $X(t)$ with an effect on firing rate. Thus we will include an $X$-dependent gain change of firing rate:
 \begin{equation}
     \lambda_{u}(t) \propto \prod_i \upsilon_{iu}^{x_{iu}(t)}
 \end{equation}
@@ -319,5 +316,44 @@ Possible strategies here:
     \item Update $a$ exactly. Use a single Newton step on $b$.
     \item Gradient descent on $a$ and $b$ together.
 \end{itemize}
+
+\subsection{Log-Normal priors}
+Here, we will write the change in log firing as linear in $x(t)$:
+\begin{equation}
+    \log \lambda_{tu} \propto \sum_{iu} b_{iu} x_{tiu}
+\end{equation}
+We will also assume a normal distribution for both prior and posterior on $b$:
+\begin{align}
+    p(b_{iu}) &= \mathcal{N}(m_{iu}, \varsigma^2_{iu}) \\
+    q(b_{iu}) &= \mathcal{N}(\mu_{iu}, \sigma^2_{iu})
+\end{align}
+Using standard standard formulas for the entropy of normal distributions, along with the fact that $\mathbb{E}[e^{tx}] = \exp(t\mu + t^2\sigma^2/2)$ for $x \sim \mathcal{N}(\mu, \sigma^2)$, it is then straightforward to write down the portion of the ELBO dependent on $\mu$ and $\sigma^2$:
+\begin{multline}
+    \mathcal{L} = \sum_{iu} \left[ -\frac{1}{\varsigma^2_{iu}} \left( \sigma^2_{iu} + (\mu_{iu} - m_{iu})^2 \right) + \frac{1}{2} \log \frac{\sigma^2_{iu}}{\varsigma^2_{iu}} \right] + \sum_{tiu} N_{tu} x_{tiu} \mu_{iu} \\
+    - \sum_{mu} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u}
+\end{multline}
+where we have defined
+\begin{equation}
+    G_{tu} = \prod_i e^{\mu_{iu} x_{tiu} + \frac{1}{2} \sigma^2_{iu} x^2_{tiu}} = \exp\left(\sum_i\left( \mu_{iu} x_{tiu} + \frac{1}{2} \sigma^2_{iu} x^2_{tiu}\right)\right)
+\end{equation}
+In this case, the equations that must be solved to update $\mu$ and $\sigma^2$ take the form
+\begin{align}
+    \mu_{iu} &= m_{iu} + \varsigma^2_{iu} \sum_t N_{tu} x_{tiu} - \varsigma^2_{iu} \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x_{t(m)iu} \\
+    \frac{1}{\sigma^2_{iu}} &= \frac{1}{\varsigma^2_{iu}} + \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x^2_{t(m)iu}
+\end{align}
+Since $G_{tu}$ depends on both $\mu_{iu}$ and $\sigma^2_{iu}$, these are both transcendental equations. In the case of $x(t) = c$ a constant in time, they can be solved via variable transform using the Lambert $W$ function, but for time-varying $x$, root-finding algorithms will be needed.
+
+\subsubsection{Natural Gradients}
+In case it's useful later, here are the natural gradients. Since the natural paramter of the normal distribution is $\eta = (\mu/\sigma^2, -1/2\sigma^2)$, we can write for the natural gradient
+\begin{equation}
+    \nabla_\eta \mathcal{L} = \left( \sigma^2 \frac{\partial \mathcal{L}}{\partial \mu}, 2\sigma^4 \frac{\partial \mathcal{L}}{\partial \sigma^2}\right)
+\end{equation}
+and use
+\begin{align}
+    \frac{\partial \mathcal{L}}{\partial \mu_{iu}} &= 
+    -\frac{\mu_{iu}}{\varsigma^2_{iu}} + \frac{m_{iu}}{\varsigma^2_{iu}} + \sum_t N_{tu} x_{tiu} - \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x_{t(m)iu} \\
+    \frac{\partial \mathcal{L}}{\partial \sigma^2_{iu}} &= 
+    \frac{1}{2\sigma^2_{iu}} - \frac{1}{2\varsigma^2_{iu}} - \frac{1}{2} \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x^2_{t(m)iu}
+\end{align}
 
 \end{document}
