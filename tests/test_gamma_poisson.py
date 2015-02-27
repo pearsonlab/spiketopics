@@ -331,7 +331,7 @@ class Test_Gamma_Poisson:
             gpm.iterate(keeplog=True)
 
         Hvals = np.array(gpm.log['H'])
-        assert_true(np.all(Hvals >= 0))
+        assert_true(np.all((Hvals > 0) | np.isclose(Hvals, 0)))
 
     def test_inference_appends_to_Lvalues(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
