@@ -29,14 +29,14 @@ df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame',
 # set up params 
 print "Calculating parameters..."
 dt = 1 / 30  # duration of movie frame
+M = df.shape[0]
 T = df[['movie', 'frame']].drop_duplicates().shape[0]
 U = df['unit'].drop_duplicates().shape[0]
 K = 5
 
 # set up model object
 print "Initializing model..."
-gpm = gp.GPModel(T, K, U, dt)
-gpm = gpm.set_data(df)
+gpm = gp.GPModel(df, K, dt)
 
 #################### priors and initial values
 
@@ -48,6 +48,14 @@ dmat = 2 * np.ones((K, U))
 # baselines can be a lot bigger
 cmat[0, :] = 3
 dmat[0, :] = 1/6 / dt  # only baseline needs to compensate for dt
+
+# overdispersion: prior
+smat = 10 * np.ones((U,))
+rmat = 10 * np.ones((U,))
+
+# overdispersion: inits
+omega_mat = 5 * np.ones((M,))
+zeta_mat = 5 * np.ones((M,))
 
 nu1_mat = np.r_[np.ones((1, K)), 10 * np.ones((1, K))]
 nu2_mat = np.r_[10 * np.ones((1, K)), np.ones((1, K))]
@@ -78,11 +86,12 @@ Xi = np.random.rand(T - 1, K, 2, 2)
 Xi[:, 0] = 0
 Xi[:, 0, 1, 1] = 1
 priors = {'cc': cmat, 'dd': dmat, 'nu1': nu1_mat, 'nu2': nu2_mat,
-          'rho1': rho1_mat, 'rho2': rho2_mat}
+          'rho1': rho1_mat, 'rho2': rho2_mat, 'ss': smat, 'rr': rmat}
 
 inits = {'alpha': alpha_mat, 'beta': beta_mat, 
          'gamma1': gamma1_mat, 'gamma2': gamma2_mat,
          'delta1': delta1_mat, 'delta2': delta2_mat,
+         'omega': omega_mat, 'zeta': zeta_mat,
          'xi': xi_mat, 'Xi': Xi}
 
 gpm.set_priors(**priors).set_inits(**inits)

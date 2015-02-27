@@ -97,7 +97,10 @@ class GPModel:
         """
         Set up basic constants for the model. 
         """
-        M, T, U = self._get_pars(data)
+        M = data.shape[0]
+        T = data[['movie', 'frame']].drop_duplicates().shape[0]
+        U = data['unit'].drop_duplicates().shape[0]
+        self.M = M
         self.T = T
         self.K = K
         self.U = U
@@ -110,24 +113,12 @@ class GPModel:
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'logq': (K,), 'omega': (U,), 
-            'zeta': (U,)})
+            'Xi': (T - 1, K, 2, 2), 'logq': (K,), 'omega': (M,), 
+            'zeta': (M,)})
         self.log = {'L':[], 'H':[]}  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
         self._set_data(data)
-
-    @staticmethod
-    def _get_pars(df):
-        """
-        Given a input dataframe of data, return constants determining 
-        dimensionality of the data.
-        """
-        M = df.shape[0]
-        T = df[['movie', 'frame']].drop_duplicates().shape[0]
-        U = df['unit'].drop_duplicates().shape[0]
-
-        return M, T, U
 
     def set_priors(self, **kwargs):
         """
@@ -180,6 +171,9 @@ class GPModel:
         Nframe is a dataframe containing columns unit, movie, frame, and 
         count. 
         """
+
+        # set unit to start at 0
+        Nframe['unit'] = Nframe['unit'] - np.min(Nframe['unit'])
 
         # make an array of all spikes for a given time within movie and 
         # unit; this only has to be done once
@@ -306,9 +300,9 @@ class GPModel:
         N = self.Nframe
         nn = N['count']
         tt = N['time']
-        uu = N['unit'] - np.min(N['unit'])  # make sure unit indexing from 0
-        N['lam0'] = -Fk[tt, uu] * bar_theta[uu]
-        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta[uu])
+        uu = N['unit'] 
+        N['lam0'] = -Fk[tt, uu] * bar_theta
+        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta)
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -345,6 +339,9 @@ class GPModel:
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_log_theta = digamma(self.omega) - np.log(self.zeta)
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
+        nn = self.Nframe['count']
 
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
@@ -366,16 +363,15 @@ class GPModel:
         L.append(np.sum(H_lambda))
 
         ############### E[log (p(theta) / q(theta))] #############
-        M = np.sum(self.Nobs, axis=0)
-        L.append(np.sum(M * (self.ss - 1) * bar_log_theta))
-        L.append(-np.sum(M * self.rr * (self.omega / self.zeta)))
+        L.append(np.sum((self.ss[uu] - 1) * bar_log_theta))
+        L.append(-np.sum(self.rr[uu] * (self.omega / self.zeta)))
         H_theta = self.H_gamma(self.omega, self.zeta)
-        L.append(np.sum(M * H_theta))
+        L.append(np.sum(H_theta))
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
-        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) + np.sum(self.N * bar_log_theta))
+        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) + np.sum(nn * bar_log_theta))
         bar_theta = self.omega / self.zeta
-        L.append(-np.sum(self.Nobs * self.F_prod() * bar_theta))
+        L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta))
 
         logpi = self.calc_log_pi()
         L.append(np.sum((1 - self.xi[0]) * logpi[0] + self.xi[0] * logpi[1]))
@@ -412,8 +408,11 @@ class GPModel:
         """
         Update parameters corresponding to overdispersion for firing rates.
         """
-        self.omega = np.sum(self.N, axis=0) + self.ss
-        self.zeta = np.sum(self.Nobs * self.F_prod(), axis=0) + self.rr
+        N = self.Nframe
+        uu = N['unit']
+        tt = N['time']
+        self.omega = N['count'] + self.ss[uu]
+        self.zeta = self.F_prod()[tt, uu] + self.rr[uu]
 
         return self
 
