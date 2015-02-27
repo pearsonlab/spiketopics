@@ -99,6 +99,12 @@ class Test_Gamma_Poisson:
         fr = np.exp(self.chain.T.dot(np.log(lam))) * self.dt
         self.fr = fr + 1e-5  # in case we get exactly 0
 
+        # add overdispersion
+        ss = 10
+        rr = 10
+        theta = stats.gamma.rvs(a=ss, scale=1./rr, size=fr.shape)
+        self.fr *= theta
+
     @classmethod
     def _make_count_frame(self):
         # draw from Poisson
@@ -112,7 +118,7 @@ class Test_Gamma_Poisson:
         self.N = df
 
     def test_can_instantiate_model_object(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         assert_is_instance(gpm, gp.GPModel)
         assert_equals(gpm.U, self.U)
         assert_equals(gpm.T, self.T)
@@ -121,7 +127,7 @@ class Test_Gamma_Poisson:
         assert_is_instance(gpm.Lvalues, list)
 
     def test_can_set_priors(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         cctest = np.random.rand(self.K, self.U)
         ddtest = np.random.rand(self.K, self.U)
         nu1test = np.random.rand(2, self.K)
@@ -138,7 +144,7 @@ class Test_Gamma_Poisson:
         npt.assert_array_equal(gpm.rho2, rho2test)
 
     def test_no_arguments_sets_default_priors(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_priors()
         assert_equals(gpm.cc.shape, (self.K, self.U))
         assert_equals(gpm.dd.shape, (self.K, self.U))
@@ -148,7 +154,7 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.rho2.shape, (self.K,))
 
     def test_invalid_prior_shapes_raises_error(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         assert_raises(ValueError, gpm.set_priors, 
             cc=np.ones((self.K + 1, self.U)))
         assert_raises(ValueError, gpm.set_priors, 
@@ -163,7 +169,7 @@ class Test_Gamma_Poisson:
             rho2=np.ones((2, self.K, 1)))
 
     def test_can_set_inits(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         alphatest = np.random.rand(self.K, self.U)
         betatest = np.random.rand(self.K, self.U)
         gamma1test = np.random.rand(2, self.K)
@@ -195,7 +201,7 @@ class Test_Gamma_Poisson:
         assert_equals(gpm._Ftku.shape, (gpm.T, gpm.K, gpm.U))
 
     def test_can_set_inits_no_baseline(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt, include_baseline=False)
+        gpm = gp.GPModel(self.N, self.K, self.dt, include_baseline=False)
         alphatest = np.random.rand(self.K, self.U)
         betatest = np.random.rand(self.K, self.U)
         gamma1test = np.random.rand(2, self.K)
@@ -225,7 +231,7 @@ class Test_Gamma_Poisson:
             np.ones((self.T - 1, self.K)))
 
     def test_no_arguments_sets_default_inits(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_inits()
         assert_equals(gpm.alpha.shape, (self.K, self.U))
         assert_equals(gpm.beta.shape, (self.K, self.U))
@@ -235,7 +241,7 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.delta2.shape, (self.K,))
 
     def test_invalid_init_shapes_raises_error(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         assert_raises(ValueError, gpm.set_inits, 
             alpha=np.ones((self.K, self.U, 1)))
         assert_raises(ValueError, gpm.set_inits, 
@@ -252,7 +258,7 @@ class Test_Gamma_Poisson:
             xi=np.ones((self.T, self.K, 1)))
 
     def test_static_F_prod(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         z = np.random.rand(5, 8)
         w = np.random.rand(8, 3)
         assert_equals(gpm._F_prod(z, w).shape, (5, 8, 3))
@@ -275,8 +281,8 @@ class Test_Gamma_Poisson:
             gpm._F_prod(z, wscaled)[:, k])
 
     def test_cached_F_prod(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
+        gpm.set_priors().set_inits()
         gpm.iterate()
         npt.assert_allclose(gpm._Ftu, gpm.F_prod())
         kk = 3
@@ -285,21 +291,21 @@ class Test_Gamma_Poisson:
         npt.assert_allclose(np.prod(gpm._Fpre, axis=1), gpm._Ftu)
 
     def test_calc_A(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_inits()
         A = gpm.calc_log_A()
         assert_equals(A.shape, (2, 2, self.K))
 
     def test_L(self):
         # just test that we can run the function without errors
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
+        gpm.set_priors().set_inits()
         L0 = gpm.L()
         assert_equals(L0.shape, ())
 
     def test_iteration_increases_L(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
+        gpm.set_priors().set_inits()
         gpm.iterate()  # need to do this to handle wonky initial conditions
         Lvals = [gpm.L()]
         niter = 1 
@@ -316,8 +322,8 @@ class Test_Gamma_Poisson:
         assert_true(np.all(np.abs(decreases) <= 0.01))
 
     def test_HMM_entropy_positive(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
+        gpm.set_priors().set_inits()
         gpm.iterate()  # need to do this to handle wonky initial conditions
 
         niter = 5 
@@ -328,8 +334,8 @@ class Test_Gamma_Poisson:
         assert_true(np.all(Hvals >= 0))
 
     def test_inference_appends_to_Lvalues(self):
-        gpm = gp.GPModel(self.T, self.K, self.U, self.dt)
+        gpm = gp.GPModel(self.N, self.K, self.dt)
         assert_equals(len(gpm.Lvalues), 0)
-        gpm.set_priors().set_inits().set_data(self.N)
+        gpm.set_priors().set_inits()
         gpm.do_inference(tol=1)
         assert_equals(len(gpm.Lvalues), 1)
