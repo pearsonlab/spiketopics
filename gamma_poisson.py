@@ -172,9 +172,6 @@ class GPModel:
         count. 
         """
 
-        # set unit to start at 0
-        Nframe['unit'] = Nframe['unit'] - np.min(Nframe['unit'])
-
         # make an array of all spikes for a given time within movie and 
         # unit; this only has to be done once
         countframe = Nframe.groupby(['movie', 'frame', 'unit']).sum().unstack(level=2)
@@ -188,6 +185,9 @@ class GPModel:
 
         # make a frame of presentations linked to time index
         self.Nframe = pd.merge(self.t_index, Nframe).drop(['movie', 'frame'], axis=1)
+
+        # set unit to start at 0
+        self.Nframe['unit'] = self.Nframe['unit'] - np.min(self.Nframe['unit'])
 
         # make a masked array counting the number of observations of each 
         # (time, unit) pair
@@ -339,6 +339,7 @@ class GPModel:
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_log_theta = digamma(self.omega) - np.log(self.zeta)
+        bar_theta = self.omega / self.zeta
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
         nn = self.Nframe['count']
@@ -363,14 +364,13 @@ class GPModel:
         L.append(np.sum(H_lambda))
 
         ############### E[log (p(theta) / q(theta))] #############
-        L.append(np.sum((self.ss[uu] - 1) * bar_log_theta))
-        L.append(-np.sum(self.rr[uu] * (self.omega / self.zeta)))
+        L.append((self.ss[uu] - 1).dot(bar_log_theta))
+        L.append(-self.rr[uu].dot(bar_theta))
         H_theta = self.H_gamma(self.omega, self.zeta)
         L.append(np.sum(H_theta))
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
-        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) + np.sum(nn * bar_log_theta))
-        bar_theta = self.omega / self.zeta
+        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) + nn.dot(bar_log_theta))
         L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta))
 
         logpi = self.calc_log_pi()
