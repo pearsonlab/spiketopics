@@ -65,20 +65,20 @@ class GPModel:
     """
     This class represents and fits a Gamma-Poisson model via variational
     inference. Variables are as follows:
-    T: number of (discrete) times
+    data: data frame with columns 'unit', 'movie', 'frame', and 'count'
     dt: time difference between observations
-    U: number of observation units
     K: number of latent categories to fit
 
-    N: T x U array of count observations
+    N: M x U array of count observations
     lam: K x U array of _multiplicative_ effects; lam[0] is baseline
     z: T x K array of latent states in the Markov chain (0 or 1)
     A: 2 x 2 x K array of column-stochastic Markov transition matrices (one
         per chain)
     pi: 2 x K array of initial chain state probabilities
+    theta: M x U array of trial-to-trial overdispersion parameters
 
     Model is defined as:
-    N_{tu}|z ~ Poisson(prod_k mu_{ku}^z_{tk})
+    N_{mu}|z ~ Poisson(theta_{mu} * prod_k mu_{ku}^z_{t(m)k})
     lam_{ku}|z ~ Gamma(alpha_{ku}, beta_{ku})
     A(k)_{i -> 1} ~ Beta(gamma1_{ik}, gamma2_{ik})
     pi(k)_1 ~ Beta(delta1_k, delta2_k)
@@ -87,28 +87,38 @@ class GPModel:
     lam_{ku}|z ~ Gamma(cc_{ku}, dd_{ku})
     A(k)_{i -> 1} ~ Beta(nu1_{ik}, nu2_{ik})
     pi(k)_1 ~ Beta(rho1_k, rho2_k)
+    theta_{mu} ~ Gamma(ss_u, rr_u)
 
     Derived parameters:
     xi_{tk} = E[z_{tk}]
     Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=i)
     """
-    def __init__(self, T, K, U, dt, include_baseline=False):
+    def __init__(self, data, K, dt, include_baseline=False):
         """
         Set up basic constants for the model. 
         """
+        M = data.shape[0]
+        T = data[['movie', 'frame']].drop_duplicates().shape[0]
+        U = data['unit'].drop_duplicates().shape[0]
+        self.M = M
         self.T = T
         self.K = K
         self.U = U
         self.dt = dt
+
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
-            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
+            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,), 'ss': (U,), 
+            'rr': (U,)})
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
+            'Xi': (T - 1, K, 2, 2), 'logq': (K,), 'omega': (M,), 
+            'zeta': (M,)})
         self.log = {'L':[], 'H':[]}  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
+
+        self._set_data(data)
 
     def set_priors(self, **kwargs):
         """
@@ -156,11 +166,14 @@ class GPModel:
 
         return self
 
-    def set_data(self, Nframe):
+    def _set_data(self, Nframe):
         """
         Nframe is a dataframe containing columns unit, movie, frame, and 
         count. 
         """
+
+        # set unit to start at 0
+        Nframe['unit'] = Nframe['unit'] - np.min(Nframe['unit'])
 
         # make an array of all spikes for a given time within movie and 
         # unit; this only has to be done once
@@ -279,16 +292,17 @@ class GPModel:
         logpsi = np.empty((self.T, 2))
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
+        bar_theta = self.omega / self.zeta
         Fk = self.F_prod(k)
 
         # need to account for multiple observations of same frame by same
         # unit, so use Nframe
-        N = self.Nframe.copy()
+        N = self.Nframe
         nn = N['count']
         tt = N['time']
-        uu = N['unit'] - np.min(N['unit'])  # make sure unit indexing from 0
-        N['lam0'] = -Fk[tt, uu] 
-        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu])
+        uu = N['unit'] 
+        N['lam0'] = -Fk[tt, uu] * bar_theta
+        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta)
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -324,6 +338,10 @@ class GPModel:
         """
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+        bar_log_theta = digamma(self.omega) - np.log(self.zeta)
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
+        nn = self.Nframe['count']
 
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
@@ -344,9 +362,16 @@ class GPModel:
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
 
+        ############### E[log (p(theta) / q(theta))] #############
+        L.append(np.sum((self.ss[uu] - 1) * bar_log_theta))
+        L.append(-np.sum(self.rr[uu] * (self.omega / self.zeta)))
+        H_theta = self.H_gamma(self.omega, self.zeta)
+        L.append(np.sum(H_theta))
+
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
-        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]))
-        L.append(-np.sum(self.Nobs * self.F_prod()))
+        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) + np.sum(nn * bar_log_theta))
+        bar_theta = self.omega / self.zeta
+        L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta))
 
         logpi = self.calc_log_pi()
         L.append(np.sum((1 - self.xi[0]) * logpi[0] + self.xi[0] * logpi[1]))
@@ -356,7 +381,7 @@ class GPModel:
 
         # subtract the entropy of q(z) HMM
         L.append(-np.sum(self.logq))
-        L.extend(list(self.logZ))
+        L.append(np.sum(self.logZ))
 
         if keeplog:
             self.log['L'].append(L)
@@ -376,6 +401,18 @@ class GPModel:
         self.alpha[k] = (Nz[k] + self.cc[k]).data
         self.beta[k] = np.sum(self.Nobs * Fz, axis=0) + self.dd[k]
         self.F_prod(k, update=True)
+
+        return self
+
+    def update_theta(self):
+        """
+        Update parameters corresponding to overdispersion for firing rates.
+        """
+        N = self.Nframe
+        uu = N['unit']
+        tt = N['time']
+        self.omega = N['count'] + self.ss[uu]
+        self.zeta = self.F_prod()[tt, uu] + self.rr[uu]
 
         return self
 
@@ -451,6 +488,12 @@ class GPModel:
             if not silent:
                 print "chain {}: updated pi: L = {}".format(k, Lval)
 
+        self.update_theta()
+        if (not silent) or keeplog:
+            Lval = self.L(keeplog=keeplog) 
+        if not silent:
+            print "chain  : updated theta: L = {}".format(Lval)
+
         # E step        
         for k in xrange(self.K):
             self.update_z(k)
@@ -478,6 +521,7 @@ class GPModel:
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
                 np.abs(self.Lvalues[-1]))
+            assert(delta >= 0)
             idx += 1 
 
 
