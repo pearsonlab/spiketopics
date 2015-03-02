@@ -395,10 +395,10 @@ class GPModel:
         Update parameters corresponding to emission parameters for 
         each Markov chain.
         """
-        Nz = np.sum(self.N[:, np.newaxis, :] * self.xi[:, :, np.newaxis], axis=0)
+        Nz = self.xi[:, k].dot(self.N)
         Fz = self.F_prod(k) * self.xi[:, k, np.newaxis]
 
-        self.alpha[k] = (Nz[k] + self.cc[k]).data
+        self.alpha[k] = Nz + self.cc[k]
         self.beta[k] = np.sum(self.Nobs * Fz, axis=0) + self.dd[k]
         self.F_prod(k, update=True)
 
@@ -521,7 +521,7 @@ class GPModel:
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
                 np.abs(self.Lvalues[-1]))
-            assert(delta >= 0)
+            assert((delta > 0) | np.isclose(delta, 0))
             idx += 1 
 
 
