@@ -93,7 +93,7 @@ class GPModel:
     xi_{tk} = E[z_{tk}]
     Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=i)
     """
-    def __init__(self, data, K, dt, include_baseline=False):
+    def __init__(self, data, K, dt, include_baseline=False, overdispersion=False):
         """
         Set up basic constants for the model. 
         """
@@ -105,16 +105,20 @@ class GPModel:
         self.K = K
         self.U = U
         self.dt = dt
+        self.overdispersion = overdispersion
 
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
-            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,), 'ss': (U,), 
-            'rr': (U,)})
+            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
-            'Xi': (T - 1, K, 2, 2), 'logq': (K,), 'omega': (M,), 
-            'zeta': (M,)})
+            'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
+
+        if self.overdispersion:
+            self.prior_pars.update({'ss': (U,), 'rr': (U,)})
+            self.variational_pars.update({'omega': (M,), 'zeta': (M,)})
+
         self.log = {'L':[], 'H':[]}  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
 
@@ -292,7 +296,10 @@ class GPModel:
         logpsi = np.empty((self.T, 2))
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
-        bar_theta = self.omega / self.zeta
+        if self.overdispersion:
+            bar_theta = self.omega / self.zeta
+        else:
+            bar_theta = 1
         Fk = self.F_prod(k)
 
         # need to account for multiple observations of same frame by same
@@ -338,8 +345,12 @@ class GPModel:
         """
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
-        bar_log_theta = digamma(self.omega) - np.log(self.zeta)
-        bar_theta = self.omega / self.zeta
+        if self.overdispersion:
+            bar_theta = self.omega / self.zeta
+            bar_log_theta = digamma(self.omega) - np.log(self.zeta)
+        else:
+            bar_theta = 1
+            bar_log_theta = 0
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
         nn = self.Nframe['count']
@@ -364,13 +375,17 @@ class GPModel:
         L.append(np.sum(H_lambda))
 
         ############### E[log (p(theta) / q(theta))] #############
-        L.append((self.ss[uu] - 1).dot(bar_log_theta))
-        L.append(-self.rr[uu].dot(bar_theta))
-        H_theta = self.H_gamma(self.omega, self.zeta)
-        L.append(np.sum(H_theta))
+        if self.overdispersion:
+            L.append((self.ss[uu] - 1).dot(bar_log_theta))
+            L.append(-self.rr[uu].dot(bar_theta))
+            H_theta = self.H_gamma(self.omega, self.zeta)
+            L.append(np.sum(H_theta))
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
-        L.append(np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) + nn.dot(bar_log_theta))
+        Npiece = np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) 
+        if self.overdispersion:
+            Npiece += nn.dot(bar_log_theta)
+        L.append(Npiece)
         L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta))
 
         logpi = self.calc_log_pi()
@@ -488,11 +503,12 @@ class GPModel:
             if not silent:
                 print "chain {}: updated pi: L = {}".format(k, Lval)
 
-        self.update_theta()
-        if (not silent) or keeplog:
-            Lval = self.L(keeplog=keeplog) 
-        if not silent:
-            print "chain  : updated theta: L = {}".format(Lval)
+        if self.overdispersion:
+            self.update_theta()
+            if (not silent) or keeplog:
+                Lval = self.L(keeplog=keeplog) 
+            if not silent:
+                print "chain  : updated theta: L = {}".format(Lval)
 
         # E step        
         for k in xrange(self.K):

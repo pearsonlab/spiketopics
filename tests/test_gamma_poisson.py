@@ -2,7 +2,7 @@
 Tests for Gamma Poisson model.
 """
 from __future__ import division
-from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, set_trace
+from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, set_trace
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
@@ -152,6 +152,20 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.nu2.shape, (2, self.K))
         assert_equals(gpm.rho1.shape, (self.K,))
         assert_equals(gpm.rho2.shape, (self.K,))
+
+    def test_can_include_overdispersion(self):
+        gpm = gp.GPModel(self.N, self.K, self.dt, overdispersion=True)
+        gpm.set_priors()
+        assert_in('rr', gpm.prior_pars)
+        assert_in('ss', gpm.prior_pars)
+        assert_equals(gpm.rr.shape, (gpm.U,))
+        assert_equals(gpm.ss.shape, (gpm.U,))
+
+        gpm.set_inits()
+        assert_in('omega', gpm.variational_pars)
+        assert_in('zeta', gpm.variational_pars)
+        assert_equals(gpm.omega.shape, (gpm.M,))
+        assert_equals(gpm.zeta.shape, (gpm.M,))
 
     def test_invalid_prior_shapes_raises_error(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
