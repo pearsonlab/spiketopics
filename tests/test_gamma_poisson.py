@@ -28,6 +28,8 @@ class Test_Gamma_Poisson:
 
         self._make_firing_rates()
 
+        self._make_regressors()
+
         self._make_count_frame()
 
     @classmethod
@@ -38,7 +40,8 @@ class Test_Gamma_Poisson:
         self.U = 100  # units
         self.T = 500  # time points
         self.K = 5  # categories
-        self.dt = 1 / 30  # time length of observation (in s)
+        self.dt = 1. / 30  # time length of observation (in s)
+        self.J = 5  # number of external regressors
 
     @classmethod
     def _make_transition_probs(self):
@@ -82,6 +85,27 @@ class Test_Gamma_Poisson:
         chain[0, :] = 1
 
         self.chain = chain
+
+    @classmethod
+    def _make_regressors(self):
+        """
+        make a set of fake binary regressors to be supplied to the model
+        """
+        X = np.zeros((self.T, self.J), dtype='int')
+
+        # make transition probabilities
+        # want 0 -> 1 to be rare, 1 -> 1 to be a little less so
+        v0 = stats.beta.rvs(1, 50, size=self.J)
+        v1 = stats.beta.rvs(50, 1, size=self.J)
+        tp = np.vstack([v0, v1]).T  
+
+        # initialize all to 1
+        X[0, :] = stats.bernoulli.rvs(0.5, size=self.J)
+        for t in xrange(1, self.T):
+            p_trans_to_1 = tp[range(self.J), X[t - 1, :]]
+            X[t] = stats.bernoulli.rvs(p_trans_to_1)
+            
+        self.X = X
 
     @classmethod
     def _make_firing_rates(self):
