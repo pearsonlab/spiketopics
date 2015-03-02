@@ -98,9 +98,12 @@ class GPModel:
         Set up basic constants for the model. 
         """
         M = data.shape[0]
+        # J = number of regressors; excludes movie, frame, unit, count
+        J = data.shape[1] - 4  
         T = data[['movie', 'frame']].drop_duplicates().shape[0]
         U = data['unit'].drop_duplicates().shape[0]
         self.M = M
+        self.J = J
         self.T = T
         self.K = K
         self.U = U
@@ -176,19 +179,26 @@ class GPModel:
         count. 
         """
 
+        Nf = Nframe[['unit', 'movie', 'frame', 'count']]
+
         # make an array of all spikes for a given time within movie and 
         # unit; this only has to be done once
-        countframe = Nframe.groupby(['movie', 'frame', 'unit']).sum().unstack(level=2)
+        countframe = Nf.groupby(['movie', 'frame', 'unit']).sum().unstack(level=2)
         countarr = countframe.values
         self.N = np.ma.masked_where(np.isnan(countarr), countarr).astype('int')
 
         # make a dataframe linking movie and frame to a unique time index
-        self.t_index = Nframe.drop(['unit', 'count'], axis=1).drop_duplicates().reset_index(drop=True)
+        self.t_index = Nf.drop(['unit', 'count'], axis=1).drop_duplicates().reset_index(drop=True)
         self.t_index.index.name = 'time'
         self.t_index = self.t_index.reset_index()
 
         # make a frame of presentations linked to time index
-        self.Nframe = pd.merge(self.t_index, Nframe).drop(['movie', 'frame'], axis=1)
+        allframe = pd.merge(self.t_index, Nframe)
+        self.Nframe = allframe[['unit', 'time', 'count']].copy()
+
+        # make a frame of regressors indexed the same way
+        self.Xframe = allframe.drop(['frame', 'movie', 'unit', 'count'], 
+            axis=1).copy()
 
         # set unit to start at 0
         self.Nframe['unit'] = self.Nframe['unit'] - np.min(self.Nframe['unit'])
