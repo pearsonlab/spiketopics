@@ -104,7 +104,7 @@ class Test_Gamma_Poisson:
         for t in xrange(1, self.T):
             p_trans_to_1 = tp[range(self.J), X[t - 1, :]]
             X[t] = stats.bernoulli.rvs(p_trans_to_1)
-            
+
         self.X = X
 
     @classmethod
@@ -133,12 +133,31 @@ class Test_Gamma_Poisson:
     def _make_count_frame(self):
         # draw from Poisson
         N = stats.poisson.rvs(self.fr)
+
+        # convert to dataframe
         df = pd.DataFrame(N)
+
+        # name index frame and turn into column
         df.index.name = 'frame'
         df = df.reset_index()
+
+        # make data frame of regressors
+        Xf = pd.DataFrame(self.X, columns=map(lambda x: 'X' + str(x), xrange(self.J)))
+        Xf.index.name = 'frame'
+        Xf = Xf.reset_index()
+
+        # make each frame a row
         df = pd.melt(df, id_vars='frame')
+
+        # set column names
         df.columns = ['frame', 'unit', 'count']
+
+        # pretend all frames from same movie
         df['movie'] = 1
+
+        # concatenate regressors as columns
+        df = df.merge(Xf)
+
         self.N = df
 
     def test_can_instantiate_model_object(self):
