@@ -479,46 +479,55 @@ class GPModel:
 
         return self
 
-    def iterate(self, silent=True, keeplog=False):
+    def iterate(self, verbosity=0, keeplog=False):
         """
         Do one iteration of variational inference, updating each chain in turn.
+        verbosity is a verbosity level:
+            0: no print to screen
+            1: print L value on each iteration
+            2: print L value each update during each iteration
+        keeplog = True does internal logging for debugging; values are kept in
+            the dict self.log
         """
+        doprint = verbosity > 1 
+        calc_L = doprint or keeplog
+        
         # M step
         for k in xrange(self.K):
             self.update_lambda(k)
-            if (not silent) or keeplog:
+            if calc_L:
                 Lval = self.L(keeplog=keeplog) 
-            if not silent:
+            if doprint:
                 print "chain {}: updated lambda: L = {}".format(k, Lval)
 
             self.update_A(k)
-            if (not silent) or keeplog:
+            if calc_L:
                 Lval = self.L(keeplog=keeplog) 
-            if not silent:
+            if doprint:
                 print "chain {}: updated A: L = {}".format(k, Lval)
 
             self.update_pi(k)
-            if (not silent) or keeplog:
+            if calc_L:
                 Lval = self.L(keeplog=keeplog) 
-            if not silent:
+            if doprint:
                 print "chain {}: updated pi: L = {}".format(k, Lval)
 
         if self.overdispersion:
             self.update_theta()
-            if (not silent) or keeplog:
+            if calc_L:
                 Lval = self.L(keeplog=keeplog) 
-            if not silent:
+            if doprint:
                 print "chain  : updated theta: L = {}".format(Lval)
 
         # E step        
         for k in xrange(self.K):
             self.update_z(k)
-            if (not silent) or keeplog:
+            if calc_L:
                 Lval = self.L(keeplog=keeplog) 
-            if not silent:
+            if doprint:
                 print "chain {}: updated z: L = {}".format(k, Lval)
 
-    def do_inference(self, silent=True, tol=1e-3, keeplog=False, 
+    def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
         maxiter=np.inf):
         """
         Perform variational inference by minimizing free energy.
@@ -528,11 +537,11 @@ class GPModel:
         idx = 0
 
         while np.abs(delta) > tol and idx < maxiter:
-            if not silent:
+            if verbosity > 0:
                 print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
                 print "delta = " + str(delta)
 
-            self.iterate(silent=silent, keeplog=keeplog)
+            self.iterate(verbosity=verbosity, keeplog=keeplog)
             self.Lvalues.append(self.L())
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 

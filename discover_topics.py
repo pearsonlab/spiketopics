@@ -98,7 +98,7 @@ gpm.set_priors(**priors).set_inits(**inits)
 
 ############## fit model
 print "Fitting model..."
-gpm.do_inference(silent=False, tol=5e-3)
+gpm.do_inference(verbosity=1, tol=5e-3)
 
 print "Writing to disk..."
 ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
