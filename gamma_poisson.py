@@ -176,7 +176,7 @@ class GPModel:
     def _set_data(self, Nframe):
         """
         Nframe is a dataframe containing columns unit, movie, frame, and 
-        count. 
+        count. Any additional columns will be considered external regressors.
         """
 
         Nf = Nframe[['unit', 'movie', 'frame', 'count']]
@@ -188,7 +188,7 @@ class GPModel:
         self.N = np.ma.masked_where(np.isnan(countarr), countarr).astype('int')
 
         # make a dataframe linking movie and frame to a unique time index
-        self.t_index = Nf.drop(['unit', 'count'], axis=1).drop_duplicates().reset_index(drop=True)
+        self.t_index = Nf[['movie', 'frame']].drop_duplicates().reset_index(drop=True)
         self.t_index.index.name = 'time'
         self.t_index = self.t_index.reset_index()
 

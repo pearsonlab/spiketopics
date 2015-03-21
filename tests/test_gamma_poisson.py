@@ -105,7 +105,12 @@ class Test_Gamma_Poisson:
             p_trans_to_1 = tp[range(self.J), X[t - 1, :]]
             X[t] = stats.bernoulli.rvs(p_trans_to_1)
 
-        self.X = X
+        # make data frame of regressors
+        Xf = pd.DataFrame(X, columns=map(lambda x: 'X' + str(x), xrange(self.J)))
+        Xf.index.name = 'frame'
+        Xf = Xf.reset_index()
+
+        self.X = Xf
 
     @classmethod
     def _make_firing_rates(self):
@@ -141,11 +146,6 @@ class Test_Gamma_Poisson:
         df.index.name = 'frame'
         df = df.reset_index()
 
-        # make data frame of regressors
-        Xf = pd.DataFrame(self.X, columns=map(lambda x: 'X' + str(x), xrange(self.J)))
-        Xf.index.name = 'frame'
-        Xf = Xf.reset_index()
-
         # make each frame a row
         df = pd.melt(df, id_vars='frame')
 
@@ -156,7 +156,7 @@ class Test_Gamma_Poisson:
         df['movie'] = 1
 
         # concatenate regressors as columns
-        df = df.merge(Xf)
+        df = df.merge(self.X)
 
         self.N = df
 
@@ -167,6 +167,13 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.T, self.T)
         assert_equals(gpm.K, self.K)
         assert_equals(gpm.dt, self.dt)
+        assert_equals(gpm.Xframe.shape, 
+            (self.T * self.U, self.X.shape[1]))
+
+        # gpm.Xframe has one row for each unit, so need ot drop duplicates
+        npt.assert_array_equal(gpm.Xframe.drop_duplicates().values, 
+            self.X.values)
+
         assert_is_instance(gpm.Lvalues, list)
 
     def test_can_set_priors(self):
