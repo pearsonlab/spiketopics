@@ -109,6 +109,7 @@ class GPModel:
         self.U = U
         self.dt = dt
         self.overdispersion = overdispersion
+        self.regressors = self.J > 0
 
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
@@ -121,6 +122,11 @@ class GPModel:
         if self.overdispersion:
             self.prior_pars.update({'ss': (U,), 'rr': (U,)})
             self.variational_pars.update({'omega': (M,), 'zeta': (M,)})
+
+        if self.regressors:
+            self.prior_pars.update({'vv': (J, U), 'ww': (J, U)})
+            self.variational_pars.update({'aa': (J, U), 'bb': (J, U)})
+
 
         self.log = {'L':[], 'H':[]}  # for debugging
         self.Lvalues = []  # for recording value of optimization objective
@@ -488,6 +494,12 @@ class GPModel:
         self.delta2[k] = self.rho2[k] + 1 - self.xi[0, k]
 
         return self
+
+    def update_upsilon(self, i):
+        """
+        Update regression coefficient for a particular regressor i.
+        """
+        pass
 
     def iterate(self, verbosity=0, keeplog=False):
         """

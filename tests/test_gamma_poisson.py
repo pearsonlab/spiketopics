@@ -2,7 +2,7 @@
 Tests for Gamma Poisson model.
 """
 from __future__ import division
-from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, set_trace
+from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, set_trace
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
@@ -176,6 +176,18 @@ class Test_Gamma_Poisson:
 
         assert_is_instance(gpm.Lvalues, list)
 
+    def test_can_handle_no_regressors(self):
+        # first, remove extra regressors 
+        cols = ['frame', 'unit', 'count', 'movie']
+        N = self.N[cols]
+        gpm = gp.GPModel(N, self.K, self.dt)
+        assert_equals(gpm.J, 0)
+        assert_true(not gpm.regressors)
+        assert_not_in('aa', gpm.variational_pars)
+        assert_not_in('bb', gpm.variational_pars)
+        assert_not_in('vv', gpm.prior_pars)
+        assert_not_in('ww', gpm.prior_pars)
+
     def test_can_set_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
         cctest = np.random.rand(self.K, self.U)
@@ -303,6 +315,8 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.gamma2.shape, (2, self.K))
         assert_equals(gpm.delta1.shape, (self.K,))
         assert_equals(gpm.delta2.shape, (self.K,))
+        assert_equals(gpm.aa.shape, (self.J, self.U))
+        assert_equals(gpm.bb.shape, (self.J, self.U))
 
     def test_invalid_init_shapes_raises_error(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
