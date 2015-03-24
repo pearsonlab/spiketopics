@@ -168,11 +168,12 @@ class Test_Gamma_Poisson:
         assert_equals(gpm.K, self.K)
         assert_equals(gpm.dt, self.dt)
         assert_equals(gpm.Xframe.shape, 
-            (self.T * self.U, self.X.shape[1]))
+            (self.T * self.U, self.X.shape[1] - 1))
 
-        # gpm.Xframe has one row for each unit, so need ot drop duplicates
-        npt.assert_array_equal(gpm.Xframe.drop_duplicates().values, 
-            self.X.values)
+        # get regressors for first unit
+        first_unit = gpm.Xframe.groupby(self.N['frame']).first()
+        # compare to X itself
+        npt.assert_array_equal(first_unit, self.X.iloc[:, 1:].values)
 
         assert_is_instance(gpm.Lvalues, list)
 

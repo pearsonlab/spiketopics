@@ -206,8 +206,7 @@ class GPModel:
         self.Nframe = allframe[['unit', 'time', 'count']].copy()
 
         # make a frame of regressors indexed the same way
-        self.Xframe = allframe.drop(['frame', 'movie', 'unit', 'count'], 
-            axis=1).copy()
+        self.Xframe = allframe.drop(['frame', 'movie', 'unit', 'count', 'time'], axis=1).copy()
 
         # set unit to start at 0
         self.Nframe['unit'] = self.Nframe['unit'] - np.min(self.Nframe['unit'])
@@ -291,14 +290,14 @@ class GPModel:
             tt = self.Nframe['time']
             if k is not None:
                 zz = (self.aa[k] / self.bb[k])[uu]
-                # get x values for kth regressor; col 0 = time
-                xx = self.Xframe.values[:, 1 + k]
+                # get x values for kth regressor
+                xx = self.Xframe.values[:, k]
                 vv = ne.evaluate("zz ** xx")
                 self._Gpre[:, k] = vv
             else:
                 zz = (self.aa / self.bb)[:, uu].T
                 # get x values for kth regressor; col 0 = time
-                xx = self.Xframe.values[:, 1:]
+                xx = self.Xframe.values
                 vv = ne.evaluate("zz ** xx")
                 self._Gpre = vv
 
@@ -422,7 +421,7 @@ class GPModel:
         nn = self.Nframe['count']
         if self.regressors:
             # get view of regressors array, leave out time = col 0
-            xx = self.Xframe.values[:, 1:]
+            xx = self.Xframe.values
 
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
@@ -497,6 +496,18 @@ class GPModel:
 
         return self
 
+    def update_upsilon(self):
+        """
+        Update regression coefficient for a particular regressor i.
+        """
+        nn = self.Nframe['count']
+        uu = self.Nframe['unit']
+        NX = nn[:, np.newaxis] * self.Xframe
+
+        self.aa = NX.groupby(uu).sum().values.T
+
+        return self
+
     def update_theta(self):
         """
         Update parameters corresponding to overdispersion for firing rates.
@@ -557,12 +568,6 @@ class GPModel:
 
         return self
 
-    def update_upsilon(self, i):
-        """
-        Update regression coefficient for a particular regressor i.
-        """
-        pass
-
     def iterate(self, verbosity=0, keeplog=False):
         """
         Do one iteration of variational inference, updating each chain in turn.
@@ -602,6 +607,13 @@ class GPModel:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:
                 print "chain  : updated theta: L = {}".format(Lval)
+
+        if self.regressors:
+            self.update_upsilon()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog) 
+            if doprint:
+                print "chain  : updated upsilon: L = {}".format(Lval)
 
         # E step        
         for k in xrange(self.K):
