@@ -506,7 +506,7 @@ class GPModel:
         NX = nn[:, np.newaxis] * self.Xframe
 
         self.aa = NX.groupby(uu).sum().values.T
-        self.bb = self._get_b_optimize()
+        self.bb = self._get_b_approximate()
 
         return self
 
@@ -514,6 +514,13 @@ class GPModel:
         """
         Solve for b via black-box optimization.
         """
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
+        if self.overdispersion:
+            bar_theta = self.omega / self.zeta
+        else:
+            bar_theta = 1
+        F_prod = self.F_prod()[tt, uu]
 
         def minfun(b): 
             """
@@ -521,21 +528,51 @@ class GPModel:
             the b parameter.
             """
             bb = b.reshape(self.J, self.U)
-            uu = self.Nframe['unit']
-            tt = self.Nframe['time']
             bar_log_upsilon = digamma(self.aa) - np.log(bb)
             bar_upsilon = self.aa / bb
-            if self.overdispersion:
-                bar_theta = self.omega / self.zeta
-            else:
-                bar_theta = 1
             H_upsilon = self.H_gamma(self.aa, bb)
             G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
 
             elbo = np.sum((self.vv - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
-            elbo += -np.sum(self.F_prod()[tt, uu] * bar_theta * G_prod)
+            elbo += -np.sum(F_prod()[tt, uu] * bar_theta * G_prod)
+
+            return -elbo
+
+        res = minimize(minfun, self.bb)
+        return res.x.reshape(self.J, self.U)
+
+    def _get_b_approximate(self):
+        """
+        Solve for b via black-box optimization.
+        """
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
+        if self.overdispersion:
+            bar_theta = self.omega / self.zeta
+        else:
+            bar_theta = 1
+        sum_log_F_prod = np.sum(np.log(self.F_prod()[tt, uu]))
+        sum_log_bar_theta = np.sum(np.log(bar_theta))
+        X_sufficient = self.Xframe.groupby(self.Nframe['unit']).sum().values.T
+
+        def minfun(b): 
+            """
+            This is the portion of the evidence lower bound that depends on 
+            the b parameter.
+            """
+            bb = b.reshape(self.J, self.U)
+            bar_log_upsilon = digamma(self.aa) - np.log(bb)
+            bar_upsilon = self.aa / bb
+            H_upsilon = self.H_gamma(self.aa, bb)
+            G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
+            sum_log_G = np.sum((np.log(self.aa) - np.log(bb)) * X_sufficient)
+
+            elbo = np.sum((self.vv - 1) * bar_log_upsilon)
+            elbo += -np.sum(self.ww * bar_upsilon)
+            elbo += np.sum(H_upsilon)
+            elbo += -np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
 
             return -elbo
 
