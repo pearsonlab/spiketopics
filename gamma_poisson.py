@@ -378,6 +378,9 @@ class GPModel:
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
         nn = self.Nframe['count']
+        if self.regressors:
+            # get view of regressors array, leave out time = col 0
+            xx = self.Xframe.values[:, 1:]
 
         L = [] 
         ############### E[log (p(pi) / q(pi))] #############
@@ -416,6 +419,8 @@ class GPModel:
         Npiece = np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) 
         if self.overdispersion:
             Npiece += nn.dot(bar_log_theta)
+        if self.regressors:
+            Npiece += np.sum(nn[:, np.newaxis] * xx * bar_log_upsilon[:, uu].T)
         L.append(Npiece)
         L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta))
 
