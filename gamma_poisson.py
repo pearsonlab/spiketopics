@@ -506,13 +506,19 @@ class GPModel:
         NX = nn[:, np.newaxis] * self.Xframe
 
         self.aa = NX.groupby(uu).sum().values.T
+        self.bb = self._get_b_optimize()
+
+        return self
+
+    def _get_b_optimize(self):
+        """
+        Solve for b via black-box optimization.
+        """
 
         def minfun(b): 
             """
             This is the portion of the evidence lower bound that depends on 
             the b parameter.
-            IMPORTANT: Assumes self.Gprod is not a function of b, which is
-            false, though we might get away with it.
             """
             bb = b.reshape(self.J, self.U)
             uu = self.Nframe['unit']
@@ -524,18 +530,17 @@ class GPModel:
             else:
                 bar_theta = 1
             H_upsilon = self.H_gamma(self.aa, bb)
+            G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
 
             elbo = np.sum((self.vv - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
-            elbo += -np.sum(self.F_prod()[tt, uu] * bar_theta * self.G_prod())
+            elbo += -np.sum(self.F_prod()[tt, uu] * bar_theta * G_prod)
 
             return -elbo
 
         res = minimize(minfun, self.bb)
-        self.bb = res.x.reshape(self.J, self.U)
-
-        return self
+        return res.x.reshape(self.J, self.U)
 
     def update_theta(self):
         """
