@@ -367,6 +367,14 @@ class GPModel:
         else:
             bar_theta = 1
             bar_log_theta = 0
+
+        if self.regressors:
+            bar_upsilon = self.aa / self.bb
+            bar_log_upsilon = digamma(self.aa) - np.log(self.bb)
+        else:
+            bar_upsilon = 1
+            bar_log_upsilon = 0
+
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
         nn = self.Nframe['count']
@@ -396,6 +404,13 @@ class GPModel:
             L.append(-self.rr[uu].dot(bar_theta))
             H_theta = self.H_gamma(self.omega, self.zeta)
             L.append(np.sum(H_theta))
+
+        ############### E[log (p(upsilon) / q(upsilon))] #############
+        if self.regressors:
+            L.append(np.sum((self.vv - 1) * bar_log_upsilon))
+            L.append(-np.sum(self.ww * bar_upsilon))
+            H_upsilon = self.H_gamma(self.aa, self.bb)
+            L.append(np.sum(H_upsilon))
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
         Npiece = np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) 
