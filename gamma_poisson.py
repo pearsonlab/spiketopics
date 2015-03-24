@@ -566,7 +566,6 @@ class GPModel:
             bar_log_upsilon = digamma(self.aa) - np.log(bb)
             bar_upsilon = self.aa / bb
             H_upsilon = self.H_gamma(self.aa, bb)
-            G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
             sum_log_G = np.sum((np.log(self.aa) - np.log(bb)) * X_sufficient)
 
             elbo = np.sum((self.vv - 1) * bar_log_upsilon)
