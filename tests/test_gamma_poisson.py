@@ -368,6 +368,18 @@ class Test_Gamma_Poisson:
         npt.assert_allclose(gpm.F_prod(kk, update=True), gpm._Ftku[:, kk, :])
         npt.assert_allclose(np.prod(gpm._Fpre, axis=1), gpm._Ftu)
 
+    def test_cached_G_prod(self):
+        gpm = gp.GPModel(self.N, self.K, self.dt)
+        gpm.set_priors().set_inits()
+        gpm.iterate()
+        npt.assert_allclose(gpm._Gtu, gpm.G_prod())
+        kk = 3
+        npt.assert_allclose(gpm._Gtku[:, kk], gpm.G_prod(kk))
+        npt.assert_allclose(gpm.G_prod(kk, update=True), gpm._Gtku[:, kk])
+        npt.assert_allclose(np.prod(gpm._Gpre, axis=1), gpm._Gtu)
+        assert_equals(gpm.G_prod().shape[0], gpm.Xframe.shape[0])
+        assert_equals(gpm.G_prod(kk).shape[0], gpm.Xframe.shape[0])
+
     def test_calc_A(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_inits()

@@ -177,6 +177,9 @@ class GPModel:
         # initialize F product
         self.F_prod(update=True)
 
+        # initialize G product
+        self.G_prod(update=True)
+
         return self
 
     def _set_data(self, Nframe):
@@ -242,7 +245,7 @@ class GPModel:
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
-        If k is specifice, return F_{tku} (product over all but k), 
+        If k is specified, return F_{tku} (product over all but k), 
         else return F_{tu} (product over all k). If update=True, 
         recalculate F before returning the result and cache the new 
         matrix.
@@ -271,6 +274,45 @@ class GPModel:
         else:
             return self._Ftu
 
+    def G_prod(self, k=None, update=False):
+        """
+        Return the value of the G product.
+        If k is specified, return G_{tku} (product over all but k),
+        else return G_{tu} (product over all k). If update=True,
+        recalculate G before returning the result and cache the new 
+        matrix.
+        NOTE: Because the regressors may vary by *presentation* and not 
+        simply by movie time, the regressors are in a "melted" dataframe
+        with each (unit, presentation) pair in a row by itself. As a 
+        result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
+        """
+        if update:
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+            if k is not None:
+                zz = (self.aa[k] / self.bb[k])[uu]
+                # get x values for kth regressor; col 0 = time
+                xx = self.Xframe.values[:, 1 + k]
+                vv = ne.evaluate("zz ** xx")
+                self._Gpre[:, k] = vv
+            else:
+                zz = (self.aa / self.bb)[:, uu].T
+                # get x values for kth regressor; col 0 = time
+                xx = self.Xframe.values[:, 1:]
+                vv = ne.evaluate("zz ** xx")
+                self._Gpre = vv
+
+            # work in log space to avoid over/underflow
+            Gpre = self._Gpre
+            dd = ne.evaluate("sum(log(Gpre), axis=1)")
+            self._Gtu = ne.evaluate("exp(dd)")
+            ddd = dd[:, np.newaxis]
+            self._Gtku = ne.evaluate("exp(ddd - log(Gpre))")
+
+        if k is not None:
+            return self._Gtku[:, k]
+        else:
+            return self._Gtu
 
     def calc_log_A(self):
         """
@@ -422,7 +464,7 @@ class GPModel:
         if self.regressors:
             Npiece += np.sum(nn[:, np.newaxis] * xx * bar_log_upsilon[:, uu].T)
         L.append(Npiece)
-        L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta))
+        L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta * self.G_prod()))
 
         logpi = self.calc_log_pi()
         L.append(np.sum((1 - self.xi[0]) * logpi[0] + self.xi[0] * logpi[1]))
