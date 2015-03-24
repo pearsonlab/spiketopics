@@ -343,6 +343,41 @@ In this case, the equations that must be solved to update $\mu$ and $\sigma^2$ t
 \end{align}
 Since $G_{tu}$ depends on both $\mu_{iu}$ and $\sigma^2_{iu}$, these are both transcendental equations. In the case of $x(t) = c$ a constant in time, they can be solved via variable transform using the Lambert $W$ function, but for time-varying $x$, root-finding algorithms will be needed.
 
+\subsubsection{Approximating the sum of exponentials}
+We would like a cheap way of evaluating the objective $\mathcal{L}$ above, but the last term involves all variables and is a sum over time (the other sum over time decomposes easily). In fact, there is a nice trick to approximate this term. 
+
+We can begin by writing the non-$G$ terms, which are constants in $\mu$ and $\sigma^2$ in exponential form:
+\begin{equation}
+    \theta_{mu} F_{t(m)u} = e^{A_{mu}}
+\end{equation}
+so that we can write the final term as
+\begin{equation}
+    \sum_{mu} \exp\left(A_{mu} +  \sum_i \left[ \mu_{iu} x_{t(m)iu} + 
+    \frac{1}{2} \sigma^2_{iu} x^2_{t(m)iu}\right]\right)
+\end{equation}
+But recall that this is equal to the expectation
+\begin{equation}
+    \sum_{mu}\mathbb{E}\left[ \theta_{mu} \prod_k \lambda_{ku}^{z_{t(m)k}} 
+    \prod_i e^{b_{iu} x_{t(m)iu}}\right]
+\end{equation}
+and often in practice, the expectations we are summing are quite close to 1 (exponents close to 0). This means, of course, that we can approximate 
+\begin{equation}
+    \sum_n e^{x_n} \approx \sum_n (1 + x_n + \ldots) \approx e^{\sum_n x_n}
+\end{equation}
+In fact, even in cases where a scaling constant $\Lambda$ exists such that $\Lambda e^{x_n} \approx 1$ for all $n$ (i.e., $x - \log \Lambda \approx 0$), we have
+\begin{equation}
+    \sum_n e^{x_n} \approx \Lambda^{-1} \sum_n e^{x_i + \log \Lambda} \approx
+    \Lambda^{N - 1} e^{\sum_n x_n}
+\end{equation}
+Thus, we might well consider approximating the last term in $\mathcal{L}$ as
+\begin{multline}
+    \sum_{mu} \exp\left(A_{mu} +  \sum_i \left[ \mu_{iu} x_{t(m)iu} + 
+    \frac{1}{2} \sigma^2_{iu} x^2_{t(m)iu}\right]\right) \approx \\
+    \exp\left(\sum_{mu} A_{mu} +  \sum_{imu} \left[ \mu_{iu} x_{t(m)iu} + 
+    \frac{1}{2} \sigma^2_{iu} x^2_{t(m)iu}\right]\right)
+\end{multline}
+which leads to dramatically simpler expressions for the gradient and Hessian.
+
 \subsubsection{Natural Gradients}
 In case it's useful later, here are the natural gradients. Since the natural paramter of the normal distribution is $\eta = (\mu/\sigma^2, -1/2\sigma^2)$, we can write for the natural gradient
 \begin{equation}
