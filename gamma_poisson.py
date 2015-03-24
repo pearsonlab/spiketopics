@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from scipy.special import digamma, gammaln, betaln
+from scipy.optimize import minimize
 import numexpr as ne
 
 def fb_infer(A, pi, psi):
@@ -505,6 +506,34 @@ class GPModel:
         NX = nn[:, np.newaxis] * self.Xframe
 
         self.aa = NX.groupby(uu).sum().values.T
+
+        def minfun(b): 
+            """
+            This is the portion of the evidence lower bound that depends on 
+            the b parameter.
+            IMPORTANT: Assumes self.Gprod is not a function of b, which is
+            false, though we might get away with it.
+            """
+            bb = b.reshape(self.J, self.U)
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+            bar_log_upsilon = digamma(self.aa) - np.log(bb)
+            bar_upsilon = self.aa / bb
+            if self.overdispersion:
+                bar_theta = self.omega / self.zeta
+            else:
+                bar_theta = 1
+            H_upsilon = self.H_gamma(self.aa, bb)
+
+            elbo = np.sum((self.vv - 1) * bar_log_upsilon)
+            elbo += -np.sum(self.ww * bar_upsilon)
+            elbo += np.sum(H_upsilon)
+            elbo += -np.sum(self.F_prod()[tt, uu] * bar_theta * self.G_prod())
+
+            return -elbo
+
+        res = minimize(minfun, self.bb)
+        self.bb = res.x.reshape(self.J, self.U)
 
         return self
 
