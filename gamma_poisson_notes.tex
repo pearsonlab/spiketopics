@@ -291,8 +291,8 @@ It will be convenient for us to assume that both the priors and the variational 
 This contributes an additional factor to the ELBO
 \begin{multline}
     \mathbb{E}_{q(\upsilon)} \left[ \log \frac{p(\upsilon)}{q(\upsilon)} \right] =
-    \sum_{iu} \left[ (v_{iu} - 1) \overline{\log \upsilon_{iu}} - w_u \frac{a_{iu}}{b_{iu}} + H_g(a_{iu}, b_{iu}) \right] =\\
-    \sum_{iu} \left[ (v_{iu} - 1) (\psi(a_{iu}) - \log b_{iu}) - w_u \frac{a_{iu}}{b_{iu}} + H_g(a_{iu}, b_{iu}) \right]
+    \sum_{iu} \left[ (v_{iu} - 1) \overline{\log \upsilon_{iu}} - w_{iu} \frac{a_{iu}}{b_{iu}} + H_g(a_{iu}, b_{iu}) \right] =\\
+    \sum_{iu} \left[ (v_{iu} - 1) (\psi(a_{iu}) - \log b_{iu}) - w_{iu} \frac{a_{iu}}{b_{iu}} + H_g(a_{iu}, b_{iu}) \right]
 \end{multline}
 plus corrections to the observation probability piece of $\mathbb{E}_q[\log p(N, z|\lambda, A, \pi) / q(z)]$:
 \begin{multline}
