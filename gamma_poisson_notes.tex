@@ -307,7 +307,7 @@ This leads straightforwardly to updates for the posterior parameters of $q(\upsi
 \end{align}
 where $b^*_{iu}$ is the solution to the transcendental equation
 \begin{equation}
-    b_{iu} = w_{iu} + \sum_{m} \left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j \neq i} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right] \left( \frac{a_{iu}}{b_{iu}}\right)^{x_{t(m)iu} - 1}
+    b_{iu} = w_{iu} + \left( \frac{b_{iu}}{a_{iu}}\right) \sum_{m} x_{t(m)iu}\left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right]  
 \end{equation}
 
 Possible strategies here:
