@@ -297,7 +297,7 @@ This contributes an additional factor to the ELBO
 plus corrections to the observation probability piece of $\mathbb{E}_q[\log p(N, z|\lambda, A, \pi) / q(z)]$:
 \begin{multline}
     \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} + \sum_{mu} N_{mu} \overline{\log \theta_{mu}} + \sum_{tiu} N_{tu} x_{tiu} \overline{\log \upsilon_{iu}} \\
-    - \sum_{mu} \theta_{mu} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_i \left(\frac{a_{iu}}{b_{iu}} \right)^{x_{t(m)iu}}
+    - \sum_{mu} \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_i \left(\frac{a_{iu}}{b_{iu}} \right)^{x_{t(m)iu}}
 \end{multline}
 
 This leads straightforwardly to updates for the posterior parameters of $q(\upsilon)$:
@@ -307,7 +307,7 @@ This leads straightforwardly to updates for the posterior parameters of $q(\upsi
 \end{align}
 where $b^*_{iu}$ is the solution to the transcendental equation
 \begin{equation}
-    b_{iu} = w_{iu} + \sum_{m} \left[ \theta_{mu} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j \neq i} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right] \left( \frac{a_{iu}}{b_{iu}}\right)^{x_{t(m)iu} - 1}
+    b_{iu} = w_{iu} + \sum_{m} \left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j \neq i} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right] \left( \frac{a_{iu}}{b_{iu}}\right)^{x_{t(m)iu} - 1}
 \end{equation}
 
 Possible strategies here:
