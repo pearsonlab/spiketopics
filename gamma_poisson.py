@@ -94,7 +94,7 @@ class GPModel:
     xi_{tk} = E[z_{tk}]
     Xi_{t,k}[j, i] = p(z_{t+1, k}=j, z_{tk}=i)
     """
-    def __init__(self, data, K, dt, include_baseline=False, overdispersion=False):
+    def __init__(self, data, K, dt, include_baseline=False, overdispersion=False, regression_updater='approximate'):
         """
         Set up basic constants for the model. 
         """
@@ -111,6 +111,11 @@ class GPModel:
         self.dt = dt
         self.overdispersion = overdispersion
         self.regressors = self.J > 0
+
+        if regression_updater == 'exact':
+            self.updater = self._get_logb_optimize
+        elif regression_updater == 'approximate':
+            self.updater = self._get_logb_approximate
 
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
@@ -497,7 +502,7 @@ class GPModel:
 
         return self
 
-    def update_upsilon(self):
+    def update_upsilon(self, b_updater):
         """
         Update regression coefficient for a particular regressor i.
         """
@@ -506,13 +511,15 @@ class GPModel:
         NX = nn[:, np.newaxis] * self.Xframe
 
         self.aa = NX.groupby(uu).sum().values.T + self.vv
-        self.bb = np.exp(self._get_logb_approximate())
+
+        self.bb = np.exp(b_updater())
 
         return self
 
     def _get_logb_optimize(self):
         """
-        Solve for log b via black-box optimization.
+        Solve for log b via black-box optimization. 
+        Optimize over log b, the natural parameter.
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
@@ -525,28 +532,34 @@ class GPModel:
         def minfun(logb): 
             """
             This is the portion of the evidence lower bound that depends on 
-            the b parameter.
+            the b parameter. 
             """
-            bb = logb.reshape(self.J, self.U)
-            ebb = np.exp(bb)
-            bar_log_upsilon = digamma(self.aa) - bb
-            bar_upsilon = self.aa / ebb
-            H_upsilon = self.H_gamma(self.aa, ebb)
-            G_prod = np.prod((self.aa / ebb)[:, uu].T ** self.Xframe.values, axis=1)
+            logbb = logb.reshape(self.J, self.U)
+            bb = np.exp(logbb)
+            bar_log_upsilon = digamma(self.aa) - logbb
+            bar_upsilon = self.aa / bb
+            H_upsilon = self.H_gamma(self.aa, bb)
+            G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
 
             elbo = np.sum((self.aa - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
-            elbo += -np.sum(F_prod()[tt, uu] * bar_theta * G_prod)
+            FthG = F_prod * bar_theta * G_prod
+            elbo += -np.sum(FthG)
 
-            return -elbo
+            grad = -self.aa + self.ww * (self.aa / bb) 
+            grad += -(self.aa / bb) * (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values.T
 
-        res = minimize(minfun, self.bb)
+            return -elbo, grad.ravel()
+
+        # initialize self.bb = self.aa, or (aa/bb) ** x will be enormous
+        res = minimize(minfun, np.log(self.aa), jac=True)
         return res.x.reshape(self.J, self.U)
 
     def _get_logb_approximate(self):
         """
         Solve for b via black-box optimization.
+        Optimize over log b, the natural parameter.
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
@@ -563,21 +576,25 @@ class GPModel:
             This is the portion of the evidence lower bound that depends on 
             the b parameter.
             """
-            bb = logb.reshape(self.J, self.U)
-            ebb = np.exp(bb)
-            bar_log_upsilon = digamma(self.aa) - bb
-            bar_upsilon = self.aa / ebb
-            H_upsilon = self.H_gamma(self.aa, ebb)
-            sum_log_G = np.sum((np.log(self.aa) - bb) * X_sufficient)
+            logbb = logb.reshape(self.J, self.U)
+            bb = np.exp(logbb)
+            bar_log_upsilon = digamma(self.aa) - logbb
+            bar_upsilon = self.aa / bb
+            H_upsilon = self.H_gamma(self.aa, bb)
+            sum_log_G = np.sum((np.log(self.aa) - logbb) * X_sufficient)
 
             elbo = np.sum((self.aa - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
             elbo += -np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
 
-            return -elbo
+            grad = -self.aa + self.ww * (self.aa / bb) 
+            grad += -X_sufficient * np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
 
-        res = minimize(minfun, self.bb)
+            return -elbo, grad.ravel()
+
+        # initialize self.bb = self.aa, or (aa/bb) ** x will be enormous
+        res = minimize(minfun, np.log(self.aa), jac=True)
         return res.x.reshape(self.J, self.U)
 
     def update_theta(self):
@@ -681,7 +698,7 @@ class GPModel:
                 print "chain  : updated theta: L = {}".format(Lval)
 
         if self.regressors:
-            self.update_upsilon()
+            self.update_upsilon(self.updater)
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:

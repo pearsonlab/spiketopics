@@ -2,7 +2,7 @@
 Tests for Gamma Poisson model.
 """
 from __future__ import division
-from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, set_trace
+from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, assert_is, set_trace
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
@@ -188,6 +188,10 @@ class Test_Gamma_Poisson:
         assert_not_in('bb', gpm.variational_pars)
         assert_not_in('vv', gpm.prior_pars)
         assert_not_in('ww', gpm.prior_pars)
+
+    def test_can_use_exact_optimization(self):
+        gpm = gp.GPModel(self.N, self.K, self.dt, regression_updater='exact')
+        assert_equals(gpm.updater, gpm._get_logb_optimize)
 
     def test_can_set_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
