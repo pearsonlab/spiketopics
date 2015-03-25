@@ -505,7 +505,7 @@ class GPModel:
         uu = self.Nframe['unit']
         NX = nn[:, np.newaxis] * self.Xframe
 
-        self.aa = NX.groupby(uu).sum().values.T
+        self.aa = NX.groupby(uu).sum().values.T + self.vv
         self.bb = np.exp(self._get_logb_approximate())
 
         return self
