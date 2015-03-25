@@ -506,13 +506,13 @@ class GPModel:
         NX = nn[:, np.newaxis] * self.Xframe
 
         self.aa = NX.groupby(uu).sum().values.T
-        self.bb = self._get_b_approximate()
+        self.bb = np.exp(self._get_logb_approximate())
 
         return self
 
-    def _get_b_optimize(self):
+    def _get_logb_optimize(self):
         """
-        Solve for b via black-box optimization.
+        Solve for log b via black-box optimization.
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
@@ -522,16 +522,17 @@ class GPModel:
             bar_theta = 1
         F_prod = self.F_prod()[tt, uu]
 
-        def minfun(b): 
+        def minfun(logb): 
             """
             This is the portion of the evidence lower bound that depends on 
             the b parameter.
             """
-            bb = b.reshape(self.J, self.U)
-            bar_log_upsilon = digamma(self.aa) - np.log(bb)
-            bar_upsilon = self.aa / bb
-            H_upsilon = self.H_gamma(self.aa, bb)
-            G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
+            bb = logb.reshape(self.J, self.U)
+            ebb = np.exp(bb)
+            bar_log_upsilon = digamma(self.aa) - bb
+            bar_upsilon = self.aa / ebb
+            H_upsilon = self.H_gamma(self.aa, ebb)
+            G_prod = np.prod((self.aa / ebb)[:, uu].T ** self.Xframe.values, axis=1)
 
             elbo = np.sum((self.vv - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
@@ -543,7 +544,7 @@ class GPModel:
         res = minimize(minfun, self.bb)
         return res.x.reshape(self.J, self.U)
 
-    def _get_b_approximate(self):
+    def _get_logb_approximate(self):
         """
         Solve for b via black-box optimization.
         """
@@ -557,16 +558,17 @@ class GPModel:
         sum_log_bar_theta = np.sum(np.log(bar_theta))
         X_sufficient = self.Xframe.groupby(self.Nframe['unit']).sum().values.T
 
-        def minfun(b): 
+        def minfun(logb): 
             """
             This is the portion of the evidence lower bound that depends on 
             the b parameter.
             """
-            bb = b.reshape(self.J, self.U)
-            bar_log_upsilon = digamma(self.aa) - np.log(bb)
-            bar_upsilon = self.aa / bb
-            H_upsilon = self.H_gamma(self.aa, bb)
-            sum_log_G = np.sum((np.log(self.aa) - np.log(bb)) * X_sufficient)
+            bb = logb.reshape(self.J, self.U)
+            ebb = np.exp(bb)
+            bar_log_upsilon = digamma(self.aa) - bb
+            bar_upsilon = self.aa / ebb
+            H_upsilon = self.H_gamma(self.aa, ebb)
+            sum_log_G = np.sum((np.log(self.aa) - bb) * X_sufficient)
 
             elbo = np.sum((self.vv - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
