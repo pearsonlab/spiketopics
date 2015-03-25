@@ -534,7 +534,7 @@ class GPModel:
             H_upsilon = self.H_gamma(self.aa, ebb)
             G_prod = np.prod((self.aa / ebb)[:, uu].T ** self.Xframe.values, axis=1)
 
-            elbo = np.sum((self.vv - 1) * bar_log_upsilon)
+            elbo = np.sum((self.aa - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
             elbo += -np.sum(F_prod()[tt, uu] * bar_theta * G_prod)
@@ -570,7 +570,7 @@ class GPModel:
             H_upsilon = self.H_gamma(self.aa, ebb)
             sum_log_G = np.sum((np.log(self.aa) - bb) * X_sufficient)
 
-            elbo = np.sum((self.vv - 1) * bar_log_upsilon)
+            elbo = np.sum((self.aa - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
             elbo += -np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
