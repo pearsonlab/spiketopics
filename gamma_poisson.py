@@ -657,7 +657,7 @@ class GPModel:
 
         return self
 
-    def iterate(self, verbosity=0, keeplog=False):
+    def iterate(self, verbosity=0, keeplog=False, excluded_iters=[]):
         """
         Do one iteration of variational inference, updating each chain in turn.
         verbosity is a verbosity level:
@@ -666,38 +666,42 @@ class GPModel:
             2: print L value each update during each iteration
         keeplog = True does internal logging for debugging; values are kept in
             the dict self.log
+        excluded_iters is a list of variables to exclude from updating
         """
         doprint = verbosity > 1 
         calc_L = doprint or keeplog
         
         # M step
         for k in xrange(self.K):
-            self.update_lambda(k)
-            if calc_L:
-                Lval = self.L(keeplog=keeplog) 
-            if doprint:
-                print "chain {}: updated lambda: L = {}".format(k, Lval)
+            if not 'lambda' in excluded_iters:
+                self.update_lambda(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print "chain {}: updated lambda: L = {}".format(k, Lval)
 
-            self.update_A(k)
-            if calc_L:
-                Lval = self.L(keeplog=keeplog) 
-            if doprint:
-                print "chain {}: updated A: L = {}".format(k, Lval)
+            if not 'A' in excluded_iters:
+                self.update_A(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print "chain {}: updated A: L = {}".format(k, Lval)
 
-            self.update_pi(k)
-            if calc_L:
-                Lval = self.L(keeplog=keeplog) 
-            if doprint:
-                print "chain {}: updated pi: L = {}".format(k, Lval)
+            if not 'pi' in excluded_iters:
+                self.update_pi(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print "chain {}: updated pi: L = {}".format(k, Lval)
 
-        if self.overdispersion:
+        if self.overdispersion and not 'theta' in excluded_iters:
             self.update_theta()
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:
                 print "chain  : updated theta: L = {}".format(Lval)
 
-        if self.regressors:
+        if self.regressors and not 'upsilon' in excluded_iters:
             self.update_upsilon(self.updater)
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
@@ -706,16 +710,20 @@ class GPModel:
 
         # E step        
         for k in xrange(self.K):
-            self.update_z(k)
-            if calc_L:
-                Lval = self.L(keeplog=keeplog) 
-            if doprint:
-                print "chain {}: updated z: L = {}".format(k, Lval)
+            if not 'z' in excluded_iters:
+                self.update_z(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print "chain {}: updated z: L = {}".format(k, Lval)
 
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
-        maxiter=np.inf):
+        maxiter=np.inf, delayed_iters=[]):
         """
         Perform variational inference by minimizing free energy.
+        delayed_iters is a dict of variable names that should not be
+        iterated over in the early going; once the algorithm has converged,
+        these variables are added in and inference run a second time
         """
         self.Lvalues.append(self.L())
         delta = 1
@@ -733,6 +741,12 @@ class GPModel:
                 np.abs(self.Lvalues[-1]))
             assert((delta > 0) | np.isclose(delta, 0))
             idx += 1 
+
+        # now redo inference, this time including all variables that 
+        # were delayed
+        if len(delayed_iters) > 0:
+            self.do_inference(verbosity=verbosity, tol=tol, keeplog=keeplog,
+                maxiter=maxiter, delayed_iters=[])
 
 
 
