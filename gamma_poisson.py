@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.special import digamma, gammaln, betaln
 from scipy.optimize import minimize
 import numexpr as ne
+from pdb import set_trace
 
 def fb_infer(A, pi, psi):
     """
@@ -112,10 +113,7 @@ class GPModel:
         self.overdispersion = overdispersion
         self.regressors = self.J > 0
 
-        if regression_updater == 'exact':
-            self.updater = self._get_logb_optimize
-        elif regression_updater == 'approximate':
-            self.updater = self._get_logb_approximate
+        self.updater = regression_updater
 
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
@@ -502,7 +500,7 @@ class GPModel:
 
         return self
 
-    def update_upsilon(self, b_updater):
+    def update_upsilon(self):
         """
         Update regression coefficient for a particular regressor i.
         """
@@ -512,14 +510,35 @@ class GPModel:
 
         self.aa = NX.groupby(uu).sum().values.T + self.vv
 
-        self.bb = np.exp(b_updater())
+        self.bb = np.exp(self._get_logb())
 
         return self
 
-    def _get_logb_optimize(self):
+    def _get_logb(self):
         """
-        Solve for log b via black-box optimization. 
-        Optimize over log b, the natural parameter.
+        Solve for log(b) via black-box optimization. Use log(b) since this
+        is the natural parameter.
+        Updater is the name of a factory function that returns a function
+        to be minimized based on current parameter values.
+        """
+        if self.updater == 'exact':
+            minfun = self._make_exact_minfun()
+        elif self.updater == 'approximate':
+            minfun = self._make_approximate_minfun()
+
+        # initialize self.bb = self.aa, or (aa/bb) ** x will be enormous
+        starts = np.log(self.aa)
+        res = minimize(minfun, starts, jac=True)
+        if not res.success:
+            print "Warning, optimization terminated without success."
+            return np.nan * np.ones((self.J, self.U))
+        else:
+            return res.x.reshape(self.J, self.U)
+
+    def _make_exact_minfun(self):
+        """
+        Factory function that returns a function to be minimized.
+        This version uses an exact minimization objective.
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
@@ -528,6 +547,12 @@ class GPModel:
         else:
             bar_theta = 1
         F_prod = self.F_prod()[tt, uu]
+        X_sufficient = self.Xframe.groupby(self.Nframe['unit']).sum().values.T
+
+        # this constant factor shows up in the minimization objective
+        # calculate it here and divide it out
+        # makes numerical behavior much better
+        rescaling = np.sum(X_sufficient)
 
         def minfun(logb): 
             """
@@ -539,7 +564,12 @@ class GPModel:
             bar_log_upsilon = digamma(self.aa) - logbb
             bar_upsilon = self.aa / bb
             H_upsilon = self.H_gamma(self.aa, bb)
-            G_prod = np.prod((self.aa / bb)[:, uu].T ** self.Xframe.values, axis=1)
+            sum_log_G = np.sum((np.log(self.aa) - logbb)[:, uu].T * 
+                self.Xframe.values, axis=1)
+
+            # take out a huge factor in sum_log_G
+            sum_log_G -= rescaling
+            G_prod = np.exp(sum_log_G)
 
             elbo = np.sum((self.aa - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
@@ -547,19 +577,19 @@ class GPModel:
             FthG = F_prod * bar_theta * G_prod
             elbo += -np.sum(FthG)
 
-            grad = -self.aa + self.ww * (self.aa / bb) 
-            grad += -(self.aa / bb) * (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values.T
+            grad = -self.aa + self.ww * bar_upsilon
+            grad /= np.exp(rescaling)
+            grad += (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values.T
 
-            return -elbo, grad.ravel()
+            # remember, minimization objective is -elbo; same for grad
+            return -elbo, -grad.ravel()
 
-        # initialize self.bb = self.aa, or (aa/bb) ** x will be enormous
-        res = minimize(minfun, np.log(self.aa), jac=True)
-        return res.x.reshape(self.J, self.U)
+        return minfun
 
-    def _get_logb_approximate(self):
+    def _make_approximate_minfun(self):
         """
-        Solve for b via black-box optimization.
-        Optimize over log b, the natural parameter.
+        Factory function that returns a function to be minimized.
+        This version uses an approximate minimization objective.
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
@@ -571,31 +601,40 @@ class GPModel:
         sum_log_bar_theta = np.sum(np.log(bar_theta))
         X_sufficient = self.Xframe.groupby(self.Nframe['unit']).sum().values.T
 
+        # this constant factor shows up in the minimization objective
+        # calculate it here and divide it out
+        # makes numerical behavior much better
+        rescaling = np.sum(X_sufficient)
+
         def minfun(logb): 
             """
             This is the portion of the evidence lower bound that depends on 
             the b parameter.
             """
-            logbb = logb.reshape(self.J, self.U)
+            logbb = logb.reshape(self.J, self.U) 
             bb = np.exp(logbb)
             bar_log_upsilon = digamma(self.aa) - logbb
             bar_upsilon = self.aa / bb
             H_upsilon = self.H_gamma(self.aa, bb)
             sum_log_G = np.sum((np.log(self.aa) - logbb) * X_sufficient)
 
+            # take out a huge factor in sum_log_G
+            sum_log_G -= rescaling
+
             elbo = np.sum((self.aa - 1) * bar_log_upsilon)
             elbo += -np.sum(self.ww * bar_upsilon)
             elbo += np.sum(H_upsilon)
             elbo += -np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
 
-            grad = -self.aa + self.ww * (self.aa / bb) 
-            grad += -X_sufficient * np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
+            grad = -self.aa + self.ww * bar_upsilon
+            grad /= np.exp(rescaling)
+            grad += X_sufficient * np.exp(sum_log_F_prod + sum_log_bar_theta + sum_log_G)
 
-            return -elbo, grad.ravel()
+            # remember, minimization objective is -elbo; same for grad
+            return -elbo, -grad.ravel()
 
-        # initialize self.bb = self.aa, or (aa/bb) ** x will be enormous
-        res = minimize(minfun, np.log(self.aa), jac=True)
-        return res.x.reshape(self.J, self.U)
+        return minfun
+
 
     def update_theta(self):
         """
@@ -702,7 +741,7 @@ class GPModel:
                 print "chain  : updated theta: L = {}".format(Lval)
 
         if self.regressors and not 'upsilon' in excluded_iters:
-            self.update_upsilon(self.updater)
+            self.update_upsilon()
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:

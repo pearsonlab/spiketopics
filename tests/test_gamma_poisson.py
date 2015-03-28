@@ -191,7 +191,7 @@ class Test_Gamma_Poisson:
 
     def test_can_use_exact_optimization(self):
         gpm = gp.GPModel(self.N, self.K, self.dt, regression_updater='exact')
-        assert_equals(gpm.updater, gpm._get_logb_optimize)
+        assert_equals(gpm.updater, 'exact')
 
     def test_can_set_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
@@ -415,7 +415,6 @@ class Test_Gamma_Poisson:
         percent_change = change / np.abs(Lvals[:-1])
         decreases = percent_change[percent_change < 0]
         assert_true(np.all(np.abs(decreases) <= 0.01))
-        assert_true(np.all(~np.isnan(Lvals)))
 
     def test_HMM_entropy_positive(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
@@ -435,3 +434,14 @@ class Test_Gamma_Poisson:
         gpm.set_priors().set_inits()
         gpm.do_inference(tol=1)
         assert_equals(len(gpm.Lvalues), 1)
+
+    def test_can_optimize_b(self):
+        gpm = gp.GPModel(self.N, self.K, self.dt, regression_updater='approximate')
+        gpm.set_priors().set_inits()
+        gpm.iterate()
+        assert_true(~np.isnan(gpm.L()))
+        gpm = gp.GPModel(self.N, self.K, self.dt, regression_updater='exact')
+        gpm.set_priors().set_inits()
+        gpm.iterate()
+        assert_true(~np.isnan(gpm.L()))
+
