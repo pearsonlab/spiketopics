@@ -415,6 +415,7 @@ class Test_Gamma_Poisson:
         percent_change = change / np.abs(Lvals[:-1])
         decreases = percent_change[percent_change < 0]
         assert_true(np.all(np.abs(decreases) <= 0.01))
+        assert_true(np.all(~np.isnan(Lvals)))
 
     def test_HMM_entropy_positive(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
