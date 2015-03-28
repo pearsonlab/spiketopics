@@ -303,9 +303,22 @@ plus corrections to the observation probability piece of $\mathbb{E}_q[\log p(N,
 This leads straightforwardly to updates for the posterior parameters of $q(\upsilon)$:
 \begin{align}
     a_{iu} &\leftarrow \sum_t N_{tu} x_{tiu} + v_{iu} \\
-    b_{iu} &\leftarrow b^*_{iu}
 \end{align}
-where $b^*_{iu}$ is the solution to the transcendental equation
+For $b_{iu}$, we can more easily calculate the gradient with respect to the parameter $\log b$:
+\begin{align}
+    \nabla_{\log b_{iu}} \mathcal{L} = &-(v_{iu} - 1) + 
+    w_{iu} \frac{a_{iu}}{b_{iu}} - 1 - \sum_t N_{tu} x_{tiu} \\
+    & + \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
+    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
+    \frac{\alpha_{ku}}{\beta_{ku}}\right)
+    \prod_j \left(\frac{a_{ju}}{b_{ju}}\right)^{x_{t(m)ju}} \\
+    &= -a_{iu} + w_{iu} \frac{a_{iu}}{b_{iu}} 
+    + \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
+    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
+    \frac{\alpha_{ku}}{\beta_{ku}}\right)
+    \prod_j \left(\frac{a_{ju}}{b_{ju}}\right)^{x_{t(m)ju}} 
+\end{align}
+Thus, the updated value of $b_{iu}$, $b^*_{iu}$, is the solution to the transcendental equation
 \begin{equation}
     b_{iu} = w_{iu} + \left( \frac{b_{iu}}{a_{iu}}\right) \sum_{m} x_{t(m)iu}\left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right]  
 \end{equation}
