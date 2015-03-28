@@ -323,6 +323,17 @@ Thus, the updated value of $b_{iu}$, $b^*_{iu}$, is the solution to the transcen
     b_{iu} = w_{iu} + \left( \frac{b_{iu}}{a_{iu}}\right) \sum_{m} x_{t(m)iu}\left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right]  
 \end{equation}
 
+In addition, the additional regressor terms necessitate changes to the update rules given above:
+\begin{align}
+    \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku} \xi_{tk} G_{tu} \\
+    \zeta_{mu} &\leftarrow F_{t(m)u} G_{t(m)u} + r_u
+\end{align}
+where 
+\begin{align}
+    G_{tu} &\equiv \prod_i G_{tiu} \\
+    G_{tiu} &\equiv \left(\frac{a_{iu}}{b_{iu}} \right)^{x_{tiu}}
+\end{align}
+
 Possible strategies here:
 \begin{itemize}
     \item Update $a$ exactly. Use a Newton's Method approach to solve for $b$.
