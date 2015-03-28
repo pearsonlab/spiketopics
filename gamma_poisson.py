@@ -277,17 +277,21 @@ class GPModel:
         else:
             return self._Ftu
 
-    def G_prod(self, k=None, update=False):
+    def G_prod(self, k=None, update=False, long=True):
         """
         Return the value of the G product.
         If k is specified, return G_{tku} (product over all but k),
         else return G_{tu} (product over all k). If update=True,
         recalculate G before returning the result and cache the new 
         matrix.
+        
         NOTE: Because the regressors may vary by *presentation* and not 
         simply by movie time, the regressors are in a "melted" dataframe
         with each (unit, presentation) pair in a row by itself. As a 
         result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
+        
+        If k is None and long=False, a (T, U) aggregate array is 
+        returned instead. This containst the product over J.
         """
         if update:
             uu = self.Nframe['unit']
@@ -305,6 +309,9 @@ class GPModel:
                 vv = ne.evaluate("zz ** xx")
                 self._Gpre = vv
 
+            # in some cases, we want to return the (T, U) array
+            self._Gsq = self._aggregate_array_by(self._Gpre, by=(tt, uu))
+
             # work in log space to avoid over/underflow
             Gpre = self._Gpre
             dd = ne.evaluate("sum(log(Gpre), axis=1)")
@@ -315,7 +322,24 @@ class GPModel:
         if k is not None:
             return self._Gtku[:, k]
         else:
-            return self._Gtu
+            if long:
+                return self._Gtu
+            else:
+                return self._Gsq
+
+    @staticmethod
+    def _aggregate_array_by(arr, by=None):
+        """
+        Given an array in one-row-per-observation (i.e., long) form, 
+        group by the by argument using Pandas and return an array.
+        """
+        df = pd.DataFrame(arr)
+        grp = df.groupby(by)
+        agg = grp.sum().prod(axis=1)
+        if len(by) > 1:
+            agg = agg.unstack(level=-1)
+
+        return agg.values
 
     def calc_log_A(self):
         """
@@ -494,8 +518,12 @@ class GPModel:
         Nz = self.xi[:, k].dot(self.N)
         Fz = self.F_prod(k) * self.xi[:, k, np.newaxis]
 
+        # G is returned as one row per observation
+        # want it to be time x unit
+        G_tu = self.G_prod(long=False)
+
         self.alpha[k] = Nz + self.cc[k]
-        self.beta[k] = np.sum(self.Nobs * Fz, axis=0) + self.dd[k]
+        self.beta[k] = np.sum(self.Nobs * Fz * G_tu, axis=0) + self.dd[k]
         self.F_prod(k, update=True)
 
         return self
@@ -512,6 +540,7 @@ class GPModel:
 
         starts = np.log(self.bb) 
         self.bb = np.exp(self._get_logb(starts))
+        self.G_prod(update=True)
 
         return self
 
@@ -643,7 +672,7 @@ class GPModel:
         uu = N['unit']
         tt = N['time']
         self.omega = N['count'] + self.ss[uu]
-        self.zeta = self.F_prod()[tt, uu] + self.rr[uu]
+        self.zeta = self.F_prod()[tt, uu] * self.G_prod() + self.rr[uu]
 
         return self
 
