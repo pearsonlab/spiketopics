@@ -510,11 +510,12 @@ class GPModel:
 
         self.aa = NX.groupby(uu).sum().values.T + self.vv
 
-        self.bb = np.exp(self._get_logb())
+        starts = np.log(self.bb) 
+        self.bb = np.exp(self._get_logb(starts))
 
         return self
 
-    def _get_logb(self):
+    def _get_logb(self, starts):
         """
         Solve for log(b) via black-box optimization. Use log(b) since this
         is the natural parameter.
@@ -526,8 +527,6 @@ class GPModel:
         elif self.updater == 'approximate':
             minfun = self._make_approximate_minfun()
 
-        # initialize self.bb = self.aa, or (aa/bb) ** x will be enormous
-        starts = np.log(self.aa)
         res = minimize(minfun, starts, jac=True)
         if not res.success:
             print "Warning, optimization terminated without success."
@@ -741,7 +740,20 @@ class GPModel:
                 print "chain  : updated theta: L = {}".format(Lval)
 
         if self.regressors and not 'upsilon' in excluded_iters:
-            self.update_upsilon()
+
+            # if updates are approximate, we may not increase the objective
+            # if so, run again
+            if self.updater == 'approximate':
+                oldL = self.L()
+                self.update_upsilon()
+                delta = ((self.L() - oldL) / np.abs(oldL))
+                if not ((delta > 0) | np.isclose(delta, 0)):
+                    print "Upsilon update did not increase objective. Trying exact mode."
+                    self.updater = 'exact'
+                    self.update_upsilon()
+            else:
+                self.update_upsilon()
+
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:
@@ -784,6 +796,7 @@ class GPModel:
         # now redo inference, this time including all variables that 
         # were delayed
         if len(delayed_iters) > 0:
+            print "Initial optimization done, adding {}".format(', '.join(delayed_iters))
             self.do_inference(verbosity=verbosity, tol=tol, keeplog=keeplog,
                 maxiter=maxiter, delayed_iters=[])
 
