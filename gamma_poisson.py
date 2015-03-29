@@ -393,8 +393,11 @@ class GPModel:
         nn = N['count']
         tt = N['time']
         uu = N['unit'] 
-        N['lam0'] = -Fk[tt, uu] * bar_theta * self.G_prod()
-        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta * self.G_prod())
+        G = self.G_prod()
+        Gbar = np.mean(G)  # use as normalizer
+
+        N['lam0'] = -Fk[tt, uu] * bar_theta * G / Gbar
+        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta * G) / Gbar
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -448,7 +451,6 @@ class GPModel:
         tt = self.Nframe['time']
         nn = self.Nframe['count']
         if self.regressors:
-            # get view of regressors array, leave out time = col 0
             xx = self.Xframe.values
 
         L = [] 
@@ -515,15 +517,24 @@ class GPModel:
         Update parameters corresponding to emission parameters for 
         each Markov chain.
         """
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
+        if self.overdispersion:
+            bar_theta = self.omega / self.zeta
+        else:
+            bar_theta = 1
         Nz = self.xi[:, k].dot(self.N)
         Fz = self.F_prod(k) * self.xi[:, k, np.newaxis]
 
         # G is returned as one row per observation
         # want it to be time x unit
-        G_tu = self.G_prod(long=False)
+        G_tu = self.G_prod()
+
+        FthG = pd.DataFrame(Fz[tt, uu] * bar_theta * G_tu).groupby(uu).sum().values.squeeze()
 
         self.alpha[k] = Nz + self.cc[k]
-        self.beta[k] = np.sum(self.Nobs * Fz * G_tu, axis=0) + self.dd[k]
+        self.beta[k] = FthG + self.dd[k]
+
         self.F_prod(k, update=True)
 
         return self
@@ -538,6 +549,7 @@ class GPModel:
 
         self.aa = NX.groupby(uu).sum().values.T + self.vv
 
+        self.bb_old = self.bb.copy()
         starts = np.log(self.bb) 
         self.bb = np.exp(self._get_logb(starts))
         self.G_prod(update=True)
@@ -779,6 +791,8 @@ class GPModel:
                 if not ((delta > 0) | np.isclose(delta, 0)):
                     print "Upsilon update did not increase objective. Trying exact mode."
                     self.updater = 'exact'
+                    self.bb = self.bb_old
+                    self.G_prod(update=True)
                     self.update_upsilon()
             else:
                 self.update_upsilon()
