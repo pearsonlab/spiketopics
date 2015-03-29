@@ -326,7 +326,14 @@ Thus, the updated value of $b_{iu}$, $b^*_{iu}$, is the solution to the transcen
 In addition, the additional regressor terms necessitate changes to the update rules given above:
 \begin{align}
     \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku} \xi_{tk} G_{tu} \\
-    \zeta_{mu} &\leftarrow F_{t(m)u} G_{t(m)u} + r_u
+    \zeta_{mu} &\leftarrow F_{t(m)u} G_{t(m)u} + r_u \\
+    \eta_{tk} &\leftarrow 
+    \begin{pmatrix}
+        -\sum_{u, m: \, t(m) = t} \frac{\omega_{mu}}{\zeta_{mu}} F_{t(m)ku} 
+        G_{t(m)u}\\
+        \sum_u N_{tu} \overline{\log \lambda_{ku}} -
+        \sum_{u, m: \, t(m) = t} \frac{\omega_{mu}} {\zeta_{mu}}\frac{\alpha_{ku}}{\beta_{ku}} F_{t(m)ku}  G_{t(m)u}
+    \end{pmatrix} 
 \end{align}
 where 
 \begin{align}
