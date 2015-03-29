@@ -393,8 +393,8 @@ class GPModel:
         nn = N['count']
         tt = N['time']
         uu = N['unit'] 
-        N['lam0'] = -Fk[tt, uu] * bar_theta
-        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta)
+        N['lam0'] = -Fk[tt, uu] * bar_theta * self.G_prod()
+        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta * self.G_prod())
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
