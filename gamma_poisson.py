@@ -741,15 +741,7 @@ class GPModel:
                 if doprint:
                     print "chain {}: updated pi: L = {}".format(k, Lval)
 
-        if self.overdispersion and not 'theta' in excluded_iters:
-            self.update_theta()
-            if calc_L:
-                Lval = self.L(keeplog=keeplog) 
-            if doprint:
-                print "chain  : updated theta: L = {}".format(Lval)
-
         if self.regressors and not 'upsilon' in excluded_iters:
-
             # if updates are approximate, we may not increase the objective
             # if so, run again
             if self.updater == 'approximate':
@@ -770,6 +762,13 @@ class GPModel:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:
                 print "chain  : updated upsilon: L = {}".format(Lval)
+
+        if self.overdispersion and not 'theta' in excluded_iters:
+            self.update_theta()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog) 
+            if doprint:
+                print "chain  : updated theta: L = {}".format(Lval)
 
         # E step        
         for k in xrange(self.K):
