@@ -612,8 +612,6 @@ class GPModel:
 
         return minfun
 
-
-
     def _make_approximate_minfun(self):
         """
         Factory function that returns a function to be minimized.
@@ -673,15 +671,10 @@ class GPModel:
         logpi = self.calc_log_pi()[..., k]
 
         # do forward-backward inference and assign results
-        if k == 0 and self.include_baseline is True:
-            logZ = self.logZ[k]
-            Xi = self.Xi[:, k]
-            post = np.c_[1 - self.xi[:, k], self.xi[:, k]]
-        else:
-            post, logZ, Xi = fb_infer(np.exp(logA), np.exp(logpi), np.exp(eta))
-            self.xi[:, k] = post[:, 1]
-            self.logZ[k] = logZ
-            self.Xi[:, k] = Xi
+        post, logZ, Xi = fb_infer(np.exp(logA), np.exp(logpi), np.exp(eta))
+        self.xi[:, k] = post[:, 1]
+        self.logZ[k] = logZ
+        self.Xi[:, k] = Xi
 
         self.F_prod(k, update=True)
         emission_piece = np.sum(post * eta)
@@ -781,11 +774,12 @@ class GPModel:
         # E step        
         for k in xrange(self.K):
             if not 'z' in excluded_iters:
-                self.update_z(k)
-                if calc_L:
-                    Lval = self.L(keeplog=keeplog) 
-                if doprint:
-                    print "chain {}: updated z: L = {}".format(k, Lval)
+                if not (k == 0 and self.include_baseline):
+                    self.update_z(k)
+                    if calc_L:
+                        Lval = self.L(keeplog=keeplog) 
+                    if doprint:
+                        print "chain {}: updated z: L = {}".format(k, Lval)
 
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
         maxiter=np.inf, delayed_iters=[]):
