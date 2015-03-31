@@ -440,6 +440,7 @@ and use
 \end{align}
 
 \section{Sparsity over features}
+\subsection{Beta multiplier}
 In the above, we have assumed $K$ independent features. What if the number of true features $\tilde{K} < K$? In this case, we would like $z_{tk} = 0$ for all $k > \tilde{K}$. However, there is no intrinsic penalty to turning on features, so that, if we assume too many features, we might replicate the same underlying feature more than once, dividing its firing rate between the two. (In fact, this is empirically what seems to happen.) And while we can choose priors that make transitions from the 0 to the 1 state unlikely and the $1 \rightarrow 1$ very unlikely, this does not preclude dynamics from emerging.
 
 Thus, we would like to add a second indicator variable for the \emph{entire chain}, so that the expression for the firing rate of a unit $u$ at time $t$ is given by 
@@ -461,10 +462,43 @@ in which case
 with
 \begin{align}
     \overline{h_{k1}} &= \psi(\eta_{k1}) - \psi(\eta_{k1} + \eta_{k2}) \\
-    \overline{h_{k2}} &= \psi(\eta_{k2}) - \psi(\eta_{k1} + \eta_{k2})
+    \overline{h_{k2}} &= \psi(\eta_{k2}) - \psi(\eta_{k1} + \eta_{k2}) \\
+    \overline{h_k} &= \frac{\eta_{k1}}{\eta_{k1} + \eta_{k2}}
 \end{align}
 and $H(h_k)$ the differential entropy of the Beta distribution, just as for $\pi_k$ above.
 
- 
+Likewise the free energy piece arising from the observation model becomes
+\begin{multline}
+    \mathbb{E}_q\left[ \log p(N, z|\lambda, \pi, A, h) / q(z) \right] = \\
+    \sum_{tku} N_{tu} \overline{h_k} \xi_{tk} \overline{\log \lambda_{ku}} - 
+    \sum_{tu} \prod_k \left( 1 - \overline{h_k} \xi_{tk} + \overline{h_k}\xi_{tk} \overline{\lambda_{ku}}\right)
+\end{multline}
+This naturally suggests the following changes in the inference algorithm:
+\begin{align}
+    \xi_{tk} \rightarrow \overline{h_k}\xi_{tk} \quad
+    &\text{everywhere in $\mathcal{L}$ and $F_{tu}$}\\
+    \overline{\log \lambda_{ku}} \rightarrow 
+    \overline{h_k}\overline{\log \lambda_{ku}} \quad 
+    &\text{when calculating log evidence for forward-backward} 
+\end{align}
+
+\subsection{Gamma ARD prior}
+Alternately, we could posit an overall scaling for the firing rate due to each category, such that 
+\begin{equation}
+    \lambda_{eff} = \prod_{k} \mu_k\lambda_{ku}^{z_{tk}}
+\end{equation}
+with a ``sparse'' prior on $\mu_k$:
+\begin{equation}
+    \mu_k \sim \mathrm{Gamma}(1, \varrho_k)
+\end{equation}
+with $\varrho_k$ ``large''. That is, this prior favors $\mu_k \approx 0$, in which case factor $k$ is unused by the model (even though $z_k$ is nontrivial). Updates to the posterior on $\mu$ are then very straightforward:
+\begin{align}
+    q(\mu_k) &\sim \mathrm{Gamma}(g_k, h_k) \\
+    g_k &\leftarrow \sum_{tu} N_{tu} \overline{\log \lambda_{ku}} + 1\\
+    h_k &\leftarrow D_k \sum_{tu} F_{tu} + \varrho_k \\
+    D_k &\equiv \prod_{j \neq k} \mu_j \\
+    D &\equiv \prod_k \mu_k
+\end{align}
+Conveniently, this can be extended to include overdispersion and regressors undert the substitution $F \rightarrow F D$.
 
 \end{document}
