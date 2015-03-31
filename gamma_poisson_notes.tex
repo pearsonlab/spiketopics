@@ -439,4 +439,32 @@ and use
     \frac{1}{2\sigma^2_{iu}} - \frac{1}{2\varsigma^2_{iu}} - \frac{1}{2} \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x^2_{t(m)iu}
 \end{align}
 
+\section{Sparsity over features}
+In the above, we have assumed $K$ independent features. What if the number of true features $\tilde{K} < K$? In this case, we would like $z_{tk} = 0$ for all $k > \tilde{K}$. However, there is no intrinsic penalty to turning on features, so that, if we assume too many features, we might replicate the same underlying feature more than once, dividing its firing rate between the two. (In fact, this is empirically what seems to happen.) And while we can choose priors that make transitions from the 0 to the 1 state unlikely and the $1 \rightarrow 1$ very unlikely, this does not preclude dynamics from emerging.
+
+Thus, we would like to add a second indicator variable for the \emph{entire chain}, so that the expression for the firing rate of a unit $u$ at time $t$ is given by 
+\begin{equation}
+    \lambda_{eff} = \prod_{k} \lambda_{ku}^{h_k z_{tk}}
+\end{equation}
+(Here, we have neglected terms for regressors and overdispersion, since they multiply trivially, in the usual way.)
+
+Given this ansatz, we can assume Beta priors and variational posteriors on $h_k$:
+\begin{align}
+    p(h_k) &= \mathrm{Beta}(g_{k1}, g_{k2}) \\
+    q(h_k) &= \mathrm{Beta}(\eta_{k1}, \eta_{k2})
+\end{align}
+in which case 
+\begin{equation}
+    \mathbb{E}_{q(h)}\left[\log \frac{p(h)}{q(h)} \right] = \sum_k 
+    \left[ (g_{k1} - 1) \overline{\log h_{k1}} + (g_{k2} - 1) \overline{\log h_{k2}} + \log B(g_{k1}, g_{k2}) + H(h_k) \right] 
+\end{equation}
+with
+\begin{align}
+    \overline{h_{k1}} &= \psi(\eta_{k1}) - \psi(\eta_{k1} + \eta_{k2}) \\
+    \overline{h_{k2}} &= \psi(\eta_{k2}) - \psi(\eta_{k1} + \eta_{k2})
+\end{align}
+and $H(h_k)$ the differential entropy of the Beta distribution, just as for $\pi_k$ above.
+
+ 
+
 \end{document}
