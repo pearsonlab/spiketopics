@@ -496,8 +496,8 @@ with $\varrho_k$ ``large''. That is, this prior favors $\mu_k \approx 0$, in whi
     q(\mu_k) &\sim \mathrm{Gamma}(g_k, h_k) \\
     g_k &\leftarrow \sum_{tu} N_{tu} \overline{\log \lambda_{ku}} + 1\\
     h_k &\leftarrow D_k \sum_{tu} F_{tu} + \varrho_k \\
-    D_k &\equiv \prod_{j \neq k} \mu_j \\
-    D &\equiv \prod_k \mu_k
+    D_k &\equiv \prod_{j \neq k} \overline{\mu_j} \\
+    D &\equiv \prod_k \overline{\mu_k}
 \end{align}
 Conveniently, this can be extended to include overdispersion and regressors undert the substitution $F \rightarrow F D$.
 
