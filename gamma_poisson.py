@@ -339,7 +339,7 @@ class GPModel:
 
         D = np.prod(mubar)
 
-        if k:
+        if k is not None:
             return D / mubar[k]
         else:
             return D
@@ -552,8 +552,6 @@ class GPModel:
         Nz = self.xi[:, k].dot(self.N)
         Fz = self.F_prod(k) * self.xi[:, k, np.newaxis]
 
-        # G is returned as one row per observation
-        # want it to be time x unit
         G_tu = self.G_prod()
         D = self.D_prod()
 
@@ -570,8 +568,18 @@ class GPModel:
         """
         Update overall firing rate scaling for factor k.
         """
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
+        if self.overdispersion:
+            bar_theta = self.omega / self.zeta
+        else:
+            bar_theta = 1
+        F_prod = self.F_prod()[tt, uu]
+        G_tu = self.G_prod()
+        FthG = np.sum(F_prod * bar_theta * G_tu)
+
         self.mu_shape[k] = np.sum(self.N) + self.mu_prior_shape[k]
-        self.mu_rate[k] = np.sum(self.F_prod()) * self.D_prod(k) + self.mu_prior_rate[k]
+        self.mu_rate[k] = FthG * self.D_prod(k) + self.mu_prior_rate[k]
 
         return self
 
