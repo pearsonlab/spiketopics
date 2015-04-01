@@ -117,10 +117,12 @@ class GPModel:
 
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
-            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
+            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,), 'mu_prior_shape': (K,),
+            'mu_prior_rate': (K,)})
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
-            'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
+            'delta1': (K,), 'delta2': (K,), 'xi': (T, K),
+            'mu_shape': (K,), 'mu_rate': (K,), 
             'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
 
         if self.overdispersion:
@@ -327,6 +329,21 @@ class GPModel:
             else:
                 return self._Gsq
 
+    def D_prod(self, k=None):
+        """
+        Return the value of the D product.
+        If k is specified, return D_k (product over all but k),
+        else return D (product over all k). 
+        """
+        mubar = self.mu_shape / self.mu_rate
+
+        D = np.prod(mubar)
+
+        if k:
+            return D / mubar[k]
+        else:
+            return D
+
     @staticmethod
     def _aggregate_array_by(arr, by=None):
         """
@@ -395,9 +412,10 @@ class GPModel:
         uu = N['unit'] 
         G = self.G_prod()
         Gbar = np.mean(G)  # use as normalizer
+        D = self.D_prod()
 
-        N['lam0'] = -Fk[tt, uu] * bar_theta * G / Gbar
-        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta * G) / Gbar
+        N['lam0'] = -Fk[tt, uu] * bar_theta * (G / Gbar) * D
+        N['lam1'] = (nn * bar_log_lambda[k, uu] - Fk[tt, uu] * bar_lambda[k, uu] * bar_theta * G * D) / Gbar
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -433,6 +451,7 @@ class GPModel:
         """
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+        bar_log_mu = digamma(self.mu_shape) - np.log(self.mu_rate)
         if self.overdispersion:
             bar_theta = self.omega / self.zeta
             bar_log_theta = digamma(self.omega) - np.log(self.zeta)
@@ -472,6 +491,12 @@ class GPModel:
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
 
+        ############### E[log (p(mu) / q(mu))] #############
+        L.append(np.sum((self.mu_prior_shape - 1) * bar_log_mu))
+        L.append(-np.sum(self.mu_prior_rate * (self.mu_shape / self.mu_rate)))
+        H_mu = self.H_gamma(self.mu_shape, self.mu_rate)
+        L.append(np.sum(H_mu))
+
         ############### E[log (p(theta) / q(theta))] #############
         if self.overdispersion:
             L.append((self.ss[uu] - 1).dot(bar_log_theta))
@@ -488,12 +513,13 @@ class GPModel:
 
         ############### E[log (p(N, z|A, pi, lambda) / q(z))] #############
         Npiece = np.sum(self.N[:, np.newaxis, :] * self.xi[..., np.newaxis] * bar_log_lambda[np.newaxis, ...]) 
+        Npiece += np.sum(self.N) * np.sum(bar_log_mu)
         if self.overdispersion:
             Npiece += nn.dot(bar_log_theta)
         if self.regressors:
             Npiece += np.sum(nn[:, np.newaxis] * xx * bar_log_upsilon[:, uu].T)
         L.append(Npiece)
-        L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta * self.G_prod()))
+        L.append(-np.sum(self.F_prod()[tt, uu] * bar_theta * self.G_prod() * self.D_prod()))
 
         logpi = self.calc_log_pi()
         L.append(np.sum((1 - self.xi[0]) * logpi[0] + self.xi[0] * logpi[1]))
@@ -529,13 +555,23 @@ class GPModel:
         # G is returned as one row per observation
         # want it to be time x unit
         G_tu = self.G_prod()
+        D = self.D_prod()
 
-        FthG = pd.DataFrame(Fz[tt, uu] * bar_theta * G_tu).groupby(uu).sum().values.squeeze()
+        FthG = pd.DataFrame(Fz[tt, uu] * bar_theta * G_tu * D).groupby(uu).sum().values.squeeze()
 
         self.alpha[k] = Nz + self.cc[k]
         self.beta[k] = FthG + self.dd[k]
 
         self.F_prod(k, update=True)
+
+        return self
+
+    def update_mu(self, k):
+        """
+        Update overall firing rate scaling for factor k.
+        """
+        self.mu_shape[k] = np.sum(self.N) + self.mu_prior_shape[k]
+        self.mu_rate[k] = np.sum(self.F_prod()) * self.D_prod(k) + self.mu_prior_rate[k]
 
         return self
 
@@ -589,6 +625,7 @@ class GPModel:
         else:
             bar_theta = 1
         F_prod = self.F_prod()[tt, uu]
+        D_prod = self.D_prod()
 
         def minfun(epsilon): 
             """
@@ -601,7 +638,7 @@ class GPModel:
 
             elbo = np.sum(self.aa * eps)
             elbo += -np.sum(self.ww * np.exp(eps))
-            FthG = F_prod * bar_theta * G_prod
+            FthG = F_prod * bar_theta * G_prod * D_prod
             elbo += -np.sum(FthG)
 
             grad = self.aa - self.ww * np.exp(eps)
@@ -623,10 +660,11 @@ class GPModel:
             bar_theta = self.omega / self.zeta
         else:
             bar_theta = 1
+        log_D = np.log(self.D_prod())
         sum_log_F_prod = np.sum(np.log(self.F_prod()[tt, uu]))
         sum_log_bar_theta = np.sum(np.log(bar_theta))
         X_sufficient = self.Xframe.groupby(self.Nframe['unit']).sum().values.T
-        log_Fth = sum_log_F_prod + sum_log_bar_theta
+        log_Fth = sum_log_F_prod + sum_log_bar_theta + log_D
 
         def minfun(epsilon): 
             """
@@ -657,7 +695,7 @@ class GPModel:
         uu = N['unit']
         tt = N['time']
         self.omega = N['count'] + self.ss[uu]
-        self.zeta = self.F_prod()[tt, uu] * self.G_prod() + self.rr[uu]
+        self.zeta = self.F_prod()[tt, uu] * self.G_prod() * self.D_prod() + self.rr[uu]
 
         return self
 
@@ -720,6 +758,13 @@ class GPModel:
         
         # M step
         for k in xrange(self.K):
+            if not 'mu' in excluded_iters:
+                self.update_mu(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print "chain {}: updated mu: L = {}".format(k, Lval)
+
             if not 'lambda' in excluded_iters:
                 self.update_lambda(k)
                 if calc_L:
