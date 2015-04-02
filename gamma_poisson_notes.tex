@@ -323,21 +323,21 @@ Thus, the updated value of $b_{iu}$, $b^*_{iu}$, is the solution to the transcen
     b_{iu} = w_{iu} + \left( \frac{b_{iu}}{a_{iu}}\right) \sum_{m} x_{t(m)iu}\left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right]  
 \end{equation}
 
-Alternately, since we expect $\lvert (a/b) - 1 \rvert \ll 1$ when $x \gg 1$, we can write $b_{iu} = a_{iu}e^{-\epsilon_{iu}/\Lambda}$, with $\Lambda$ an arbitrary scaling constant, in which case
+Alternately, since we expect $\lvert (a/b) - 1 \rvert \ll 1$ when $x \gg 1$, we can write $b_{iu} = a_{iu}e^{-\epsilon_{iu}}$, in which case
 \begin{multline}
-    \mathcal{L}_b = \sum_{iu} \left[a_{iu} \frac{\epsilon_{iu}}{\Lambda} - w_{iu} e^{\epsilon_{iu}/\Lambda} \right]\\
+    \mathcal{L}_b = \sum_{iu} \left[a_{iu} \epsilon_{iu} - w_{iu} e^{\epsilon_{iu}} \right]\\
      - \sum_{mu} \frac{\omega_{mu}}{\zeta_{mu}} 
     \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
     \frac{\alpha_{ku}}{\beta_{ku}}\right)
-    e^{\sum_j \epsilon_{ju} x_{t(m)ju}/\Lambda}
+    e^{\sum_j \epsilon_{ju} x_{t(m)ju}}
 \end{multline}
 and
 \begin{multline}
-    \nabla_\epsilon \mathcal{L}_b = \frac{a_{iu}}{\Lambda} - \frac{w_{iu}}{\Lambda} e^{\epsilon_{iu}/\Lambda} \\
-    - \frac{1}{\Lambda}\sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
+    \nabla_\epsilon \mathcal{L}_b = a_{iu} - w_{iu} e^{\epsilon_{iu}} \\
+    - \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
     \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
     \frac{\alpha_{ku}}{\beta_{ku}}\right)
-    e^{\sum_j \epsilon_{ju} x_{t(m)ju}/\Lambda} 
+    e^{\sum_j \epsilon_{ju} x_{t(m)ju}} 
 \end{multline}
 
  In addition, the additional regressor terms necessitate changes to the update rules given above:
