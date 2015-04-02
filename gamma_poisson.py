@@ -597,7 +597,7 @@ class GPModel:
         self.aa = NX.groupby(uu).sum().values.T + self.vv
 
         self.bb_old = self.bb.copy()
-        starts = self.aa  # assume log(aa/bb) ~ 0
+        starts = self.bb  
         self.bb = self._get_b(starts)
         self.G_prod(update=True)
 
@@ -605,8 +605,7 @@ class GPModel:
 
     def _get_b(self, starts):
         """
-        Solve for log(b) via black-box optimization. Use log(b) since this
-        is the natural parameter.
+        Solve for b via black-box optimization. 
         Updater is the name of a factory function that returns a function
         to be minimized based on current parameter values.
         """
