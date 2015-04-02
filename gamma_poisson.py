@@ -177,6 +177,10 @@ class GPModel:
             self.Xi[:, 0] = 0
             self.Xi[:, 0, 1, 1] = 1
 
+            # don't infer mu for baseline, but fix to ~delta(mu[0] - 1)
+            self.mu_shape[0] = 1e6
+            self.mu_rate[0] = 1e6
+
         # normalize Xi
         self.Xi = self.Xi / np.sum(self.Xi, axis=(-1, -2), keepdims=True)
 
@@ -306,7 +310,6 @@ class GPModel:
                 self._Gpre[:, k] = vv
             else:
                 zz = (self.aa / self.bb)[:, uu].T
-                # get x values for kth regressor; col 0 = time
                 xx = self.Xframe.values
                 vv = ne.evaluate("zz ** xx")
                 self._Gpre = vv
@@ -594,7 +597,7 @@ class GPModel:
         self.aa = NX.groupby(uu).sum().values.T + self.vv
 
         self.bb_old = self.bb.copy()
-        starts = self.bb
+        starts = self.aa  # assume log(aa/bb) ~ 0
         self.bb = self._get_b(starts)
         self.G_prod(update=True)
 
@@ -767,11 +770,12 @@ class GPModel:
         # M step
         for k in xrange(self.K):
             if not 'mu' in excluded_iters:
-                self.update_mu(k)
-                if calc_L:
-                    Lval = self.L(keeplog=keeplog) 
-                if doprint:
-                    print "chain {}: updated mu: L = {}".format(k, Lval)
+                if not (k == 0 and self.include_baseline):
+                    self.update_mu(k)
+                    if calc_L:
+                        Lval = self.L(keeplog=keeplog) 
+                    if doprint:
+                        print "chain {}: updated mu: L = {}".format(k, Lval)
 
             if not 'lambda' in excluded_iters:
                 self.update_lambda(k)
@@ -804,6 +808,7 @@ class GPModel:
                 if not ((delta > 0) | np.isclose(delta, 0)):
                     print "Upsilon update did not increase objective. Trying exact mode."
                     self.updater = 'exact'
+                    self.aa = self.aa_old
                     self.bb = self.bb_old
                     self.G_prod(update=True)
                     self.update_upsilon()
