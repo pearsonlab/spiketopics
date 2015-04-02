@@ -807,7 +807,6 @@ class GPModel:
                 if not ((delta > 0) | np.isclose(delta, 0)):
                     print "Upsilon update did not increase objective. Trying exact mode."
                     self.updater = 'exact'
-                    self.aa = self.aa_old
                     self.bb = self.bb_old
                     self.G_prod(update=True)
                     self.update_upsilon()
