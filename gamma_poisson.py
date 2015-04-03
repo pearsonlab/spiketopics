@@ -184,6 +184,9 @@ class GPModel:
         # initialize G product
         self.G_prod(update=True)
 
+        # intialize H
+        self.H = 0
+
         return self
 
     def _set_data(self, Nframe):
