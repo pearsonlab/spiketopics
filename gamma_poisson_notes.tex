@@ -439,4 +439,21 @@ and use
     \frac{1}{2\sigma^2_{iu}} - \frac{1}{2\varsigma^2_{iu}} - \frac{1}{2} \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x^2_{t(m)iu}
 \end{align}
 
+\section{Hierarchy over units}
+Up to this point, we have not made the very natural assumption that parameters for a given neural unit are drawn from a common distribution. Equivalently, we might want to make inferences not only about coefficients for single units, but about distributions for the population as a whole. That is, we might want to assume
+\begin{align}
+    \lambda_{ku} &\sim \mathrm{Ga}(c_k, d_k) \\
+    c_k &\sim 
+\end{align}
+Note that we can use bounds on the gamma function of the form
+\begin{equation}
+    \sqrt{2\pi} \le \frac{z!}{z^{z+\frac{1}{2}} e^{-z}} \le e
+\end{equation}
+along with the identities $z! = \Gamma(z + 1)$ and $\log \Gamma(z + 1) = \log \Gamma (z) + \log z$ to write
+\begin{equation}
+    \log \sqrt{2\pi} + \left(z - \frac{1}{2}\right)\log z - z \le
+    \log \Gamma (z) \le 1 + \left(z - \frac{1}{2}\right) \log z - z
+\end{equation}
+which we can use to get a lower bound on $-\log \Gamma (z)$. 
+
 \end{document}
