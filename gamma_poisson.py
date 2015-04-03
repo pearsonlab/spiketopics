@@ -573,7 +573,7 @@ class GPModel:
 
         eps_starts = np.log(self.aa / starts)
         res = minimize(minfun, eps_starts, jac=True)
-        if not res.success and not 'precision' in res.message:
+        if not res.success:
             print "Warning: optimization terminated without success."
             print res.message
         eps = res.x.reshape(self.J, self.U)
@@ -607,11 +607,12 @@ class GPModel:
             FthG = F_prod * bar_theta * G_prod
             elbo += -np.sum(FthG)
 
+            # grad = grad(elbo)
             grad = self.aa - self.ww * np.exp(eps)
             grad -= (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values.T
 
-            # remember, minimization objective is -elbo; same for grad
-            return -elbo, -grad.ravel()
+            # minimization objective is log(-elbo)
+            return np.log(-elbo), grad.ravel() / elbo
 
         return minfun
 
@@ -644,11 +645,12 @@ class GPModel:
             elbo += -np.sum(self.ww * np.exp(eps))
             elbo += -FthG
 
+            # grad = grad(elbo)
             grad = self.aa - self.ww * np.exp(eps)
             grad += -X_sufficient * FthG
 
-            # remember, minimization objective is -elbo; same for grad
-            return -elbo, -grad.ravel()
+            # minimization objective is log(-elbo)
+            return np.log(-elbo), grad.ravel() / elbo
 
         return minfun
 
