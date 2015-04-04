@@ -443,9 +443,17 @@ and use
 Up to this point, we have not made the very natural assumption that parameters for a given neural unit are drawn from a common distribution. Equivalently, we might want to make inferences not only about coefficients for single units, but about distributions for the population as a whole. That is, we might want to assume
 \begin{align}
     \lambda_{ku} &\sim \mathrm{Ga}(c_k, d_k) \\
-    c_k &\sim 
 \end{align}
-Note that we can use bounds on the gamma function of the form
+With appropriate priors on $c_k$ and $d_k$
+
+\subsection{Derivation of closed-form hyperpriors}
+What form should the distribution of the hyperpriors on $c$ and $d$ take? (In this section, we will suppress the index $k$.) To begin, we can write the likelihood for the $\lambda_u$ terms:
+\begin{equation}
+    \log p(\lambda) = \sum_u \log p(\lambda_u|c, d) = \sum_u \left[ 
+    (c - 1) \log \lambda_u - d\lambda_u + c \log d - \log \Gamma(c) 
+    \right]
+\end{equation}
+The $\log Gamma(c)$ term presents a challenge, but we can use bounds on the gamma function of the form
 \begin{equation}
     \sqrt{2\pi} \le \frac{z!}{z^{z+\frac{1}{2}} e^{-z}} \le e
 \end{equation}
@@ -454,6 +462,25 @@ along with the identities $z! = \Gamma(z + 1)$ and $\log \Gamma(z + 1) = \log \G
     \log \sqrt{2\pi} + \left(z - \frac{1}{2}\right)\log z - z \le
     \log \Gamma (z) \le 1 + \left(z - \frac{1}{2}\right) \log z - z
 \end{equation}
-which we can use to get a lower bound on $-\log \Gamma (z)$. 
+which we can use to get a lower bound on $-\log \Gamma (z)$. That is
+\begin{multline}
+    \log p(\lambda) \ge \sum_u \left[ 
+    (c - 1) \log \lambda_u - d\lambda_u + c \log d - 
+    \left(1 + \left(c - \frac{1}{2}\right) \log c - c\right)
+    \right]
+\end{multline}
+Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = c$, corresponding to a $\mathrm{Ga}(c, c)$ prior on firing rate effects --- equivalent to a mean (non-) effect of 1 --- allows us to cancel terms and write
+\begin{equation}
+    \log p(\lambda) \ge \sum_u \left[ 
+    (c - 1) \log \lambda_u - c(\lambda_u + 1) - 1 + \frac{1}{2}\log c\right]
+\end{equation}
+Clearly, conditioned on $\lambda_u$, this is Gamma in form, implying that a prior $c \sim \mathrm{Ga}(a, b)$ leads to a posterior 
+\begin{equation}
+    c \sim \mathrm{Ga}\left(a + \frac{U}{2}, b +  
+    \sum_u\left[\lambda_u + 1 - \log \lambda_u \right]\right)
+\end{equation}
+
+As a result, in the special case of $\mathrm{Gamma}(c_k, c_k)$ priors on the firing rate effects, we can implement a hierarchical model with closed-form updates, using Gamma priors on the $c_k$. This also has the added benefit that, as the posterior distribution of $c_k$ concentrates around larger values, the prior variance of $\lambda_{ku} \sim 1/c_k$, implementing automatic relevance determination.
+
 
 \end{document}
