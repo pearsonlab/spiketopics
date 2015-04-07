@@ -67,11 +67,20 @@ For this, we will use the posterior variational ansatz
     b_{ku} &\sim \mathcal{N}\left((\mu_b)_{ku}, (\sigma^2_b)_{ku}\right) \\
     (v^2_b)_{k} &\sim \text{Inv-Ga}\left((\varsigma_b)_{k}, (\rho_b)_{k} \right) \\
     \beta_{ku} &\sim \mathcal{N}\left((\mu_\beta)_{ku}, (\sigma^2_\beta)_{ku}\right) \\
-    (\sigma^2_\beta)_{k} &\sim \text{Inv-Ga}\left((\varsigma_\beta)_k, (\rho_\beta)_k \right) \\
+    (v^2_\beta)_{k} &\sim \text{Inv-Ga}\left((\varsigma_\beta)_k, (\rho_\beta)_k \right) \\
     \epsilon_{mu} &\sim \mathcal{N}((\mu_\epsilon)_{mu}, (\sigma^2_\epsilon)_{mu}) \\
     (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left((\varsigma_\epsilon)_u, (\rho_\epsilon)_u \right) \\
     \pi_k &\sim \mathrm{Beta}\left((\gamma_\pi)_k, (\delta_\pi)_k \right) \\ 
     \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((\gamma_A)_{ki}, (\delta_A)_{ki} \right)  
 \end{align}
+
+\section{HMM inference}
+Given the parameters of our observation model $\theta = (b, \beta, \epsilon, A, \pi)$, the well-known Forward-Backward Algorithm returns the following posteriors
+\begin{align}
+    \xi_t \equiv p(z_t|N, \theta) &\qquad \text{posterior marginals} \\
+    \Xi_{t, ij} \equiv p(z_{t+1} = j, z_t = i|N, \theta) &\qquad \text{two-slice marginals} \\
+    \log Z_t = \log p(N_{t+1 \bullet}|N_{t\bullet}, \theta) &\qquad \text{partition function}
+\end{align}
+The first two allow us to calculate expressions with respect to $q(z)$, while the last gives the normalization for the joint posterior over all $z$: $\log Z = \sum_t \log Z_t = \log p(N_{1:T}|\theta)$
 
 \end{document}
