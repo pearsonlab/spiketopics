@@ -116,10 +116,14 @@ class GPModel:
         self.updater = regression_updater
 
         self.include_baseline = include_baseline
-        self.prior_pars = ({'cc': (K, U), 'dd': (K, U), 'nu1': (2, K), 
-            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
+        self.prior_pars = ({'cc': (K,), 'dd': (K,), 'nu1': (2, K), 
+            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,), 
+            'lambda_pop_prior_shape': (K,),
+            'lambda_pop_prior_rate': (K,)})
         self.variational_pars = ({'alpha': (K, U), 
-            'beta': (K, U), 'gamma1': (2, K), 'gamma2': (2, K), 
+            'beta': (K, U), 'lambda_pop_shape': (K,), 
+            'lambda_pop_rate': (K,), 
+            'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
             'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
 
@@ -436,6 +440,9 @@ class GPModel:
         """
         ############### useful expectations ################ 
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+        bar_lambda = self.alpha / self.beta
+        bar_log_lpp = digamma(self.lambda_pop_shape) - np.log(self.lambda_pop_rate)
+        bar_lpp = self.lambda_pop_shape / self.lambda_pop_rate
         if self.overdispersion:
             bar_theta = self.omega / self.zeta
             bar_log_theta = digamma(self.omega) - np.log(self.zeta)
@@ -469,11 +476,24 @@ class GPModel:
         H_A = self.H_beta(self.gamma1, self.gamma2)
         L.append(np.sum(H_A))
 
-        ############### E[log (p(lambda) / q(lambda))] #############
-        L.append(np.sum((self.cc - 1) * bar_log_lambda))
-        L.append(-np.sum(self.dd * (self.alpha / self.beta)))
+        ############### E[log (p(lambda|lpp) / q(lambda))] #############
+        L.append(np.sum((bar_lpp[:, np.newaxis] - 1) * bar_log_lambda))
+        L.append(-np.sum(bar_lpp[:, np.newaxis] * bar_lambda))
+
+        # these pieces approximate -log Gamma(lpp)
+        L.append(-self.U * np.sum(bar_lpp))
+        L.append(self.U * 0.5 * np.sum(bar_log_lpp))
+
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
+
+        ############### E[log (p(lpp) / q(lpp))] #############
+        ##### hierarchical prior
+        L.append(np.sum((self.cc - 1) * bar_log_lpp))
+        L.append(-np.sum(self.dd * bar_lpp))
+
+        H_lpp = self.H_gamma(self.cc, self.dd)
+        L.append(np.sum(H_lpp))
 
         ############### E[log (p(theta) / q(theta))] #############
         if self.overdispersion:
@@ -514,6 +534,19 @@ class GPModel:
 
 
         return np.sum(L)
+
+    def update_lpp(self, k):
+        """
+        Update the lambda prior parameter for each Markov chain.
+        """
+        bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+        bar_lambda = self.alpha / self.beta
+
+        self.lambda_pop_shape = 0.5 * self.U + self.lambda_pop_prior_shape
+        self.lambda_pop_prior_rate = (self.U + np.sum(bar_lambda - 
+            bar_log_lambda, axis=1) + self.lambda_pop_prior_rate)
+
+        return self
 
     def update_lambda(self, k):
         """

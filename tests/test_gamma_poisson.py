@@ -195,8 +195,8 @@ class Test_Gamma_Poisson:
 
     def test_can_set_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
-        cctest = np.random.rand(self.K, self.U)
-        ddtest = np.random.rand(self.K, self.U)
+        cctest = np.random.rand(self.K)
+        ddtest = np.random.rand(self.K)
         nu1test = np.random.rand(2, self.K)
         nu2test = np.random.rand(2, self.K)
         rho1test = np.random.rand(self.K)
@@ -213,8 +213,8 @@ class Test_Gamma_Poisson:
     def test_no_arguments_sets_default_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_priors()
-        assert_equals(gpm.cc.shape, (self.K, self.U))
-        assert_equals(gpm.dd.shape, (self.K, self.U))
+        assert_equals(gpm.cc.shape, (self.K,))
+        assert_equals(gpm.dd.shape, (self.K,))
         assert_equals(gpm.nu1.shape, (2, self.K))
         assert_equals(gpm.nu2.shape, (2, self.K))
         assert_equals(gpm.rho1.shape, (self.K,))
