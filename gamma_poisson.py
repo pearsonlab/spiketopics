@@ -533,7 +533,7 @@ class GPModel:
 
         return np.sum(L)
 
-    def update_lpp(self, k):
+    def update_lpp(self):
         """
         Update the lambda prior parameter for each Markov chain.
         """
@@ -541,7 +541,7 @@ class GPModel:
         bar_lambda = self.alpha / self.beta
 
         self.lambda_pop_shape = 0.5 * self.U + self.cc
-        self.lambda_pop_prior_rate = (self.U + np.sum(bar_lambda - 
+        self.lambda_pop_rate = (self.U + np.sum(bar_lambda - 
             bar_log_lambda, axis=1) + self.dd)
 
         return self
@@ -755,6 +755,13 @@ class GPModel:
         calc_L = doprint or keeplog
         
         # M step
+        if not 'lpp' in excluded_iters:
+            self.update_lpp()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog) 
+            if doprint:
+                print "chain : updated lambda pop prior: L = {}".format(Lval)
+
         for k in xrange(self.K):
             if not 'lambda' in excluded_iters:
                 self.update_lambda(k)
