@@ -482,5 +482,42 @@ Clearly, conditioned on $\lambda_u$, this is Gamma in form, implying that a prio
 
 As a result, in the special case of $\mathrm{Gamma}(c_k, c_k)$ priors on the firing rate effects, we can implement a hierarchical model with closed-form updates, using Gamma priors on the $c_k$. This also has the added benefit that, as the posterior distribution of $c_k$ concentrates around larger values, the prior variance of $\lambda_{ku} \sim 1/c_k$, implementing automatic relevance determination.
 
+\subsection{Optimization objective}
+With the same ansatz as above, let us change notation slightly:
+\begin{align}
+    \lambda_{ku} &\sim \mathrm{Ga}(\gamma_k, \gamma_k) \\
+    \gamma_k &\sim \mathrm{Ga}(c_k, d_k) \\
+    \lambda_{ku} &\simeq \mathrm{Ga}(\alpha_{ku}, \beta_{ku}) \\
+    \gamma_k &\simeq \mathrm{Ga}(g_k, h_k)
+\end{align}
+where the former represent the prior distribution and the latter two approximate posteriors. In this case, the optimization objective piece including the prior (but not the observation model) is given by
+\begin{multline}
+    \mathbb{E}_q\left[ \log p(\lambda\vert\gamma)
+    \right] \ge \mathbb{E}_q \left[ 
+    \sum_{ku} \left[(\gamma_k - 1) \log \lambda_{ku} - \gamma_k \lambda_{ku}\right] 
+    + U\sum_k \left(\frac{1}{2} \log \gamma_k - \gamma_k\right)
+    \right] \\
+    = \sum_{ku}\left[ 
+    \left(\frac{g_k}{h_k} - 1 \right) \overline{\log \lambda_{ku}}
+    - \frac{g_k}{h_k} \lambda_{ku}
+    \right]
+    + U\sum_k \left( \frac{1}{2} \overline{\log \gamma_k} - \frac{g_k}{h_k}
+    \right)
+\end{multline}
+where we have dropped an overall constant $\sum_{ku} 1 = KU$ from the optimization objective and
+\begin{align}
+    \overline{\log \lambda_{ku}} &= \psi(\alpha_{ku}) - \log \beta_{ku} \\
+    \overline{\log \gamma_{k}} &= \psi(g_k) - \log h_k 
+\end{align}
+
+\subsection{Variational updates for $\gamma_k$}
+Using the notation from the last section and the posterior calculation from the section before, it is clear that the posterior updates for $g_k$ and $h_k$ take the form
+\begin{align}
+    g_k &\leftarrow \frac{U}{2} + c_k \\
+    h_k &\leftarrow U + \sum_u \left[
+    \frac{\alpha_{ku}}{\beta_{ku}} - \overline{\log \lambda_{ku}}
+    \right] + d_k
+\end{align}
+
 
 \end{document}
