@@ -1,0 +1,35 @@
+\documentclass[11pt]{article}
+\usepackage{amssymb,amsmath}
+
+\begin{document}
+\title{The Gamma-Poisson Model}
+\author{John Pearson}
+\maketitle
+
+\section{Observation Model}
+Assume an experiment with $M$ observations of $U$ units exposed to a stimulus indexed by $T$. Each unit is responsive to $J$ regressors and $K$ latent states, and is described by a Poisson process given by 
+\begin{equation}
+    N_{mu} \sim \mathrm{Poiss}(\lambda_{mu}) 
+\end{equation}
+where $N_{mu}$ is the count observed from unit $u$ on observation $m$ and the effective rate $\lambda_{mu}$ is given by 
+\begin{equation}
+    \log \lambda_{mu} = \lambda_{0u} + \sum_k z_{mk} b_{ku} + \sum_j x_{mj} \beta_{ju} 
+\end{equation}
+Here, the coefficients $b_{ku}$ index responses of each unit to the (binary) latent states $z_{mk}$ while the $\beta_{ju}$ index responses to (non-latent) regressors $x_{mj}$.
+
+\section{Latent feature model}
+We will assume a Hidden Markov Model (HMM) for the latent states $z$. We will likewise assume that these latent features are present in the stimulus, so that they are indexed by the stimulus time $t(m)$. When the meaning is clear, we will drop the dependency of stimulus time on observation number and simply write $t$.
+
+To describe the transition model for the HMM, we take
+\begin{align}
+    A_{ij} &\equiv p(z_{t+1} = i|z_t = j) \\
+    \pi_i &\equiv p(z_0 = i)
+\end{align}
+(Note that this means that the \emph{columns} of $A$ sum to 1, which is the opposite of the usual convention. In other words, in matrix notation, $z_{t+1} = A \cdot z_t$.)
+
+Given this notation, it is straightforward to write the probability of a sequence of hidden states, conditioned on the chain parameters
+\begin{equation}
+    \log p(z|A, \pi) = \sum_t \log A_{z_{t+1} z_t} + \log \pi_{z_0}
+\end{equation}
+
+\end{document}
