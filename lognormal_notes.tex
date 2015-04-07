@@ -13,9 +13,10 @@ Assume an experiment with $M$ observations of $U$ units exposed to a stimulus in
 \end{equation}
 where $N_{mu}$ is the count observed from unit $u$ on observation $m$ and the effective rate $\lambda_{mu}$ is given by 
 \begin{equation}
-    \log \lambda_{mu} = \lambda_{0u} + \sum_k z_{mk} b_{ku} + \sum_j x_{mj} \beta_{ju} 
+    \label{loglambda}
+    \log \lambda_{mu} = \lambda_{0u} + \sum_k z_{mk} b_{ku} + \sum_j x_{mj} \beta_{ju} + \epsilon_{mu}
 \end{equation}
-Here, the coefficients $b_{ku}$ index responses of each unit to the (binary) latent states $z_{mk}$ while the $\beta_{ju}$ index responses to (non-latent) regressors $x_{mj}$.
+Here, the coefficients $b_{ku}$ index responses of each unit to the (binary) latent states $z_{mk}$ while the $\beta_{ju}$ index responses to (non-latent) regressors $x_{mj}$. The final ($\epsilon$) term represents moment-to-moment fluctuations of each unit.
 
 \section{Latent feature model}
 We will assume a Hidden Markov Model (HMM) for the latent states $z$. We will likewise assume that these latent features are present in the stimulus, so that they are indexed by the stimulus time $t(m)$. When the meaning is clear, we will drop the dependency of stimulus time on observation number and simply write $t$.
@@ -31,5 +32,19 @@ Given this notation, it is straightforward to write the probability of a sequenc
 \begin{equation}
     \log p(z|A, \pi) = \sum_t \log A_{z_{t+1} z_t} + \log \pi_{z_0}
 \end{equation}
+
+\section{Priors}
+In addition to the model (\ref{loglambda}) above and the HMM ansatz, we posit the following hierarchical generative model for the parameters:
+\begin{align}
+   b_{ku} &\sim \mathcal{N}\left(0, (v^2_b)_{k}\right) \\
+   (v^2_b)_{k} &\sim \text{Inv-Ga}\left((s_b)_k, (r_b)_k \right) \\
+   \beta_{ku} &\sim \mathcal{N}\left(0, (v^2_\beta)_{k}\right) \\
+   (v^2_\beta)_{k} &\sim \text{Inv-Ga}\left((s_\beta)_k, (r_\beta)_k \right) \\
+   \epsilon_{mu} &\sim \mathcal{N}(0, v^2_\epsilon) \\
+   \pi_k &\sim \mathrm{Beta}\left((a_\pi)_k, (b_\pi)_k \right) \\ 
+   \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((a_A)_{ki}, (b_A)_{ki} \right)  
+\end{align}
+where $A_{1i}$ is the probability of the transition $i \rightarrow 1$ (i.e., the transition \emph{into} the $z = 1$ state.)
+
 
 \end{document}
