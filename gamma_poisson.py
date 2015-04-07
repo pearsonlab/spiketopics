@@ -117,9 +117,7 @@ class GPModel:
 
         self.include_baseline = include_baseline
         self.prior_pars = ({'cc': (K,), 'dd': (K,), 'nu1': (2, K), 
-            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,), 
-            'lambda_pop_prior_shape': (K,),
-            'lambda_pop_prior_rate': (K,)})
+            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
         self.variational_pars = ({'alpha': (K, U), 
             'beta': (K, U), 'lambda_pop_shape': (K,), 
             'lambda_pop_rate': (K,), 
@@ -542,9 +540,9 @@ class GPModel:
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
 
-        self.lambda_pop_shape = 0.5 * self.U + self.lambda_pop_prior_shape
+        self.lambda_pop_shape = 0.5 * self.U + self.cc
         self.lambda_pop_prior_rate = (self.U + np.sum(bar_lambda - 
-            bar_log_lambda, axis=1) + self.lambda_pop_prior_rate)
+            bar_log_lambda, axis=1) + self.dd)
 
         return self
 
