@@ -36,15 +36,42 @@ Given this notation, it is straightforward to write the probability of a sequenc
 \section{Priors}
 In addition to the model (\ref{loglambda}) above and the HMM ansatz, we posit the following hierarchical generative model for the parameters:
 \begin{align}
-   b_{ku} &\sim \mathcal{N}\left(0, (v^2_b)_{k}\right) \\
-   (v^2_b)_{k} &\sim \text{Inv-Ga}\left((s_b)_k, (r_b)_k \right) \\
-   \beta_{ku} &\sim \mathcal{N}\left(0, (v^2_\beta)_{k}\right) \\
-   (v^2_\beta)_{k} &\sim \text{Inv-Ga}\left((s_\beta)_k, (r_\beta)_k \right) \\
-   \epsilon_{mu} &\sim \mathcal{N}(0, v^2_\epsilon) \\
-   \pi_k &\sim \mathrm{Beta}\left((a_\pi)_k, (b_\pi)_k \right) \\ 
-   \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((a_A)_{ki}, (b_A)_{ki} \right)  
-\end{align}
+    \lambda_{0u} &\sim \mathcal{N}(m_0, v^2_0) \\
+    b_{ku} &\sim \mathcal{N}\left(0, (v^2_b)_{k}\right) \\
+    (v^2_b)_{k} &\sim \text{Inv-Ga}\left((s_b)_k, (r_b)_k \right) \\
+    \beta_{ku} &\sim \mathcal{N}\left(0, (v^2_\beta)_{k}\right) \\
+    (v^2_\beta)_{k} &\sim \text{Inv-Ga}\left((s_\beta)_k, (r_\beta)_k \right) \\
+    \epsilon_{mu} &\sim \mathcal{N}(0, (v^2_\epsilon)_u) \\
+    (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left((s_\epsilon)_u, (r_\epsilon)_u \right) \\
+    \pi_k &\sim \mathrm{Beta}\left((a_\pi)_k, (b_\pi)_k \right) \\ 
+    \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((a_A)_{ki}, (b_A)_{ki} \right)  
+    \end{align}
 where $A_{1i}$ is the probability of the transition $i \rightarrow 1$ (i.e., the transition \emph{into} the $z = 1$ state.)
 
+Note also that, by putting sparse priors on the $v^2$ terms, we can implement automatic relevance determination (ARD) on the regression coefficients.
+
+\section{Variational ansatz}
+We would like to approximate the joint posterior density 
+\begin{equation}
+    p(\lambda_0, b, \beta, \epsilon, A, \pi, z|N) \propto p(N, z|b, \beta, \epsilon, A, \pi) p(b) p(\beta) p(\epsilon) p(A) p(\pi) p(v^2_b) p(v^2_\beta) p(v^2_\epsilon)
+\end{equation}
+with a structured mean field form that factorizes over units and chains:
+\begin{multline}
+    q(\lambda_0, b, \beta, \epsilon, A, \pi, z) = \prod_{ku} q(\lambda_{0u}) 
+    q(b_{ku}) q(\beta_{ku}) q(\epsilon_u) q(z_k) q(A_k) q(\pi_k) \\
+    \times q(v^2_{bk}) q(v^2_{\beta k}) q(v^2_{\epsilon u})
+\end{multline}
+For this, we will use the posterior variational ansatz
+\begin{align}
+    \lambda_{0u} &\sim \mathcal{N}\left(\mu_{0u}, \sigma^2_{0u}\right) \\
+    b_{ku} &\sim \mathcal{N}\left((\mu_b)_{ku}, (\sigma^2_b)_{ku}\right) \\
+    (v^2_b)_{k} &\sim \text{Inv-Ga}\left((\varsigma_b)_{k}, (\rho_b)_{k} \right) \\
+    \beta_{ku} &\sim \mathcal{N}\left((\mu_\beta)_{ku}, (\sigma^2_\beta)_{ku}\right) \\
+    (\sigma^2_\beta)_{k} &\sim \text{Inv-Ga}\left((\varsigma_\beta)_k, (\rho_\beta)_k \right) \\
+    \epsilon_{mu} &\sim \mathcal{N}((\mu_\epsilon)_{mu}, (\sigma^2_\epsilon)_{mu}) \\
+    (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left((\varsigma_\epsilon)_u, (\rho_\epsilon)_u \right) \\
+    \pi_k &\sim \mathrm{Beta}\left((\gamma_\pi)_k, (\delta_\pi)_k \right) \\ 
+    \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((\gamma_A)_{ki}, (\delta_A)_{ki} \right)  
+\end{align}
 
 \end{document}
