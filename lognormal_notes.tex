@@ -184,7 +184,57 @@ and again
     H(A_{k1i}) = H_b(\gamma_{Aki}, \delta_{Aki})
 \end{equation}
 
+\subsection{Observation model}
+Finally, we would like to calculate the piece of the evidence lower bound arising from the Poisson observation model:
+\begin{multline}
+    \mathbb{E}_q \left[ \log \frac{p(N, z|\theta)}{q(z)} \right] =
+    \sum_{mu} \left[
+    N_{mu} \mathbb{E}_q [\log \lambda_{mu}]
+    - \mathbb{E}_q[\lambda_{mu}] \right]
+    + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right] \\
+    - \sum_{kt} \left[ \xi_{tk}^T \eta_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
+\end{multline}
+with $\xi$ and $\Xi$ defined as the expected value of $z$ and the two-slice marginals, as above, and $(\eta, \tilde{\pi}, \tilde{A})$ the variational parameters in the posterior $q(z)$. Roughly, the three terms above correspond to $\log p(N|z, \theta)$, $\log p(z|A, \pi)$, and $\log q(z)$.
 
+The first two terms involving expectations of $\lambda_{mu}$ can be calculated from (\ref{loglambda}) above and the variational ansatz:
+\begin{align}
+    \mathbb{E}_q [\log \lambda_{mu}] &= \overline{\log \lambda_{mu}} 
+    = \mu_{0u} + \sum_{k} \xi_{t(m) k} \mu_{bku} + \sum_j x_{mj} \mu_{\beta j u} + \mu_{\epsilon m u} \\
+    \mathbb{E}_q [\lambda_{mu}] &= \overline{\lambda_{mu}} = \exp \left( 
+    \overline{\log \lambda_{mu \setminus b}}
+    + \frac{1}{2} \left[ \sigma^2_{0u} 
+    + \sum_j x^2_{m j} \sigma^2_{\beta ku} + \sigma^2_{\epsilon m u}
+    \right]
+    \right) \\ \nonumber
+    &\times \left[
+    \prod_k \left(
+    1 - \xi_{t(m) k} + \xi_{t(m) k} e^{\mu_{bku} + \sigma^2_{bku} / 2}
+    \right)\right]
+\end{align}
+with $\overline{\log \lambda_{mu \setminus b}}$ the same as $\overline{\log \lambda_{mu}}$ with $zb$ terms removed. We have also used the expression for the moment generating function of a normally distributed variable:
+\begin{equation}
+    \mathbb{E}[e^{tX}] = e^{t\mu + \frac{1}{2} t^2\sigma^2}
+\end{equation}
+and the fact that $z^2 = z$ since the latents are assumed to be binary.
 
+\section{Variational Updates}
 
+\subsection{$z$}
+Technically, $xi$ is not a variational parameter, but depends on the variational parameters in $q(z)$: $\xi = \xi(\eta, \tilde{A}, \tilde{\pi})$, and similarly for $\Xi$. For the actual variational parameters, the updates are straightforward:
+\begin{align}
+    \eta_{tk} &\leftarrow \sum_{u; t(m) = t} 
+    \begin{pmatrix}
+        - F_{mku} \\
+        N_{mu} \mu_{bku} -
+        e^{\mu_{bku} + \sigma^2_{bku} / 2} F_{mku} 
+    \end{pmatrix} \\
+    \tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
+    \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
+\end{align}
+Here, we sum over all observations at stimulus time $t$, and $\eta$ the local evidence for $z$ is calculated by setting the relevant $z$ to 0 or 1. For simplicity, we also define
+\begin{equation}
+    F_{mku} = \frac{\overline{\lambda_{mu}}}{1 - \xi_{t(m) k} + \xi_{t(m) k} e^{\mu_{bku} + \sigma^2_{bku} / 2}}
+\end{equation}
+
+We note, after Beal, that as a result of these updates, $\tilde{A}$ and $\tilde{\pi}$ are subadditive (i.e., they do not sum to 1), but that the forward-backward algorithm nonetheless returns a correctly normalized posterior.
 \end{document}
