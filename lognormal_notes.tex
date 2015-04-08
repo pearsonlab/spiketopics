@@ -128,4 +128,63 @@ Where we have used $v^2 \sim \text{Inv-Ga}(\varsigma, \rho)$ to define $\tau = v
 \end{align}
 with $\psi(x)$ the digamma function.
 
+\subsection{$v^2_b$}
+Here again, we will define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ so that we can write
+\begin{multline}
+    \mathbb{E}_{q(\tau)}\left[\log \frac{p(\tau)}{q(\tau)}\right] =
+    \sum_k \mathbb{E}_q \left[
+    (s_{bk} - 1) \log \tau_{bk} - r_{bk} \tau_{bk} \right]  
+    + H_g(\varsigma_{bk}, \rho_{bk})    
+    + \mathrm{const} \\
+    = \sum_k \left[ 
+    (s_{bk} - 1) (\psi(\varsigma_{bk}) - \log \rho_{bk}) 
+    - r_{bk} \frac{\varsigma_{bk}}{\rho_{bk}} + H_g(\varsigma_{bk}, \rho_{bk})
+    \right]
+\end{multline}
+where we have discarded constants that do not depend on the variational parameters $\varsigma$ and $\rho$ and $H_g$ is the differential entropy of the gamma distribution:
+\begin{equation}
+    H_g(a, b) = a - \log b + \log \Gamma(a) + (1 - a)\psi(a)
+\end{equation}
+
+\subsection{$\beta$, $\epsilon$}
+Formulas in these cases are the same as those given above for $b$ and $v^2_b$, with only trivial substitutions required.
+
+\subsection{$\pi$}
+First, we have
+\begin{equation}
+    \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] = \sum_k \left[(a_{\pi k} - 1)\overline{\log \pi_{k1}} + (b_{\pi k} - 1) \overline{\log \pi_{k0}} - \log B(a_{\pi k}, b_{\pi k}) + H(\pi_k) \right]
+\end{equation}
+with
+\begin{align}
+    \overline{\log \pi_{k1}} &= \psi(\gamma_{\pi k}) - \psi(\gamma_{\pi k} + \delta_{\pi k}) \\
+    \overline{\log \pi_{k0}} &= \psi(\delta_{\pi k}) - \psi(\gamma_{\pi k} + \delta_{\pi k})
+\end{align}
+with $\psi$ the digamma function and 
+\begin{equation}
+    H(\pi_k) = H_b(\gamma_{\pi k}, \delta_{\pi k})
+\end{equation}
+with $H_b$ the entropy of the beta distribution:
+\begin{equation}
+    H_b(\alpha, \beta) = \log B(\alpha, \beta) - (\alpha - 1) \psi(\alpha) - (\beta - 1) \psi(\beta) + (\alpha + \beta - 2)\psi(\alpha + \beta)
+\end{equation}
+
+\subsection{$A$} 
+Similarly,
+\begin{equation}
+    \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
+\sum_{ik} \left[ (a_{Aki} - 1) \overline{\log A_{k1i}} + (b_{Aki} - 1) \overline{\log A_{k0i}} - \log B(a_{Aki}, b_{Aki}) + H(A_{k1i}) \right]
+\end{equation}
+where 
+\begin{align}
+    \overline{\log A_{k1i}} &= \psi(\gamma_{Aki}) - \psi(\gamma_{Aki} + \delta_{Aki}) \\
+    \overline{\log A_{k0i}} &= \psi(\delta_{Aki}) - \psi(\gamma_{Aki} + \delta_{Aki})
+\end{align}
+and again
+\begin{equation}
+    H(A_{k1i}) = H_b(\gamma_{Aki}, \delta_{Aki})
+\end{equation}
+
+
+
+
 \end{document}
