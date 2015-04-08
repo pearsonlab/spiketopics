@@ -118,7 +118,7 @@ As with the $\lambda$ case, we have
     \right] \\
     = \sum_{ku} \left[
     -\frac{1}{2}\frac{\varsigma_{bk}}{\rho_{bk}}\left(\sigma^2_{bku} + \mu^2_{bku} \right)
-    + \psi(\varsigma_{bk}) - \log \rho_{bk} - \log \sqrt{2\pi} + \frac{1}{2} \log 2\pi e \sigma^2_{bku}
+    + \frac{1}{2}(\psi(\varsigma_{bk}) - \log \rho_{bk}) - \log \sqrt{2\pi} + \frac{1}{2} \log 2\pi e \sigma^2_{bku}
     \right]
 \end{multline}
 Where we have used $v^2 \sim \text{Inv-Ga}(\varsigma, \rho)$ to define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ and 
@@ -237,4 +237,59 @@ Here, we sum over all observations at stimulus time $t$, and $\eta$ the local ev
 \end{equation}
 
 We note, after Beal, that as a result of these updates, $\tilde{A}$ and $\tilde{\pi}$ are subadditive (i.e., they do not sum to 1), but that the forward-backward algorithm nonetheless returns a correctly normalized posterior.
+
+\subsection{$\pi$, $A$}
+Given conjugacy, these are trivial to write down:
+\begin{align}
+    \gamma_{\pi k} &\leftarrow a_{\pi k} + \xi_{0k} \\
+    \delta_{\pi k} &\leftarrow b_{\pi k} + 1 - \xi_{0k} \\
+    \gamma_{A ki} &\leftarrow a_{A ki} + \sum_t \Xi_{kt, 1i} \\
+    \delta_{A ki} &\leftarrow b_{A ki} + \sum_t \Xi_{kt, 0i} 
+\end{align}
+
+\subsection{$v^2$}
+Here again, conjugacy makes the updates trivial for the $v^2$ terms. For both $b$ and $\beta$
+\begin{align}
+    \varsigma_k &\leftarrow s_k + \frac{U}{2} \\
+    \rho_k &\leftarrow r_k + \frac{1}{2}\sum_u (\sigma^2_{ku} + \mu^2_{ku}) \\
+\end{align}
+while for $\epsilon$
+\begin{align}
+    \varsigma_u &\leftarrow s_u + \frac{M_u}{2} \\
+    \rho_u &\leftarrow r_u + \frac{1}{2} \sum_m (\sigma^2_{mu} + \mu^2_{mu})
+\end{align}
+
+\subsection{$\lambda_0$ $b$, $\beta$, $\epsilon$}
+Here, the nonlinearity in $\overline{\lambda_{mu}}$ makes updates less straightforward. In each case, we have something like
+\begin{equation}
+    \frac{\partial\mathcal{L}}{\partial \mu} = \frac{\partial\mathcal{E}}{\partial \mu} + \sum_{mu} \left[N_{mu} \frac{\partial\overline{\log \lambda_{mu}}}{\partial \mu} - \frac{\partial\overline{\lambda_{mu}}}{\partial \mu}\right] = 0
+\end{equation}
+which works out in the various cases as
+\begin{align}
+    \frac{\partial\mathcal{L}}{\partial \mu_{0u}} &= -\frac{\mu_{0u} - m_0}{v_0^2} + \sum_m [N_{mu} - \overline{\lambda_{mu}}] \\
+    \frac{\partial\mathcal{L}}{\partial \mu_{bku}} &= 
+    - \mu_{bku} \overline{\tau_{bk}} + \sum_m [N_{mu} \xi_{t(m) k} - 
+    \xi_{t(m)k} e^{\mu_{bku} + \sigma^2_{bku} / 2} F_{mku} ] \\
+    \frac{\partial\mathcal{L}}{\partial \mu_{\beta ju}} &= 
+    - \mu_{\beta ju} \overline{\tau_{\beta j}} + \sum_m [N_{mu} x_{mj} - 
+    x_{mj} \overline{\lambda_{mu}}] \\
+    \frac{\partial\mathcal{L}}{\partial \mu_{\epsilon mu}} &= 
+    - \mu_{\epsilon mu} \overline{\tau_{\epsilon u}} + N_{mu} - 
+    \overline{\lambda_{mu}}
+\end{align}
+Unfortunately, $\overline{\lambda_{mu}}$ depends on the $\mu$ variables in question, requiring us to solve a transcendental equation in each case.
+
+The case of variation with respect to $\sigma^2$ is similar:
+\begin{align}
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{0u}} &= -\frac{1}{2v_0^2} + \frac{1}{2\sigma^2_{0u}} - \frac{1}{2} \sum_m \overline{\lambda_{mu}} \\
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} &= 
+    - \frac{1}{2} \overline{\tau_{bk}} + \frac{1}{2\sigma^2_{bku}} - \frac{1}{2}\sum_m \xi_{t(m)k} e^{\mu_{bku} + \sigma^2_{bku} / 2} F_{mku}  \\
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\beta ju}} &= 
+    - \frac{1}{2} \overline{\tau_{\beta j}} + \frac{1}{2\sigma^2_{\beta ju}} - \frac{1}{2} \sum_m x_{mj} \overline{\lambda_{mu}} \\
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon mu}} &= 
+    -\frac{1}{2} \overline{\tau_{\epsilon u}} + \frac{1}{2\sigma^2_{\epsilon mu}} - \frac{1}{2} \overline{\lambda_{mu}}
+\end{align}
+
+
+
 \end{document}
