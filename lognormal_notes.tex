@@ -83,4 +83,49 @@ Given the parameters of our observation model $\theta = (b, \beta, \epsilon, A, 
 \end{align}
 The first two allow us to calculate expressions with respect to $q(z)$, while the last gives the normalization for the joint posterior over all $z$: $\log Z = \sum_t \log Z_t = \log p(N_{1:T}|\theta)$
 
+\section{Evidence Lower Bound (ELBo)}
+We would like to maximize a lower bound on the log evidence given by
+\begin{equation}
+    \mathcal{L} = \mathbb{E}_q \left[ \log \frac{p}{q} \right]
+\end{equation}
+Thanks to factorization in the priors and posterior ansatz, this can easily be broken down in pieces, one per variable type:
+
+\subsection{$\lambda_0$}
+We want 
+\begin{multline}
+    \mathbb{E}_{q(\lambda_0)}\left[ \log \frac{p(\lambda_0)}{q(\lambda_0)}\right] = \sum_u \mathbb{E}_q\left[ -\frac{1}{2v_0^2} (\lambda_{0u} - m_0)^2
+    - \frac{1}{2}\log 2\pi v_0^2
+    + \frac{1}{2\sigma_{0u}^2} (\lambda_{0u} - \mu_{0u})^2
+    + \frac{1}{2}\log 2\pi \sigma^2_{0u}
+    \right] \\
+    = \sum_u \left[
+    -\frac{1}{2v_0^2} \left(\sigma^2_{0u} + (\mu_{0u} - m_0)^2 \right)
+    + \log \frac{\sigma_{0u}}{v_0} + \frac{1}{2}
+    \right] 
+\end{multline}
+where we have used 
+\begin{equation}
+    \mathbb{E}[X^2] = \mathrm{var}[X] + \mathbb{E}[X]^2
+\end{equation}
+
+\subsection{$b$}
+As with the $\lambda$ case, we have 
+\begin{multline}
+    \mathbb{E}_{q(b)}\left[ \log \frac{p(b)}{q(b)}\right] = \sum_{ku} \mathbb{E}_q\left[ -\frac{1}{2v_{bk}^2} b_{ku}^2
+    - \frac{1}{2}\log 2\pi v_{bk}^2
+    + \frac{1}{2\sigma_{bku}^2} (b_{ku} - \mu_{bku})^2
+    + \frac{1}{2}\log 2\pi \sigma^2_{bku} 
+    \right] \\
+    = \sum_{ku} \left[
+    -\frac{1}{2}\frac{\varsigma_{bk}}{\rho_{bk}}\left(\sigma^2_{bku} + \mu^2_{bku} \right)
+    + \psi(\varsigma_{bk}) - \log \rho_{bk} - \log \sqrt{2\pi} + \frac{1}{2} \log 2\pi e \sigma^2_{bku}
+    \right]
+\end{multline}
+Where we have used $v^2 \sim \text{Inv-Ga}(\varsigma, \rho)$ to define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ and 
+\begin{align}
+    \mathbb{E}[\tau] &= \frac{\varsigma}{\rho} \\
+    \mathbb{E}[\log \tau] &= \psi(\varsigma) - \log \rho
+\end{align}
+with $\psi(x)$ the digamma function.
+
 \end{document}
