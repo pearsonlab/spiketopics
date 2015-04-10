@@ -473,7 +473,7 @@ which we can use to get a lower bound on $-\log \Gamma (z)$. That is
     \frac{1}{2} \log c
     \right] 
 \end{multline}
-Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = \theta c$, corresponding to a $\mathrm{Ga}(c, c\theta)$ prior on firing rate effects --- equivalent to a mean (non-) effect of $\frac{1}{\theta}$ --- allows us to cancel terms and write
+Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = \theta c$, corresponding to a $\mathrm{Ga}(c, c\theta)$ prior on firing rate effects --- equivalent to a mean effect of $\frac{1}{\theta}$ --- allows us to cancel terms and write
 \begin{equation}
     \log p(\lambda) \ge \sum_u \left[ 
     (c - 1) (\log \lambda_u + 1) - c\theta\lambda_u + c \log \theta + \frac{1}{2}\log c\right]
@@ -489,13 +489,13 @@ Clearly, the conditional distributions for $c$ and $\theta$ have the form
 \end{align}
 As a result, we can easily implement a hierarchical model with closed-form updates by choosing Gamma priors on $c_k$ and $\theta_k$. More intuitively, we might want to think of putting Inverse-Gamma priors on $\theta^{-1} = \mathbb{E}[\lambda]$ and $c^{-1} = \mathbb{E}[\lambda]^2 \mathrm{var}[\lambda]$. A sparse prior on $\lambda$ then consists of a pair of priors that concentrates $\theta^{-1}$ around 1 and $c^{-1}$ around 0. In this case, given the model
 \begin{align}
-    \theta &\sim \text{Inv-Ga}(a, b) \\
-    c &\sim \text{Inv-Ga}(g, h)     
+    \theta &\sim \text{Ga}(a, b) \\
+    c &\sim \text{Ga}(g, h)     
 \end{align} 
 The posterior distributions are
 \begin{align}
-    \theta &\sim \text{Inv-Ga}\left(a + Uc, b + c\sum_u \lambda_u \right) \\
-    c &\sim \text{Inv-Ga}\left(g + \frac{U}{2}, h - U(\log \theta + 1) 
+    \theta &\sim \text{Ga}\left(a + Uc, b + c\sum_u \lambda_u \right) \\
+    c &\sim \text{Ga}\left(g + \frac{U}{2}, h - U(\log \theta + 1) 
     + \sum_u \left[ \theta \lambda_u - \log \lambda_u \right]\right) 
 \end{align}
 

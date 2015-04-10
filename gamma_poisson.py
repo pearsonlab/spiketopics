@@ -447,7 +447,7 @@ class GPModel:
         # lambda
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
-        bar_shape = bar_lam_mean
+        bar_shape = bar_lam_var
         bar_rate = bar_lam_mean * bar_lam_var
 
         # overdispersion
@@ -489,9 +489,8 @@ class GPModel:
         L.append(np.sum((bar_shape[:, np.newaxis] - 1) * bar_log_lambda))
         L.append(-np.sum(bar_rate[:, np.newaxis] * bar_lambda))
 
-        # these pieces approximate -log Gamma
+        # these pieces approximate alpha log beta - log Gamma(alpha)
         L.append(self.U * np.sum(bar_lam_var - 1))
-        L.append(np.sum(bar_lam_var * bar_lam_mean * np.sum(bar_lambda, axis=1)))
         L.append(self.U * np.sum(bar_lam_var * bar_log_lam_mean))
         L.append(0.5 * self.U * np.sum(bar_log_lam_var))
 
@@ -560,7 +559,7 @@ class GPModel:
         bar_lambda = self.alpha / self.beta
 
         self.lam_post_mean[0] = self.lam_prior_mean[0] + self.U * bar_lam_var
-        self.lam_post_mean[1] = self.lam_prior_mean[0] + bar_lam_var * np.sum(bar_lambda, axis=1)
+        self.lam_post_mean[1] = self.lam_prior_mean[1] + bar_lam_var * np.sum(bar_lambda, axis=1)
 
         return self
 
@@ -574,7 +573,7 @@ class GPModel:
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
 
         self.lam_post_var[0] = self.lam_prior_var[0] + 0.5 * self.U 
-        self.lam_post_var[1] = self.lam_prior_var[0] + self.U * (1 + bar_log_lam_mean) + np.sum(bar_lam_mean[:, np.newaxis] * bar_lambda - bar_log_lambda, axis=1)
+        self.lam_post_var[1] = self.lam_prior_var[1] - self.U * (1 + bar_log_lam_mean) + np.sum(bar_lam_mean[:, np.newaxis] * bar_lambda - bar_log_lambda, axis=1)
 
         return self
 
@@ -587,7 +586,7 @@ class GPModel:
         tt = self.Nframe['time']
         bar_lam_mean = self.lam_post_mean[0] / self.lam_post_mean[1]
         bar_lam_var = self.lam_post_var[0] / self.lam_post_var[1]
-        bar_shape = bar_lam_mean
+        bar_shape = bar_lam_var
         bar_rate = bar_lam_mean * bar_lam_var
 
         if self.overdispersion:
