@@ -473,18 +473,33 @@ which we can use to get a lower bound on $-\log \Gamma (z)$. That is
     \frac{1}{2} \log c
     \right] 
 \end{multline}
-Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = c$, corresponding to a $\mathrm{Ga}(c, c)$ prior on firing rate effects --- equivalent to a mean (non-) effect of 1 --- allows us to cancel terms and write
+Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = \theta c$, corresponding to a $\mathrm{Ga}(c, c\theta)$ prior on firing rate effects --- equivalent to a mean (non-) effect of $\frac{1}{\theta}$ --- allows us to cancel terms and write
 \begin{equation}
     \log p(\lambda) \ge \sum_u \left[ 
-    (c - 1) \log \lambda_u - c(\lambda_u + 1) - 1 + \frac{1}{2}\log c\right]
+    (c - 1) (\log \lambda_u + 1) - c\theta\lambda_u + c \log \theta + \frac{1}{2}\log c\right]
 \end{equation}
-Clearly, conditioned on $\lambda_u$, this is Gamma in form, implying that a prior $c \sim \mathrm{Ga}(a, b)$ leads to a posterior 
-\begin{equation}
-    c \sim \mathrm{Ga}\left(a + \frac{U}{2}, b +  
-    \sum_u\left[\lambda_u + 1 - \log \lambda_u \right]\right)
-\end{equation}
+Clearly, the conditional distributions for $c$ and $\theta$ have the form 
+\begin{align}
+    c &\sim \mathrm{Ga}\left(\frac{U}{2} + 1, \sum_u \left[ 
+    \theta\lambda_{u} - \log \theta - \log \lambda_{u} - 1
+    \right]\right) \\
+    \theta &\sim \mathrm{Ga}\left(
+    cU + 1, c \sum_u \lambda_u
+    \right)
+\end{align}
+As a result, we can easily implement a hierarchical model with closed-form updates by choosing Gamma priors on $c_k$ and $\theta_k$. More intuitively, we might want to think of putting Inverse-Gamma priors on $\theta^{-1} = \mathbb{E}[\lambda]$ and $c^{-1} = \mathbb{E}[\lambda]^2 \mathrm{var}[\lambda]$. A sparse prior on $\lambda$ then consists of a pair of priors that concentrates $\theta^{-1}$ around 1 and $c^{-1}$ around 0. In this case, given the model
+\begin{align}
+    \theta &\sim \text{Inv-Ga}(a, b) \\
+    c &\sim \text{Inv-Ga}(g, h)     
+\end{align} 
+The posterior distributions are
+\begin{align}
+    \theta &\sim \text{Inv-Ga}\left(a + Uc, b + c\sum_u \lambda_u \right) \\
+    c &\sim \text{Inv-Ga}\left(g + \frac{U}{2}, h - U(\log \theta + 1) 
+    + \sum_u \left[ \theta \lambda_u - \log \lambda_u \right]\right) 
+\end{align}
 
-As a result, in the special case of $\mathrm{Gamma}(c_k, c_k)$ priors on the firing rate effects, we can implement a hierarchical model with closed-form updates, using Gamma priors on the $c_k$. This also has the added benefit that, as the posterior distribution of $c_k$ concentrates around larger values, the prior variance of $\lambda_{ku} \sim 1/c_k$, implementing automatic relevance determination.
+
 
 \subsection{Optimization objective}
 With the same ansatz as above, let us change notation slightly:

@@ -116,10 +116,10 @@ class GPModel:
         self.updater = regression_updater
 
         self.include_baseline = include_baseline
-        self.prior_pars = ({'lam_pre_shape': (K, 2), 'lam_pre_rate': (K, 2), 
+        self.prior_pars = ({'lam_prior_mean': (2, K), 'lam_prior_var': (2, K),
             'nu1': (2, K), 'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
         self.variational_pars = ({'alpha': (K, U), 'beta': (K, U), 
-            'lam_post_shape': (K, 2), 'lam_post_rate': (K, 2),
+            'lam_post_mean': (2, K), 'lam_post_var': (2, K),
             'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
             'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
@@ -436,18 +436,19 @@ class GPModel:
         occur in this context, cf. Beal (2003) ~ (3.79).
         """
         ############### useful expectations ################ 
+        # lambda mean hyperparameter
+        bar_lam_mean = self.lam_post_mean[0] / self.lam_post_mean[1]
+        bar_log_lam_mean = digamma(self.lam_post_mean[0]) - np.log(self.lam_post_mean[1])
+
+        # lambda variance hyperparameter        
+        bar_lam_var = self.lam_post_var[0] / self.lam_post_var[1]
+        bar_log_lam_var = digamma(self.lam_post_var[0]) - np.log(self.lam_post_var[1])
+
         # lambda
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
-
-        # lambda shape hyperparameter
-        bar_log_ls = digamma(self.lam_post_shape[:, 0]) - np.log(self.lam_post_shape[:, 1])
-        bar_ls = self.lam_post_shape[:, 0] / self.lam_post_shape[:, 1]
-        bar_log_ls1 = bar_log_ls + 1 / self.lam_post_shape[:, 0] 
-
-        # lambda rate hyperparameter
-        bar_log_lr = digamma(self.lam_post_rate[:, 0]) - np.log(self.lam_post_rate[:, 1])
-        bar_lr = self.lam_post_rate[:, 0] / self.lam_post_rate[:, 1]
+        bar_shape = bar_lam_mean
+        bar_rate = bar_lam_mean * bar_lam_var
 
         # overdispersion
         if self.overdispersion:
@@ -485,30 +486,31 @@ class GPModel:
         L.append(np.sum(H_A))
 
         ############### E[log (p(lambda|shape, rate) / q(lambda))] #######
-        L.append(np.sum((bar_ls[:, np.newaxis] - 1) * bar_log_lambda))
-        L.append(-np.sum(bar_lr[:, np.newaxis] * bar_lambda))
+        L.append(np.sum((bar_shape[:, np.newaxis] - 1) * bar_log_lambda))
+        L.append(-np.sum(bar_rate[:, np.newaxis] * bar_lambda))
 
         # these pieces approximate -log Gamma
-        L.append(self.U * np.sum(bar_ls - 1))
-        L.append(self.U * np.sum(bar_ls * (bar_log_lr - bar_log_ls1)))
-        L.append(0.5 * self.U * np.sum(bar_log_ls))
+        L.append(self.U * np.sum(bar_lam_var - 1))
+        L.append(np.sum(bar_lam_var * bar_lam_mean * np.sum(bar_lambda, axis=1)))
+        L.append(self.U * np.sum(bar_lam_var * bar_log_lam_mean))
+        L.append(0.5 * self.U * np.sum(bar_log_lam_var))
 
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
 
-        ############### E[log (p(lam_shape) / q(lam_shape))] #############
-        L.append(np.sum((self.lam_pre_shape[:, 0] - 1) * bar_log_ls))
-        L.append(-np.sum(self.lam_pre_shape[:, 1] * bar_ls))
+        ############### E[log (p(lam_mean) / q(lam_mean))] #############
+        L.append(np.sum((self.lam_prior_mean[0] - 1) * bar_log_lam_mean))
+        L.append(-np.sum(self.lam_prior_mean[1] * bar_lam_mean))
 
-        H_lam_shape = self.H_gamma(self.lam_post_shape[:, 0], self.lam_post_shape[:, 1])
-        L.append(np.sum(H_lam_shape))
+        H_lam_mean = self.H_gamma(self.lam_post_mean[0], self.lam_post_mean[1])
+        L.append(np.sum(H_lam_mean))
 
-        ############### E[log (p(lam_rate) / q(lam_rate))] #############
-        L.append(np.sum((self.lam_pre_rate[:, 0] - 1) * bar_log_lr))
-        L.append(-np.sum(self.lam_pre_rate[:, 1] * bar_lr))
+        ############### E[log (p(lam_var) / q(lam_var))] #############
+        L.append(np.sum((self.lam_prior_var[0] - 1) * bar_log_lam_var))
+        L.append(-np.sum(self.lam_prior_var[1] * bar_lam_var))
 
-        H_lam_rate = self.H_gamma(self.lam_post_rate[:, 0], self.lam_post_rate[:, 1])
-        L.append(np.sum(H_lam_rate))
+        H_lam_var = self.H_gamma(self.lam_post_var[0], self.lam_post_var[1])
+        L.append(np.sum(H_lam_var))
 
         ############### E[log (p(theta) / q(theta))] #############
         if self.overdispersion:
@@ -550,68 +552,31 @@ class GPModel:
 
         return np.sum(L)
 
-    def update_lambda_hypers(self):
+    def update_lambda_mean_hypers(self):
         """
-        Update the lambda prior parameter for each Markov chain.
+        Update the lambda mean prior parameter.
         """
-        minfun = self._make_hypers_minfun()
+        bar_lam_var = self.lam_post_var[0] / self.lam_post_var[1]
+        bar_lambda = self.alpha / self.beta
 
-        starts = np.concatenate((self.lam_post_shape, self.lam_post_rate), 
-            axis=1)
-
-        res = minimize(minfun, starts)
-        if not res.success:
-            print "Warning: optimization terminated without success."
-            print res.message
-
-        s1 = np.array(self.lam_post_shape.shape)
-        s2 = np.array(self.lam_post_rate.shape)
-
-        finals = res.x.reshape(s1[0], s1[1] + s2[1])
-
-        self.lam_post_shape = finals[:, :s1[1]]
-        self.lam_post_rate = finals[:, s1[1]:]
+        self.lam_post_mean[0] = self.lam_prior_mean[0] + self.U * bar_lam_var
+        self.lam_post_mean[1] = self.lam_prior_mean[0] + bar_lam_var * np.sum(bar_lambda, axis=1)
 
         return self
 
-    def _make_hypers_minfun(self):
-        # lambda
-        bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
+    def update_lambda_var_hypers(self):
+        """
+        Update the lambda variance prior parameter. 
+        """
+        bar_lam_mean = self.lam_post_mean[0] / self.lam_post_mean[1]
+        bar_log_lam_mean = digamma(self.lam_post_mean[0]) - np.log(self.lam_post_mean[1])
         bar_lambda = self.alpha / self.beta
+        bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
 
-        def minfun(beta):
-            bb = beta.reshape(self.K, 4)
-            lss = bb[:, 0]  # lambda shape parameter posterior shape
-            lsr = bb[:, 1]  # lambda shape parameter posterior rate
-            lrs = bb[:, 2]  # lambda rate parameter posterior shape
-            lrr = bb[:, 3]  # lambda rate parameter posterior rate
+        self.lam_post_var[0] = self.lam_prior_var[0] + 0.5 * self.U 
+        self.lam_post_var[1] = self.lam_prior_var[0] + self.U * (1 + bar_log_lam_mean) + np.sum(bar_lam_mean[:, np.newaxis] * bar_lambda - bar_log_lambda, axis=1)
 
-            bar_log_ls = digamma(lss) - np.log(lsr)
-            bar_ls = lss / lsr
-            bar_log_ls1 = bar_log_ls + 1 / lss
-            bar_log_lr = digamma(lrs) - np.log(lrr)
-            bar_lr = lrs / lrr
-
-            # lambda pieces
-            elbo = np.sum((bar_ls[:, np.newaxis] - 1) * bar_log_lambda)
-            elbo += -np.sum(bar_lr[:, np.newaxis] * bar_lambda)
-            elbo += self.U * np.sum(bar_ls - 1)
-            elbo += self.U * np.sum(bar_ls * (bar_log_lr - bar_log_ls1))
-            elbo += 0.5 * self.U * np.sum(bar_log_ls)
-
-            # shape pieces
-            elbo += np.sum((self.lam_pre_shape[:, 0] - 1) * bar_log_ls)
-            elbo += -np.sum(self.lam_pre_shape[:, 1] * bar_ls)
-            elbo += np.sum(self.H_gamma(lss, lsr))
-
-            # rate pieces
-            elbo += np.sum((self.lam_pre_rate[:, 0] - 1) * bar_log_lr)
-            elbo += -np.sum(self.lam_pre_rate[:, 1] * bar_lr)
-            elbo += np.sum(self.H_gamma(lrs, lrr))
-
-            return -elbo
-
-        return minfun
+        return self
 
     def update_lambda(self, k):
         """
@@ -620,8 +585,10 @@ class GPModel:
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
-        bar_shape = self.lam_post_shape[:, 0] / self.lam_post_shape[:, 1]
-        bar_rate = self.lam_post_rate[:, 0] / self.lam_post_rate[:, 1]
+        bar_lam_mean = self.lam_post_mean[0] / self.lam_post_mean[1]
+        bar_lam_var = self.lam_post_var[0] / self.lam_post_var[1]
+        bar_shape = bar_lam_mean
+        bar_rate = bar_lam_mean * bar_lam_var
 
         if self.overdispersion:
             bar_theta = self.omega / self.zeta
@@ -826,7 +793,8 @@ class GPModel:
         
         # M step
         if not 'lambda_hypers' in excluded_iters:
-            self.update_lambda_hypers()
+            self.update_lambda_mean_hypers()
+            self.update_lambda_var_hypers()
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:
