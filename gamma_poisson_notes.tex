@@ -453,7 +453,7 @@ What form should the distribution of the hyperpriors on $c$ and $d$ take? (In th
     (c - 1) \log \lambda_u - d\lambda_u + c \log d - \log \Gamma(c) 
     \right]
 \end{equation}
-The $\log Gamma(c)$ term presents a challenge, but we can use bounds on the gamma function of the form
+The $\log \Gamma(c)$ term presents a challenge, but we can use bounds on the gamma function of the form
 \begin{equation}
     \sqrt{2\pi} \le \frac{z!}{z^{z+\frac{1}{2}} e^{-z}} \le e
 \end{equation}
@@ -467,7 +467,11 @@ which we can use to get a lower bound on $-\log \Gamma (z)$. That is
     \log p(\lambda) \ge \sum_u \left[ 
     (c - 1) \log \lambda_u - d\lambda_u + c \log d - 
     \left(1 + \left(c - \frac{1}{2}\right) \log c - c\right)
-    \right]
+    \right] \\
+    = \sum_u \left[
+    (c - 1) (\log \lambda_u - 1) - d\lambda_u + c \log \frac{d}{c} + 
+    \frac{1}{2} \log c
+    \right] 
 \end{multline}
 Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = c$, corresponding to a $\mathrm{Ga}(c, c)$ prior on firing rate effects --- equivalent to a mean (non-) effect of 1 --- allows us to cancel terms and write
 \begin{equation}
@@ -519,5 +523,39 @@ Using the notation from the last section and the posterior calculation from the 
     \right] + d_k
 \end{align}
 
+\subsection{Non-conjugate models}
+We might not want to limit ourselves to $\mathrm{Ga}(\gamma_k, \gamma_k)$ priors in the above. In this case, we can still write down an optimization objective, which we must maximize by means that do not require closed-form solutions.
+
+If we assume, (changing notation once again)
+\begin{align}
+    \lambda_{ku} &\sim \mathrm{Ga}(a_k, b_k) \\
+    a_k &\sim \mathrm{Ga}(s_k, r_k) \\
+    b_k &\sim \mathrm{Ga}(g_k, h_k) \\
+    \lambda_{ku} &\simeq \mathrm{Ga}(\alpha_{ku}, \beta_{ku}) \\
+    a_k &\simeq \mathrm{Ga}(\varsigma_{k}, \rho_{k}) \\
+    b_k &\simeq \mathrm{Ga}(\gamma_{k}, \eta_{k})
+\end{align}
+with $\simeq$ denoting ``posterior approximation'', then we can write a lower bound to the optimization objective as
+\begin{multline}
+    \mathbb{E}_q\left[ 
+    \frac{p(\lambda|a, b) p(a) p(b)}{q(\lambda) q(a) q(b)}
+    \right] \ge
+    \sum_k \bigg[
+    \sum_u \left[
+    (\overline{a_k} - 1) (\overline{\log \lambda_{ku}} - 1)
+    - \overline{b_k} \overline{\lambda_{ku}} 
+    \right] \\
+    + U \overline{a_k} (\overline{\log b_k} - \psi(\varsigma_k + 1) + \log \rho_k) + \frac{U}{2} \overline{\log a_k}  \\
+    + (\varsigma_k - 1) \overline{\log a_k} - \rho_k \overline{a_k} 
+    + (\gamma_k - 1) \overline{\log b_k} - \eta_k \overline{b_k}
+    \bigg] \\
+    + \sum_{ku} H_g(\alpha_{ku}, \beta_{ku}) + \sum_k \left[H_g(\varsigma_k, \rho_k) + H_g(\gamma_k, \eta_k) \right]
+\end{multline}
+Where we have used
+\begin{equation}
+    X \sim \mathrm{Ga}(\alpha, \beta) \Rightarrow
+    \mathbb{E}[X \log X] = \frac{\alpha}{\beta} (\psi(\alpha + 1) - \log \beta)
+\end{equation}
+and the barred quantities are trivial Gamma-family expectations.
 
 \end{document}
