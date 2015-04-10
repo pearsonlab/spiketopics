@@ -469,7 +469,7 @@ which we can use to get a lower bound on $-\log \Gamma (z)$. That is
     \left(1 + \left(c - \frac{1}{2}\right) \log c - c\right)
     \right] \\
     = \sum_u \left[
-    (c - 1) (\log \lambda_u - 1) - d\lambda_u + c \log \frac{d}{c} + 
+    (c - 1) (\log \lambda_u + 1) - d\lambda_u + c \log \frac{d}{c} + 
     \frac{1}{2} \log c
     \right] 
 \end{multline}
@@ -542,12 +542,12 @@ with $\simeq$ denoting ``posterior approximation'', then we can write a lower bo
     \right] \ge
     \sum_k \bigg[
     \sum_u \left[
-    (\overline{a_k} - 1) (\overline{\log \lambda_{ku}} - 1)
+    (\overline{a_k} - 1) (\overline{\log \lambda_{ku}} + 1)
     - \overline{b_k} \overline{\lambda_{ku}} 
     \right] \\
-    + U \overline{a_k} (\overline{\log b_k} - \psi(\varsigma_k + 1) + \log \rho_k) + \frac{U}{2} \overline{\log a_k}  \\
-    + (\varsigma_k - 1) \overline{\log a_k} - \rho_k \overline{a_k} 
-    + (\gamma_k - 1) \overline{\log b_k} - \eta_k \overline{b_k}
+    + U \overline{a_k} \left(\overline{\log b_k} - \overline{\log a_k} - \frac{1}{\varsigma_k}\right) + \frac{U}{2} \overline{\log a_k}  \\
+    + (s_k - 1) \overline{\log a_k} - r_k \overline{a_k} 
+    + (g_k - 1) \overline{\log b_k} - h_k \overline{b_k}
     \bigg] \\
     + \sum_{ku} H_g(\alpha_{ku}, \beta_{ku}) + \sum_k \left[H_g(\varsigma_k, \rho_k) + H_g(\gamma_k, \eta_k) \right]
 \end{multline}
@@ -555,6 +555,11 @@ Where we have used
 \begin{equation}
     X \sim \mathrm{Ga}(\alpha, \beta) \Rightarrow
     \mathbb{E}[X \log X] = \frac{\alpha}{\beta} (\psi(\alpha + 1) - \log \beta)
+    = \frac{\alpha}{\beta} \left(\frac{1}{\alpha} + \psi(\alpha) - \log \beta\right)
+\end{equation}
+since
+\begin{equation}
+    \psi(x + 1) = \frac{d}{dx} \log \Gamma(x + 1) = \frac{d}{dx} \log x \Gamma(x) = \frac{1}{x} + \psi(x)
 \end{equation}
 and the barred quantities are trivial Gamma-family expectations.
 

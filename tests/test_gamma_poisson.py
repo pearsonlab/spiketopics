@@ -195,16 +195,12 @@ class Test_Gamma_Poisson:
 
     def test_can_set_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
-        cctest = np.random.rand(self.K)
-        ddtest = np.random.rand(self.K)
         nu1test = np.random.rand(2, self.K)
         nu2test = np.random.rand(2, self.K)
         rho1test = np.random.rand(self.K)
         rho2test = np.random.rand(self.K)
-        gpm.set_priors(cc=cctest, dd=ddtest, nu1=nu1test, nu2=nu2test,
+        gpm.set_priors(nu1=nu1test, nu2=nu2test,
             rho1=rho1test, rho2=rho2test)
-        npt.assert_array_equal(gpm.cc, cctest)
-        npt.assert_array_equal(gpm.dd, ddtest)
         npt.assert_array_equal(gpm.nu1, nu1test)
         npt.assert_array_equal(gpm.nu2, nu2test)
         npt.assert_array_equal(gpm.rho1, rho1test)
@@ -213,8 +209,6 @@ class Test_Gamma_Poisson:
     def test_no_arguments_sets_default_priors(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_priors()
-        assert_equals(gpm.cc.shape, (self.K,))
-        assert_equals(gpm.dd.shape, (self.K,))
         assert_equals(gpm.nu1.shape, (2, self.K))
         assert_equals(gpm.nu2.shape, (2, self.K))
         assert_equals(gpm.rho1.shape, (self.K,))
@@ -236,10 +230,6 @@ class Test_Gamma_Poisson:
 
     def test_invalid_prior_shapes_raises_error(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
-        assert_raises(ValueError, gpm.set_priors, 
-            cc=np.ones((self.K + 1, self.U)))
-        assert_raises(ValueError, gpm.set_priors, 
-            dd=np.ones((self.K + 1, self.U)))
         assert_raises(ValueError, gpm.set_priors, 
             nu1=np.ones((self.K + 1, self.U)))
         assert_raises(ValueError, gpm.set_priors, 

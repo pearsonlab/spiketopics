@@ -116,11 +116,10 @@ class GPModel:
         self.updater = regression_updater
 
         self.include_baseline = include_baseline
-        self.prior_pars = ({'cc': (K,), 'dd': (K,), 'nu1': (2, K), 
-            'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
-        self.variational_pars = ({'alpha': (K, U), 
-            'beta': (K, U), 'lambda_pop_shape': (K,), 
-            'lambda_pop_rate': (K,), 
+        self.prior_pars = ({'lam_pre_shape': (K, 2), 'lam_pre_rate': (K, 2), 
+            'nu1': (2, K), 'nu2': (2, K), 'rho1': (K,), 'rho2': (K,)})
+        self.variational_pars = ({'alpha': (K, U), 'beta': (K, U), 
+            'lam_post_shape': (K, 2), 'lam_post_rate': (K, 2),
             'gamma1': (2, K), 'gamma2': (2, K), 
             'delta1': (K,), 'delta2': (K,), 'xi': (T, K), 
             'Xi': (T - 1, K, 2, 2), 'logq': (K,)})
@@ -437,10 +436,20 @@ class GPModel:
         occur in this context, cf. Beal (2003) ~ (3.79).
         """
         ############### useful expectations ################ 
+        # lambda
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
-        bar_log_lpp = digamma(self.lambda_pop_shape) - np.log(self.lambda_pop_rate)
-        bar_lpp = self.lambda_pop_shape / self.lambda_pop_rate
+
+        # lambda shape hyperparameter
+        bar_log_ls = digamma(self.lam_post_shape[:, 0]) - np.log(self.lam_post_shape[:, 1])
+        bar_ls = self.lam_post_shape[:, 0] / self.lam_post_shape[:, 1]
+        bar_log_ls1 = bar_log_ls + 1 / self.lam_post_shape[:, 0] 
+
+        # lambda rate hyperparameter
+        bar_log_lr = digamma(self.lam_post_rate[:, 0]) - np.log(self.lam_post_rate[:, 1])
+        bar_lr = self.lam_post_rate[:, 0] / self.lam_post_rate[:, 1]
+
+        # overdispersion
         if self.overdispersion:
             bar_theta = self.omega / self.zeta
             bar_log_theta = digamma(self.omega) - np.log(self.zeta)
@@ -448,6 +457,7 @@ class GPModel:
             bar_theta = 1
             bar_log_theta = 0
 
+        # regression coefficients
         if self.regressors:
             bar_upsilon = self.aa / self.bb
             bar_log_upsilon = digamma(self.aa) - np.log(self.bb)
@@ -474,24 +484,31 @@ class GPModel:
         H_A = self.H_beta(self.gamma1, self.gamma2)
         L.append(np.sum(H_A))
 
-        ############### E[log (p(lambda|lpp) / q(lambda))] #############
-        L.append(np.sum((bar_lpp[:, np.newaxis] - 1) * bar_log_lambda))
-        L.append(-np.sum(bar_lpp[:, np.newaxis] * bar_lambda))
+        ############### E[log (p(lambda|shape, rate) / q(lambda))] #######
+        L.append(np.sum((bar_ls[:, np.newaxis] - 1) * bar_log_lambda))
+        L.append(-np.sum(bar_lr[:, np.newaxis] * bar_lambda))
 
-        # these pieces approximate -log Gamma(lpp)
-        L.append(-self.U * np.sum(bar_lpp))
-        L.append(self.U * 0.5 * np.sum(bar_log_lpp))
+        # these pieces approximate -log Gamma
+        L.append(self.U * np.sum(bar_ls - 1))
+        L.append(self.U * np.sum(bar_ls * (bar_log_lr - bar_log_ls1)))
+        L.append(0.5 * self.U * np.sum(bar_log_ls))
 
         H_lambda = self.H_gamma(self.alpha, self.beta)
         L.append(np.sum(H_lambda))
 
-        ############### E[log (p(lpp) / q(lpp))] #############
-        ##### hierarchical prior
-        L.append(np.sum((self.cc - 1) * bar_log_lpp))
-        L.append(-np.sum(self.dd * bar_lpp))
+        ############### E[log (p(lam_shape) / q(lam_shape))] #############
+        L.append(np.sum((self.lam_pre_shape[:, 0] - 1) * bar_log_ls))
+        L.append(-np.sum(self.lam_pre_shape[:, 1] * bar_ls))
 
-        H_lpp = self.H_gamma(self.cc, self.dd)
-        L.append(np.sum(H_lpp))
+        H_lam_shape = self.H_gamma(self.lam_post_shape[:, 0], self.lam_post_shape[:, 1])
+        L.append(np.sum(H_lam_shape))
+
+        ############### E[log (p(lam_rate) / q(lam_rate))] #############
+        L.append(np.sum((self.lam_pre_rate[:, 0] - 1) * bar_log_lr))
+        L.append(-np.sum(self.lam_pre_rate[:, 1] * bar_lr))
+
+        H_lam_rate = self.H_gamma(self.lam_post_rate[:, 0], self.lam_post_rate[:, 1])
+        L.append(np.sum(H_lam_rate))
 
         ############### E[log (p(theta) / q(theta))] #############
         if self.overdispersion:
@@ -533,18 +550,68 @@ class GPModel:
 
         return np.sum(L)
 
-    def update_lpp(self):
+    def update_lambda_hypers(self):
         """
         Update the lambda prior parameter for each Markov chain.
         """
+        minfun = self._make_hypers_minfun()
+
+        starts = np.concatenate((self.lam_post_shape, self.lam_post_rate), 
+            axis=1)
+
+        res = minimize(minfun, starts)
+        if not res.success:
+            print "Warning: optimization terminated without success."
+            print res.message
+
+        s1 = np.array(self.lam_post_shape.shape)
+        s2 = np.array(self.lam_post_rate.shape)
+
+        finals = res.x.reshape(s1[0], s1[1] + s2[1])
+
+        self.lam_post_shape = finals[:, :s1[1]]
+        self.lam_post_rate = finals[:, s1[1]:]
+
+        return self
+
+    def _make_hypers_minfun(self):
+        # lambda
         bar_log_lambda = digamma(self.alpha) - np.log(self.beta)
         bar_lambda = self.alpha / self.beta
 
-        self.lambda_pop_shape = 0.5 * self.U + self.cc
-        self.lambda_pop_rate = (self.U + np.sum(bar_lambda - 
-            bar_log_lambda, axis=1) + self.dd)
+        def minfun(beta):
+            bb = beta.reshape(self.K, 4)
+            lss = bb[:, 0]  # lambda shape parameter posterior shape
+            lsr = bb[:, 1]  # lambda shape parameter posterior rate
+            lrs = bb[:, 2]  # lambda rate parameter posterior shape
+            lrr = bb[:, 3]  # lambda rate parameter posterior rate
 
-        return self
+            bar_log_ls = digamma(lss) - np.log(lsr)
+            bar_ls = lss / lsr
+            bar_log_ls1 = bar_log_ls + 1 / lss
+            bar_log_lr = digamma(lrs) - np.log(lrr)
+            bar_lr = lrs / lrr
+
+            # lambda pieces
+            elbo = np.sum((bar_ls[:, np.newaxis] - 1) * bar_log_lambda)
+            elbo += -np.sum(bar_lr[:, np.newaxis] * bar_lambda)
+            elbo += self.U * np.sum(bar_ls - 1)
+            elbo += self.U * np.sum(bar_ls * (bar_log_lr - bar_log_ls1))
+            elbo += 0.5 * self.U * np.sum(bar_log_ls)
+
+            # shape pieces
+            elbo += np.sum((self.lam_pre_shape[:, 0] - 1) * bar_log_ls)
+            elbo += -np.sum(self.lam_pre_shape[:, 1] * bar_ls)
+            elbo += np.sum(self.H_gamma(lss, lsr))
+
+            # rate pieces
+            elbo += np.sum((self.lam_pre_rate[:, 0] - 1) * bar_log_lr)
+            elbo += -np.sum(self.lam_pre_rate[:, 1] * bar_lr)
+            elbo += np.sum(self.H_gamma(lrs, lrr))
+
+            return -elbo
+
+        return minfun
 
     def update_lambda(self, k):
         """
@@ -553,6 +620,9 @@ class GPModel:
         """
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
+        bar_shape = self.lam_post_shape[:, 0] / self.lam_post_shape[:, 1]
+        bar_rate = self.lam_post_rate[:, 0] / self.lam_post_rate[:, 1]
+
         if self.overdispersion:
             bar_theta = self.omega / self.zeta
         else:
@@ -566,8 +636,8 @@ class GPModel:
 
         FthG = pd.DataFrame(Fz[tt, uu] * bar_theta * G_tu).groupby(uu).sum().values.squeeze()
 
-        self.alpha[k] = Nz + self.cc[k]
-        self.beta[k] = FthG + self.dd[k]
+        self.alpha[k] = Nz + bar_shape[k]
+        self.beta[k] = FthG + bar_rate[k]
 
         self.F_prod(k, update=True)
 
@@ -755,12 +825,12 @@ class GPModel:
         calc_L = doprint or keeplog
         
         # M step
-        if not 'lpp' in excluded_iters:
-            self.update_lpp()
+        if not 'lambda_hypers' in excluded_iters:
+            self.update_lambda_hypers()
             if calc_L:
                 Lval = self.L(keeplog=keeplog) 
             if doprint:
-                print "chain : updated lambda pop prior: L = {}".format(Lval)
+                print "chain : updated lambda priors: L = {}".format(Lval)
 
         for k in xrange(self.K):
             if not 'lambda' in excluded_iters:
