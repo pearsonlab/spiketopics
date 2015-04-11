@@ -170,29 +170,6 @@ class GPModel:
 
         return self
 
-    @staticmethod
-    def _F_prod(z, w, log=False, exclude=True):
-        """
-        Given z (T x K) in [0, 1] and w (K x U), returns the product
-        prod_{j neq k} (1 - z_{tj} + z_{tj} * w_{ju})
-        log = True returns the log of the result
-        exclude = False returns the product over all k
-        in which case, the result is T x U instead of T x K x U
-        """
-        zz = z[..., np.newaxis]
-        vv = 1 - zz + zz * w
-        dd = np.sum(np.log(vv), axis=1, keepdims=exclude)
-
-        if exclude:
-            log_ans =  dd - np.log(vv)
-        else:
-            log_ans = dd
-
-        if log:
-            return log_ans
-        else:
-            return np.exp(log_ans)
-
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
@@ -225,7 +202,7 @@ class GPModel:
         else:
             return self._Ftu
 
-    def G_prod(self, k=None, update=False, long=True):
+    def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
         If k is specified, return G_{tku} (product over all but k),
@@ -237,9 +214,6 @@ class GPModel:
         simply by movie time, the regressors are in a "melted" dataframe
         with each (unit, presentation) pair in a row by itself. As a 
         result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
-        
-        If k is None and long=False, a (T, U) aggregate array is 
-        returned instead. This containst the product over J.
         """
         if update:
             uu = self.Nframe['unit']
@@ -257,9 +231,6 @@ class GPModel:
                 vv = ne.evaluate("zz ** xx")
                 self._Gpre = vv
 
-            # in some cases, we want to return the (T, U) array
-            self._Gsq = self._aggregate_array_by(self._Gpre, by=(tt, uu))
-
             # work in log space to avoid over/underflow
             Gpre = self._Gpre
             dd = ne.evaluate("sum(log(Gpre), axis=1)")
@@ -270,24 +241,7 @@ class GPModel:
         if k is not None:
             return self._Gtku[:, k]
         else:
-            if long:
-                return self._Gtu
-            else:
-                return self._Gsq
-
-    @staticmethod
-    def _aggregate_array_by(arr, by=None):
-        """
-        Given an array in one-row-per-observation (i.e., long) form, 
-        group by the by argument using Pandas and return an array.
-        """
-        df = pd.DataFrame(arr)
-        grp = df.groupby(by)
-        agg = grp.sum().prod(axis=1)
-        if len(by) > 1:
-            agg = agg.unstack(level=-1)
-
-        return agg.values
+            return self._Gtu
 
     def calc_log_A(self):
         """

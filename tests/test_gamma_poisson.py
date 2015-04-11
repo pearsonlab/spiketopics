@@ -330,29 +330,6 @@ class Test_Gamma_Poisson:
         assert_raises(ValueError, gpm.set_inits, 
             xi=np.ones((self.T, self.K, 1)))
 
-    def test_static_F_prod(self):
-        gpm = gp.GPModel(self.N, self.K, self.dt)
-        z = np.random.rand(5, 8)
-        w = np.random.rand(8, 3)
-        assert_equals(gpm._F_prod(z, w).shape, (5, 8, 3))
-        npt.assert_allclose(gpm._F_prod(z, w), 
-            np.exp(gpm._F_prod(z, w, log=True)))
-
-        # test whether we can get the same entry in every element by
-        # multiplying through by the one part each lacks
-        unnorm = 1 - z[..., np.newaxis] + z[..., np.newaxis] * w
-        allprod = unnorm * gpm._F_prod(z, w)
-        npt.assert_allclose(allprod[0, 0, 0], allprod[0, 1, 0])
-        npt.assert_allclose(allprod[-1, 0, 2], allprod[-1, -1, 2])
-        npt.assert_allclose(allprod[:, 0, :], gpm._F_prod(z, w, exclude=False))
-
-        # test whether scaling up and w[k] has no effect on _F_prod[:, k]
-        k = 1
-        wscaled = w.copy()
-        wscaled[k] *= 10
-        npt.assert_allclose(gpm._F_prod(z, w)[:, k], 
-            gpm._F_prod(z, wscaled)[:, k])
-
     def test_cached_F_prod(self):
         gpm = gp.GPModel(self.N, self.K, self.dt)
         gpm.set_priors().set_inits()
