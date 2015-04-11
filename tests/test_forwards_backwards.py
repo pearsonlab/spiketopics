@@ -7,6 +7,7 @@ import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
 import gamma_poisson as gp
+import forward_backward as fb
 
 class Test_Forwards_Backwards:
     @classmethod
@@ -124,7 +125,7 @@ class Test_Forwards_Backwards:
         assert_equals(self.pi0_test.shape, (2,))
 
     def test_fb_returns_consistent(self):
-        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
         assert_equals(gamma.shape, (self.T, 2))
         npt.assert_allclose(np.sum(gamma, 1), np.ones((self.T,)))
         assert_equals(logZ.shape, ())
@@ -167,7 +168,7 @@ class Test_Forwards_Backwards:
     def test_entropy_positive(self):
         # we want H = -E_q[log q] > 0
         # this corresponds to log Z - E_q[log likelihood] > 0
-        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
         emission_piece = np.sum(gamma * np.log(self.psi_test))
         initial_piece = np.sum(gamma[0] * np.log(self.pi0_test))
         transition_piece = np.sum(Xi * np.log(self.A_test))
@@ -182,7 +183,7 @@ class Test_Forwards_Backwards:
         log_pi_r = np.log(self.pi0_test) - np.random.random(size=self.pi0_test.shape)
         log_A_r = np.log(self.A_test) - np.random.random(size=self.A_test.shape)
 
-        gamma, logZ, Xi = gp.fb_infer(np.exp(log_A_r), np.exp(log_pi_r),
+        gamma, logZ, Xi = fb.fb_infer(np.exp(log_A_r), np.exp(log_pi_r),
          self.psi_test)
         emission_piece = np.sum(gamma * np.log(self.psi_test))
         initial_piece = np.sum(gamma[0] * log_pi_r)
@@ -191,7 +192,7 @@ class Test_Forwards_Backwards:
         assert_true(logZ - LL >= 0)
 
     def fb_infer_integration_test(self):
-        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
         npt.assert_allclose(self.z_test.astype('float')[5:], 
             gamma[5:, 1], atol=1e-3)
         
