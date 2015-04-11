@@ -15,6 +15,7 @@ class GammaNode:
         self.prior_rate = prior[..., 1]
         self.post_shape = post[..., 0]
         self.post_rate = post[..., 1]
+        self.name = name
 
     def expected_x(self):
         return self.post_shape / self.post_rate

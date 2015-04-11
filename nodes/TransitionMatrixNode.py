@@ -16,6 +16,7 @@ class TransitionMatrixNode:
 
         self.prior = prior
         self.post = post
+        self.name = name
 
     def expected_x(self):
         """
@@ -52,7 +53,7 @@ class TransitionMatrixNode:
         """
         Calculate differential entropy of posterior.
         """
-        alpha = self.post_shape
+        alpha = self.post
         H = self.logB(alpha)
         H += (alpha[0] - self.M) * digamma(alpha[0])
         H += -np.sum((alpha[1:] - 1) * digamma(alpha[1:]), axis=0)
