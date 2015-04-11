@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import digamma, gammaln
+from ConstNode import ConstNode
 
 class GammaNode:
     """
@@ -12,8 +13,18 @@ class GammaNode:
         if post_shape.shape != post_rate.shape:
             raise ValueError('Dimensions of priors must agree!')
 
-        self.prior_shape = prior_shape
-        self.prior_rate = prior_rate
+        # if any parameters are passed as arrays, wrap in 
+        # constant node
+        if isinstance(prior_shape, np.ndarray):
+            self.prior_shape = prior_shape.view(ConstNode)
+        else:
+            self.prior_shape = prior_shape
+
+        if isinstance(prior_rate, np.ndarray):
+            self.prior_rate = prior_rate.view(ConstNode)
+        else:
+            self.prior_rate = prior_rate
+
         self.post_shape = post_shape
         self.post_rate = post_rate
         self.name = name
@@ -28,8 +39,8 @@ class GammaNode:
         """
         Calculate expected value of log prior under the posterior distribution.
         """
-        alpha = self.prior_shape
-        beta = self.prior_rate
+        alpha = self.prior_shape.expected_x()
+        beta = self.prior_rate.expected_x()
         elp = (alpha - 1) * self.expected_log_x() 
         elp += -beta * self.expected_x() 
         elp += alpha * np.log(beta) 

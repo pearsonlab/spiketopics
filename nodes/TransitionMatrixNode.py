@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import digamma, gammaln
+from ConstNode import ConstNode
 
 class TransitionMatrixNode:
     """
@@ -14,7 +15,11 @@ class TransitionMatrixNode:
 
         self.M = prior.shape[0]  # number of states
 
-        self.prior = prior
+        if isinstance(prior, np.ndarray):
+            self.prior = prior.view(ConstNode)
+        else:
+            self.prior = prior
+            
         self.post = post
         self.name = name
 
