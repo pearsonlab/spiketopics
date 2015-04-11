@@ -5,16 +5,17 @@ class GammaNode:
     """
     Gamma distribution. Uses (shape, rate) parameterization.
     """
-    def __init__(self, prior, post, name='gamma'):
-        if prior.shape[-1] != 2:
-            raise ValueError('Last dimension of prior parameters array must be 2')  
-        if post.shape[-1] != 2:
-            raise ValueError('Last dimension of posterior parameters array must be 2')  
+    def __init__(self, prior_shape, prior_rate, post_shape,
+        post_rate, name='gamma'):
+        if prior_shape.shape != prior_rate.shape:
+            raise ValueError('Dimensions of priors must agree!')
+        if post_shape.shape != post_rate.shape:
+            raise ValueError('Dimensions of priors must agree!')
 
-        self.prior_shape = prior[..., 0]
-        self.prior_rate = prior[..., 1]
-        self.post_shape = post[..., 0]
-        self.post_rate = post[..., 1]
+        self.prior_shape = prior_shape
+        self.prior_rate = prior_rate
+        self.post_shape = post_shape
+        self.post_rate = post_rate
         self.name = name
 
     def expected_x(self):
@@ -47,3 +48,4 @@ class GammaNode:
         H += (1 - alpha) * digamma(alpha)
 
         return np.sum(H)
+
