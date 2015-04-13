@@ -84,7 +84,7 @@ class GammaModel:
         """
         Set up node for baseline firing rate effects.
         Assumes the prior is on f * dt, where f is the baseline firing
-        rate and dt is the time bin size.
+        rate and dt is the time bin size. 
         """
         if prior_shape.shape != (self.U,):
             raise ValueError('Prior has shape inconsistent with data.')
@@ -96,5 +96,47 @@ class GammaModel:
 
         return self
 
+    def _initialize_gamma_hierarchy(self, basename, parent_shape, 
+        child_shape, **kwargs):
+        """
+        Initialize a hierarchical gamma variable: 
+            lambda ~ Gamma(c, c * m)
+            c ~ Gamma
+            m ~ Gamma
 
+        basename is the name of the name of the child variable 
+        parent_shape and child_shape are the shapes of the parent and
+            child variables
+        """
+        par_shapes = ({'prior_shape_shape': parent_shape, 
+            'prior_shape_rate': parent_shape, 
+            'prior_mean_shape': parent_shape, 'prior_mean_rate': parent_shape, 
+            'post_shape_shape': parent_shape, 'post_shape_rate': parent_shape, 
+            'post_mean_shape': parent_shape, 'post_mean_rate': parent_shape, 
+            'post_child_shape': child_shape, 'post_child_rate': child_shape})
 
+        # error checking
+        for var, shape in par_shapes.iteritems():
+            if var not in kwargs:
+                raise ValueError('Argument missing: {}'.format(var))
+            elif kwargs[var].shape != shape:
+                raise ValueError('Argument has wrong shape: {}'.format(var))
+
+        shape = nd.GammaNode(kwargs['prior_shape_shape'], 
+            kwargs['prior_shape_rate'], kwargs['post_shape_shape'], 
+            kwargs['post_shape_rate'])
+
+        mean = nd.GammaNode(kwargs['prior_mean_shape'], 
+            kwargs['prior_mean_rate'], kwargs['post_mean_shape'], 
+            kwargs['post_mean_rate'])
+
+        child = nd.GammaNode(shape, nd.ProductNode(shape, mean),
+            kwargs['post_child_shape'], kwargs['post_child_rate'])
+
+        setattr(self, basename + '_shape', shape)
+        setattr(self, basename + '_mean', mean)
+        setattr(self, basename, child)
+
+        self.Lterms.extend([child, shape, mean])
+
+        return self
