@@ -26,7 +26,7 @@ class TransitionMatrixNode:
 
         self.post = post
         self.name = name
-        self.shape = prior.shape.shape
+        self.shape = prior.shape
 
     def expected_x(self):
         """
