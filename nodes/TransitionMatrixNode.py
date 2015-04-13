@@ -12,6 +12,8 @@ class TransitionMatrixNode:
             raise ValueError('First two indices of prior must be a square matrix')
         if post.shape[0] != post.shape[1]:
             raise ValueError('First two indices of posterior must be a square matrix')
+        if prior.shape != post.shape:
+            raise ValueError('Dimensions of prior and posterior must agree')
 
         self.M = prior.shape[0]  # number of states
 
@@ -19,7 +21,7 @@ class TransitionMatrixNode:
             self.prior = prior.view(ConstNode)
         else:
             self.prior = prior
-            
+
         self.post = post
         self.name = name
 

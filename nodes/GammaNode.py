@@ -11,7 +11,9 @@ class GammaNode:
         if prior_shape.shape != prior_rate.shape:
             raise ValueError('Dimensions of priors must agree!')
         if post_shape.shape != post_rate.shape:
-            raise ValueError('Dimensions of priors must agree!')
+            raise ValueError('Dimensions of posteriors must agree!')
+        if prior_shape.shape != post_shape.shape:
+            raise ValueError('Dimensions of priors and posteriors must agree!')
 
         # if any parameters are passed as arrays, wrap in 
         # constant node

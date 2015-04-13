@@ -20,8 +20,10 @@ def test_init_sets_priors_and_posts():
 def test_misshapen_inputs_raises_error():
     pr_mat = prior_mat[..., 0][..., np.newaxis]
     po_mat = post_mat[..., 1][..., np.newaxis]
+    pm = np.array([10, 2, 1., 5, 6, 7, 2, 2, 2]).reshape(3, 3)
     assert_raises(ValueError, TransitionMatrixNode, prior=pr_mat, post=post_mat)
     assert_raises(ValueError, TransitionMatrixNode, prior=prior_mat, post=po_mat)
+    assert_raises(ValueError, TransitionMatrixNode, prior=prior_mat, post=pm)
 
 def test_can_set_name():
     tn = TransitionMatrixNode(prior=prior_mat, post=post_mat, name='tester')
