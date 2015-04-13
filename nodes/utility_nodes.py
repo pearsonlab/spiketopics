@@ -15,6 +15,7 @@ class ProductNode:
         # assign parents
         self.A = A
         self.B = B
+        self.shape = A.shape
 
     def expected_x(self):
         return self.A.expected_x() * self.B.expected_x()

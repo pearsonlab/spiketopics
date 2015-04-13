@@ -12,8 +12,10 @@ class TransitionMatrixNode:
             raise ValueError('First two indices of prior must be a square matrix')
         if post.shape[0] != post.shape[1]:
             raise ValueError('First two indices of posterior must be a square matrix')
-        if prior.shape != post.shape:
-            raise ValueError('Dimensions of prior and posterior must agree')
+        try: 
+            np.broadcast(prior, post)
+        except:
+            raise ValueError('Dimensions of prior and posterior could not be broadcast together.')
 
         self.M = prior.shape[0]  # number of states
 
@@ -24,6 +26,7 @@ class TransitionMatrixNode:
 
         self.post = post
         self.name = name
+        self.shape = prior.shape.shape
 
     def expected_x(self):
         """
