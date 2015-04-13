@@ -5,6 +5,7 @@ from scipy.special import digamma, gammaln, betaln
 from scipy.optimize import minimize
 from forward_backward import fb_infer
 import numexpr as ne
+import spiketopics.nodes as nd
 
 class GammaModel:
     """
@@ -16,14 +17,21 @@ class GammaModel:
     \lambda ~ Gamma
     """
 
-    def __init__(self, data, K, dt):
+    def __init__(self, data, K):
         """
         Construct model object.
 
         data: Pandas DataFrame with one row per observation and columns
             'unit', 'time', and 'count' (time is stimulus time)
         K: number of latent categories to infer
-        dt: time step size
+        nodedict: dictionary of nodes in the model; node names can be 
+            'baseline': baseline firing rates
+            'regressor': firing rate effects for each regressor
+            'latent': firing rate effects for latent states
+            'overdispersion': firing rate effects due to overdispersion
+            All of the above nodes are optional. Additional nodes (e.g.,
+            parents of the above) are permitted, and will be updated 
+            appropriately.
         """
         # Infer basic constants
         M = data.shape[0]  # number of observations
@@ -37,14 +45,12 @@ class GammaModel:
         self.T = T
         self.K = K
         self.U = U
-        self.dt = dt
-        self.regressors = self.R > 0
 
         self.log = {'L': [], 'H': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective
+        self.Lterms = []  # holds piece of optimization objective
 
         self._parse_frames(data)
-
 
     def _parse_frames(self, data):
         """
@@ -72,3 +78,23 @@ class GammaModel:
         self.Nobs = np.ma.masked_where(np.isnan(Nobs), Nobs).astype('int')
 
         return self
+
+    def initialize_baseline(self, prior_shape, prior_rate, 
+        post_shape, post_rate):
+        """
+        Set up node for baseline firing rate effects.
+        Assumes the prior is on f * dt, where f is the baseline firing
+        rate and dt is the time bin size.
+        """
+        if prior_shape.shape != (self.U,):
+            raise ValueError('Prior has shape inconsistent with data.')
+
+        self.baseline = nd.GammaNode(prior_shape, prior_rate, post_shape, 
+            post_rate)
+
+        self.Lterms.append(self.baseline)
+
+        return self
+
+
+

@@ -9,6 +9,7 @@ import pandas as pd
 import numpy.testing as npt
 import gamma_model as gp
 from helpers import frames_to_times
+import spiketopics.nodes as nd
 
 class Test_Gamma_Model:
     @classmethod
@@ -169,12 +170,11 @@ class Test_Gamma_Model:
 
 
     def test_can_instantiate_model_object(self):
-        gpm = gp.GammaModel(self.N, self.K, self.dt)
+        gpm = gp.GammaModel(self.N, self.K)
         assert_is_instance(gpm, gp.GammaModel)
         assert_equals(gpm.U, self.U)
         assert_equals(gpm.T, self.T)
         assert_equals(gpm.K, self.K)
-        assert_equals(gpm.dt, self.dt)
         assert_equals(gpm.Xframe.shape, 
             (self.T * self.U, self.X.shape[1] - 1))
 
@@ -184,3 +184,18 @@ class Test_Gamma_Model:
         npt.assert_array_equal(first_unit, self.X.iloc[:, 1:].values)
 
         assert_is_instance(gpm.Lvalues, list)
+
+    def test_can_set_baseline(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        prs = np.ones((self.U,))
+        prr = np.ones((self.U,))
+        pos = np.ones((self.U,))
+        por = np.ones((self.U,))
+        gpm.initialize_baseline(prs, prr, pos, por)
+        assert_is_instance(gpm.baseline, nd.GammaNode)
+        npt.assert_array_equal(prs, gpm.baseline.prior_shape)
+        npt.assert_array_equal(prr, gpm.baseline.prior_rate)
+        npt.assert_array_equal(pos, gpm.baseline.post_shape)
+        npt.assert_array_equal(por, gpm.baseline.post_rate)
+        assert_in(gpm.baseline, gpm.Lterms)
+
