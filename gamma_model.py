@@ -105,19 +105,22 @@ class GammaModel:
             elif kwargs[var].shape != shape:
                 raise ValueError('Argument has wrong shape: {}'.format(var))
 
+        shapename = basename + '_shape'
         shape = nd.GammaNode(kwargs['prior_shape_shape'], 
             kwargs['prior_shape_rate'], kwargs['post_shape_shape'], 
-            kwargs['post_shape_rate'])
+            kwargs['post_shape_rate'], name=shapename)
 
+        meanname = basename + '_mean'
         mean = nd.GammaNode(kwargs['prior_mean_shape'], 
             kwargs['prior_mean_rate'], kwargs['post_mean_shape'], 
-            kwargs['post_mean_rate'])
+            kwargs['post_mean_rate'], name=meanname)
 
         child = nd.GammaNode(shape, nd.ProductNode(shape, mean),
-            kwargs['post_child_shape'], kwargs['post_child_rate'])
+            kwargs['post_child_shape'], kwargs['post_child_rate'], 
+            name=basename)
 
-        setattr(self, basename + '_shape', shape)
-        setattr(self, basename + '_mean', mean)
+        setattr(self, shapename, shape)
+        setattr(self, meanname, mean)
         setattr(self, basename, child)
 
         self.Lterms.extend([child, shape, mean])
@@ -139,7 +142,7 @@ class GammaModel:
                 raise ValueError('Argument has wrong shape: {}'.format(var))
 
         node = nd.GammaNode(kwargs['prior_shape'], kwargs['prior_rate'], 
-            kwargs['post_shape'], kwargs['post_rate'])
+            kwargs['post_shape'], kwargs['post_rate'], name=name)
 
         setattr(self, name, node)
 
@@ -147,23 +150,29 @@ class GammaModel:
 
         return self
 
+    def _gamma_node_dispatch(self, name, node_shape, parent_shape, **kwargs):
+        """
+        Perform multiple distpatch for initializing gamma nodes based on 
+            parameters in kwargs.
+        name: name of the base node
+        node_shape: shape of base node
+        parent_shape: shape of parent node
+        """
+        # test if parameters indicate there's a hierarchy
+        if 'prior_shape_shape' in kwargs:
+            self._initialize_gamma_hierarchy(name, parent_shape,
+                node_shape, **kwargs)
+        else:
+            self._initialize_gamma(name, node_shape, **kwargs)
+
+
     def initialize_baseline(self, **kwargs):
         """
         Set up node for baseline firing rates.
         Assumes the prior is on f * dt, where f is the baseline firing
         rate and dt is the time bin size. 
         """
-        # test if parameters indicate there's a hierarchy
-        if 'prior_shape_shape' in kwargs:
-            child_shape = (self.U,)
-            parent_shape = (1,)
-
-            self._initialize_gamma_hierarchy('baseline', parent_shape,
-                child_shape, **kwargs)
-        else:
-            node_shape = (self.U,)
-
-            self._initialize_gamma('baseline', node_shape, **kwargs)
+        self._gamma_node_dispatch('baseline', (self.U,), (1,), **kwargs)
 
         return self
 
@@ -171,17 +180,16 @@ class GammaModel:
         """
         Set up node for firing rate effects due to latent variables.
         """
-        # test if parameters indicate there's a hierarchy
-        if 'prior_shape_shape' in kwargs:
-            child_shape = (self.K, self.U)
-            parent_shape = (self.K,)
-
-            self._initialize_gamma_hierarchy('fr_latents', parent_shape,
-                child_shape, **kwargs)
-        else:
-            node_shape = (self.K, self.U)
-
-            self._initialize_gamma('fr_latents', node_shape, **kwargs)
+        self._gamma_node_dispatch('fr_latents', (self.K, self.U), 
+            (self.K,), **kwargs)
 
         return self
 
+    def initialize_fr_regressors(self, **kwargs):
+        """
+        Set up node for firing rate effects due to latent variables.
+        """
+        self._gamma_node_dispatch('fr_regressors', (self.R, self.U), 
+            (self.R,), **kwargs)
+
+        return self
