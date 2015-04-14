@@ -88,7 +88,7 @@ class HMMNode:
         idx needs to be an object capable of indexing the relevant Markov
             Chain (i.e., z after the first two (M, T) indices, A after the
             first two (M, M) indices, etc.)
-        log_evidence is log p(y|z, theta) (y.shape, T) where y is the 
+        log_evidence is log p(y|z, theta) (T, M) where y is the 
             observed data from the HMM, z is the latent state variable(s), 
             and theta are the other parameters of the HMM
         """
@@ -99,23 +99,25 @@ class HMMNode:
         z0 = self.nodes['z'].z[:, 0, idx]  # time 0 only
 
         ########### update nodes
-        self.nodes['A'].update(zz_bar)
-        self.nodes['pi'].update(z0)
+        self.nodes['A'].update(idx, zz_bar)
+        self.nodes['pi'].update(idx, z0)
 
         ########### update chains
-        psi = log_evidence
+        psi = log_evidence  # (T, M)
 
         # calculate variational parameters in z posterior 
-        A_par = self.nodes['A'].expected_log_x()
-        pi_par = self.nodes['pi'].expected_log_x()
+        A_par = self.nodes['A'].expected_log_x()[..., idx]
+        pi_par = self.nodes['pi'].expected_log_x()[..., idx]
 
         xi, logZ, Xi = fb_infer(np.exp(A_par), np.exp(pi_par), np.exp(psi))
+        xi = xi.T
+        Xi = Xi.transpose((1, 2, 0))
         self.nodes['z'].update(idx, xi, Xi, logZ) 
 
         ########### calculate entropy pieces
-        emission_piece = xi.dot(psi)
+        emission_piece = np.sum(xi.T * psi)
         initial_piece = xi[:, 0].dot(pi_par)
-        transition_piece = np.sum(Xi * A_par)
+        transition_piece = np.sum(Xi * A_par[..., np.newaxis])
         logq = emission_piece + initial_piece + transition_piece
         self.Hz[idx] = -logq + logZ
 

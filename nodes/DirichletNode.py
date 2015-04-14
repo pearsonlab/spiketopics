@@ -36,7 +36,7 @@ class DirichletNode:
         Calculate expected log value of the transition matrix values under
         the posterior distribution.
         """
-        return digamma(self.post) / digamma(np.sum(self.post, axis=0, keepdims=True))
+        return digamma(self.post) - digamma(np.sum(self.post, axis=0, keepdims=True))
 
     @staticmethod
     def logB(alpha):
@@ -52,6 +52,7 @@ class DirichletNode:
         alpha = self.prior
         elp = np.sum((alpha - 1) * self.expected_x(), axis=0)
         elp += -self.logB(alpha)
+        elp = elp.view(np.ndarray)
 
         return np.sum(elp)
 
@@ -66,10 +67,10 @@ class DirichletNode:
 
         return np.sum(H)
 
-    def update(self, ess):
+    def update(self, idx, ess):
         """
         Update posterior given expected sufficient statistics.
         """
-        self.post = self.prior + ess
+        self.post[..., idx] = self.prior[..., idx] + ess
 
         return self

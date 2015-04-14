@@ -50,6 +50,7 @@ class GammaNode:
         elp += -beta * self.expected_x() 
         elp += alpha * np.log(beta) 
         elp += -gammaln(alpha)
+        elp = elp.view(np.ndarray)
 
         return np.sum(elp)
 
