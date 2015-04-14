@@ -64,7 +64,7 @@ class DirichletNode:
         H += (alpha[0] - self.M) * digamma(alpha[0])
         H += -np.sum((alpha[1:] - 1) * digamma(alpha[1:]), axis=0)
 
-        return H
+        return np.sum(H)
 
     def update(self, ess):
         """

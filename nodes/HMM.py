@@ -80,7 +80,7 @@ class HMMNode:
         self.shape = z.shape
 
         self.nodes = {'z': z, 'A': A, 'pi': pi} 
-        self.H = np.empty(K)
+        self.Hz = np.empty(K)
 
     def update(self, idx, log_evidence):
         """
@@ -117,10 +117,14 @@ class HMMNode:
         initial_piece = xi[:, 0].dot(pi_par)
         transition_piece = np.sum(Xi * A_par)
         logq = emission_piece + initial_piece + transition_piece
-        self.H[idx] = -logq + logZ
+        self.Hz[idx] = -logq + logZ
 
         return self
 
     def entropy(self):
-        return self.H
+        return (np.sum(self.Hz) + self.nodes['A'].entropy() + 
+            self.nodes['pi'].entropy())
 
+    def expected_log_prior(self):
+        return (self.nodes['A'].expected_log_prior() + 
+            self.nodes['pi'].expected_log_prior())
