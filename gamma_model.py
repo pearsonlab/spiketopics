@@ -79,23 +79,6 @@ class GammaModel:
 
         return self
 
-    def initialize_baseline(self, prior_shape, prior_rate, 
-        post_shape, post_rate):
-        """
-        Set up node for baseline firing rate effects.
-        Assumes the prior is on f * dt, where f is the baseline firing
-        rate and dt is the time bin size. 
-        """
-        if prior_shape.shape != (self.U,):
-            raise ValueError('Prior has shape inconsistent with data.')
-
-        self.baseline = nd.GammaNode(prior_shape, prior_rate, post_shape, 
-            post_rate)
-
-        self.Lterms.append(self.baseline)
-
-        return self
-
     def _initialize_gamma_hierarchy(self, basename, parent_shape, 
         child_shape, **kwargs):
         """
@@ -141,14 +124,49 @@ class GammaModel:
 
         return self
 
+    def _initialize_gamma(self, name, node_shape, **kwargs):
+        """
+        Initialize a gamma variable.
+        """
+        par_shapes = ({'prior_shape': node_shape, 'prior_rate': node_shape,
+            'post_shape': node_shape, 'post_rate': node_shape })
+
+        # error checking
+        for var, shape in par_shapes.iteritems():
+            if var not in kwargs:
+                raise ValueError('Argument missing: {}'.format(var))
+            elif kwargs[var].shape != shape:
+                raise ValueError('Argument has wrong shape: {}'.format(var))
+
+        node = nd.GammaNode(kwargs['prior_shape'], kwargs['prior_rate'], 
+            kwargs['post_shape'], kwargs['post_rate'])
+
+        setattr(self, name, node)
+
+        self.Lterms.append(node)
+
+        return self
+
+    def initialize_baseline(self, **kwargs):
+        """
+        Set up node for baseline firing rate effects.
+        Assumes the prior is on f * dt, where f is the baseline firing
+        rate and dt is the time bin size. 
+        """
+        node_shape = (self.U,)
+
+        self._initialize_gamma('baseline', node_shape, **kwargs)
+
+        return self
+
     def initialize_baseline_hierarchy(self, **kwargs):
         """
         Initialize baseline with hierarchy over units.
         """
         child_shape = (self.U,)
-        parent_shape = (1,)
+        node_shape = (1,)
 
-        self._initialize_gamma_hierarchy('baseline', parent_shape,
+        self._initialize_gamma_hierarchy('baseline', node_shape,
             child_shape, **kwargs)
 
         return self

@@ -191,7 +191,8 @@ class Test_Gamma_Model:
         prr = np.ones((self.U,))
         pos = np.ones((self.U,))
         por = np.ones((self.U,))
-        gpm.initialize_baseline(prs, prr, pos, por)
+        gpm.initialize_baseline(prior_shape=prs, 
+            prior_rate=prr, post_shape=pos, post_rate=por)
         assert_is_instance(gpm.baseline, nd.GammaNode)
         npt.assert_array_equal(prs, gpm.baseline.prior_shape)
         npt.assert_array_equal(prr, gpm.baseline.prior_rate)
@@ -234,5 +235,5 @@ class Test_Gamma_Model:
         gpm.initialize_baseline_hierarchy(**vals)
         assert_in(gpm.baseline, gpm.Lterms)
         assert_is_instance(gpm.baseline_shape, nd.GammaNode)
-        
+
             
