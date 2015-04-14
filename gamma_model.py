@@ -79,6 +79,35 @@ class GammaModel:
 
         return self
 
+    def _check_shapes(self, par_shapes, pars):
+        """
+        Check for consistency between par_shapes, a dict with (name, shape)
+        pairs, and pars, a dict of (name, value) pairs. 
+        """
+        for var, shape in par_shapes.iteritems():
+            if var not in pars:
+                raise ValueError('Argument missing: {}'.format(var))
+            elif pars[var].shape != shape:
+                raise ValueError('Argument has wrong shape: {}'.format(var))
+
+    def _initialize_gamma(self, name, node_shape, **kwargs):
+        """
+        Initialize a gamma variable.
+        """
+        par_shapes = ({'prior_shape': node_shape, 'prior_rate': node_shape,
+            'post_shape': node_shape, 'post_rate': node_shape })
+
+        self._check_shapes(par_shapes, kwargs)
+
+        node = nd.GammaNode(kwargs['prior_shape'], kwargs['prior_rate'], 
+            kwargs['post_shape'], kwargs['post_rate'], name=name)
+
+        setattr(self, name, node)
+
+        self.Lterms.append(node)
+
+        return self
+
     def _initialize_gamma_hierarchy(self, basename, parent_shape, 
         child_shape, **kwargs):
         """
@@ -98,13 +127,8 @@ class GammaModel:
             'post_mean_shape': parent_shape, 'post_mean_rate': parent_shape, 
             'post_child_shape': child_shape, 'post_child_rate': child_shape})
 
-        # error checking
-        for var, shape in par_shapes.iteritems():
-            if var not in kwargs:
-                raise ValueError('Argument missing: {}'.format(var))
-            elif kwargs[var].shape != shape:
-                raise ValueError('Argument has wrong shape: {}'.format(var))
-
+        self._check_shapes(par_shapes, kwargs)
+        
         shapename = basename + '_shape'
         shape = nd.GammaNode(kwargs['prior_shape_shape'], 
             kwargs['prior_shape_rate'], kwargs['post_shape_shape'], 
@@ -124,29 +148,6 @@ class GammaModel:
         setattr(self, basename, child)
 
         self.Lterms.extend([child, shape, mean])
-
-        return self
-
-    def _initialize_gamma(self, name, node_shape, **kwargs):
-        """
-        Initialize a gamma variable.
-        """
-        par_shapes = ({'prior_shape': node_shape, 'prior_rate': node_shape,
-            'post_shape': node_shape, 'post_rate': node_shape })
-
-        # error checking
-        for var, shape in par_shapes.iteritems():
-            if var not in kwargs:
-                raise ValueError('Argument missing: {}'.format(var))
-            elif kwargs[var].shape != shape:
-                raise ValueError('Argument has wrong shape: {}'.format(var))
-
-        node = nd.GammaNode(kwargs['prior_shape'], kwargs['prior_rate'], 
-            kwargs['post_shape'], kwargs['post_rate'], name=name)
-
-        setattr(self, name, node)
-
-        self.Lterms.append(node)
 
         return self
 
