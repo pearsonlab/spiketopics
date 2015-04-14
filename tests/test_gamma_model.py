@@ -220,3 +220,19 @@ class Test_Gamma_Model:
         assert_is_instance(gpm.foo, nd.GammaNode)
         assert_equals(gpm.foo.shape, parent_shape)
 
+    def test_can_set_baseline_hierarchy(self):
+        parent_shape = (1,)
+        child_shape = (self.U,)
+        ps = np.ones(parent_shape)
+        cs = np.ones(child_shape)
+        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+            'prior_mean_shape': ps, 'prior_mean_rate': ps,
+            'post_shape_shape': ps, 'post_shape_rate': ps,
+            'post_mean_shape': ps, 'post_mean_rate': ps,
+            'post_child_shape': cs, 'post_child_rate': cs})
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline_hierarchy(**vals)
+        assert_in(gpm.baseline, gpm.Lterms)
+        assert_is_instance(gpm.baseline_shape, nd.GammaNode)
+        
+            

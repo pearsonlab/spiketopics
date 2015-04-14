@@ -140,3 +140,17 @@ class GammaModel:
         self.Lterms.extend([child, shape, mean])
 
         return self
+
+    def initialize_baseline_hierarchy(self, **kwargs):
+        """
+        Initialize baseline with hierarchy over units.
+        """
+        child_shape = (self.U,)
+        parent_shape = (1,)
+
+        self._initialize_gamma_hierarchy('baseline', parent_shape,
+            child_shape, **kwargs)
+
+        return self
+
+
