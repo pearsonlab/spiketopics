@@ -200,27 +200,6 @@ class Test_Gamma_Model:
         npt.assert_array_equal(por, gpm.baseline.post_rate)
         assert_in(gpm.baseline, gpm.Lterms)
 
-    def test_can_initialize_gamma_hierarchy(self):
-        parent_shape = (5,)
-        child_shape = (10, 5)
-        basename = 'foo'
-        ps = np.ones(parent_shape)
-        cs = np.ones(child_shape)
-        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
-            'prior_mean_shape': ps, 'prior_mean_rate': ps,
-            'post_shape_shape': ps, 'post_shape_rate': ps,
-            'post_mean_shape': ps, 'post_mean_rate': ps,
-            'post_child_shape': cs, 'post_child_rate': cs})
-
-        gpm = gp.GammaModel(self.N, self.K)
-        gpm._initialize_gamma_hierarchy(basename, parent_shape, 
-            child_shape, **vals)
-        assert_in(gpm.foo, gpm.Lterms)
-        assert_in(gpm.foo_shape, gpm.Lterms)
-        assert_in(gpm.foo_mean, gpm.Lterms)
-        assert_is_instance(gpm.foo, nd.GammaNode)
-        assert_equals(gpm.foo.shape, parent_shape)
-
     def test_can_initialize_baseline_hierarchy(self):
         parent_shape = (1,)
         child_shape = (self.U,)
