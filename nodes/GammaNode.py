@@ -65,3 +65,6 @@ class GammaNode:
 
         return np.sum(H)
 
+    def update(self):
+        raise NotImplementedError('Instances should define this method for each model')
+

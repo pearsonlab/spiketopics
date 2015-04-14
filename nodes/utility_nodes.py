@@ -10,6 +10,9 @@ class ConstNode(np.ndarray):
     def expected_log_x(self):
         return np.log(self)
 
+    def update(self):
+        pass
+
 class ProductNode:
     def __init__(self, A, B):
         # assign parents
@@ -22,3 +25,6 @@ class ProductNode:
 
     def expected_log_x(self):
         return self.A.expected_log_x() + self.B.expected_log_x()
+
+    def update(self):
+        pass

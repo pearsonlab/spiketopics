@@ -30,8 +30,8 @@ def test_misshapen_inputs_raises_error():
         prior_rate=prior_rate, post_shape=post_shape, 
         post_rate=np.array(1.))
     assert_raises(ValueError, GammaNode, prior_shape=prior_shape, 
-        prior_rate=prior_rate, post_shape=np.array(1.), 
-        post_rate=np.array(1.))
+        prior_rate=prior_rate, post_shape=np.array([1., 2., 3.]), 
+        post_rate=np.array([1., 2., 3.]))
 
 def test_can_set_name():
     gn = GammaNode(prior_shape=prior_shape, prior_rate=prior_rate, 
@@ -50,3 +50,6 @@ def test_log_prior():
 
 def test_entropy():
     gn.entropy()
+
+def test_update_raises_notimplementederror():
+    assert_raises(NotImplementedError, gn.update)

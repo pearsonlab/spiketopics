@@ -47,3 +47,7 @@ def test_log_prior_shape():
 def test_entropy():
     tn = TransitionMatrixNode(prior=prior_mat, post=post_mat)
     tn.entropy()
+
+def test_update_raises_notimplementederror():
+    tn = TransitionMatrixNode(prior=prior_mat, post=post_mat)
+    assert_raises(NotImplementedError, tn.update)

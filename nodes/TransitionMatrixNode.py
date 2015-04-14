@@ -69,3 +69,6 @@ class TransitionMatrixNode:
         H += -np.sum((alpha[1:] - 1) * digamma(alpha[1:]), axis=0)
 
         return H
+
+    def update(self):
+        raise NotImplementedError('Instances should define this method for each model')
