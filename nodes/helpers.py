@@ -3,7 +3,7 @@ Helper functions for dealing with nodes.
 """
 from .GammaNode import GammaNode
 from .DirichletNode import DirichletNode
-from .MarkovChainNode import MarkovChainNode
+from .HMM import MarkovChainNode
 from .utility_nodes import ProductNode
 
 def check_shapes(par_shapes, pars):
