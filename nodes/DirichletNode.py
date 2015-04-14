@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import digamma, gammaln
-from ConstNode import ConstNode
+from utility_nodes import ConstNode
 
 class DirichletNode:
     """
@@ -66,6 +66,10 @@ class DirichletNode:
 
         return H
 
-    def update(self):
-        raise NotImplementedError('Instances should define this method for each model')
+    def update(self, ess):
+        """
+        Update posterior given expected sufficient statistics.
+        """
+        self.post = self.prior + ess
 
+        return self

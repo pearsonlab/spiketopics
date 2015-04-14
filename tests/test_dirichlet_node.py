@@ -44,6 +44,3 @@ def test_entropy():
     dn = DirichletNode(prior=prior_mat, post=post_mat)
     dn.entropy()
 
-def test_update_raises_notimplementederror():
-    dn = DirichletNode(prior=prior_mat, post=post_mat)
-    assert_raises(NotImplementedError, dn.update)

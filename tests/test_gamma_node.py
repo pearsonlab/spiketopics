@@ -51,5 +51,3 @@ def test_log_prior():
 def test_entropy():
     gn.entropy()
 
-def test_update_raises_notimplementederror():
-    assert_raises(NotImplementedError, gn.update)

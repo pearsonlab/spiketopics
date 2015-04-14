@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import digamma, gammaln
-from ConstNode import ConstNode
+from utility_nodes import ConstNode
 
 class GammaNode:
     """
@@ -65,6 +65,11 @@ class GammaNode:
 
         return np.sum(H)
 
-    def update(self):
-        raise NotImplementedError('Instances should define this method for each model')
+    def update(self, ess_shape, ess_rate):
+        """
+        Update posterior given expected sufficient statistics.
+        """
+        self.post_shape = self.prior_shape + ess_shape
+        self.post_rate = self.prior_rate + ess_rate
 
+        return self
