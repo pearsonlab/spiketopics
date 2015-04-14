@@ -232,7 +232,7 @@ class Test_Gamma_Model:
             'post_mean_shape': ps, 'post_mean_rate': ps,
             'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_baseline_hierarchy(**vals)
+        gpm.initialize_baseline(**vals)
         assert_in(gpm.baseline, gpm.Lterms)
         assert_is_instance(gpm.baseline_shape, nd.GammaNode)
 
@@ -256,6 +256,6 @@ class Test_Gamma_Model:
             'post_mean_shape': ps, 'post_mean_rate': ps,
             'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_latents_hierarchy(**vals)
+        gpm.initialize_fr_latents(**vals)
         assert_in(gpm.fr_latents, gpm.Lterms)
         assert_is_instance(gpm.fr_latents_shape, nd.GammaNode)

@@ -153,21 +153,17 @@ class GammaModel:
         Assumes the prior is on f * dt, where f is the baseline firing
         rate and dt is the time bin size. 
         """
-        node_shape = (self.U,)
+        # test if parameters indicate there's a hierarchy
+        if 'prior_shape_shape' in kwargs:
+            child_shape = (self.U,)
+            parent_shape = (1,)
 
-        self._initialize_gamma('baseline', node_shape, **kwargs)
+            self._initialize_gamma_hierarchy('baseline', parent_shape,
+                child_shape, **kwargs)
+        else:
+            node_shape = (self.U,)
 
-        return self
-
-    def initialize_baseline_hierarchy(self, **kwargs):
-        """
-        Initialize baseline with hierarchy over units.
-        """
-        child_shape = (self.U,)
-        parent_shape = (1,)
-
-        self._initialize_gamma_hierarchy('baseline', parent_shape,
-            child_shape, **kwargs)
+            self._initialize_gamma('baseline', node_shape, **kwargs)
 
         return self
 
@@ -175,21 +171,17 @@ class GammaModel:
         """
         Set up node for firing rate effects due to latent variables.
         """
-        node_shape = (self.K, self.U)
+        # test if parameters indicate there's a hierarchy
+        if 'prior_shape_shape' in kwargs:
+            child_shape = (self.K, self.U)
+            parent_shape = (self.K,)
 
-        self._initialize_gamma('fr_latents', node_shape, **kwargs)
+            self._initialize_gamma_hierarchy('fr_latents', parent_shape,
+                child_shape, **kwargs)
+        else:
+            node_shape = (self.K, self.U)
 
-        return self
-
-    def initialize_fr_latents_hierarchy(self, **kwargs):
-        """
-        Initialize firing rate effects for latent states with 
-        hierarchy over units.
-        """
-        child_shape = (self.K, self.U)
-        parent_shape = (self.K,)
-
-        self._initialize_gamma_hierarchy('fr_latents', parent_shape,
-            child_shape, **kwargs)
+            self._initialize_gamma('fr_latents', node_shape, **kwargs)
 
         return self
+
