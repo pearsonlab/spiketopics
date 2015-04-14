@@ -149,7 +149,7 @@ class GammaModel:
 
     def initialize_baseline(self, **kwargs):
         """
-        Set up node for baseline firing rate effects.
+        Set up node for baseline firing rates.
         Assumes the prior is on f * dt, where f is the baseline firing
         rate and dt is the time bin size. 
         """
@@ -164,11 +164,32 @@ class GammaModel:
         Initialize baseline with hierarchy over units.
         """
         child_shape = (self.U,)
-        node_shape = (1,)
+        parent_shape = (1,)
 
-        self._initialize_gamma_hierarchy('baseline', node_shape,
+        self._initialize_gamma_hierarchy('baseline', parent_shape,
             child_shape, **kwargs)
 
         return self
 
+    def initialize_fr_latents(self, **kwargs):
+        """
+        Set up node for firing rate effects due to latent variables.
+        """
+        node_shape = (self.K, self.U)
 
+        self._initialize_gamma('fr_latents', node_shape, **kwargs)
+
+        return self
+
+    def initialize_fr_latents_hierarchy(self, **kwargs):
+        """
+        Initialize firing rate effects for latent states with 
+        hierarchy over units.
+        """
+        child_shape = (self.K, self.U)
+        parent_shape = (self.K,)
+
+        self._initialize_gamma_hierarchy('fr_latents', parent_shape,
+            child_shape, **kwargs)
+
+        return self
