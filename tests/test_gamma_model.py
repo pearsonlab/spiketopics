@@ -183,7 +183,7 @@ class Test_Gamma_Model:
         # compare to X itself
         npt.assert_array_equal(first_unit, self.X.iloc[:, 1:].values)
 
-        assert_is_instance(gpm.Lvalues, list)
+        assert_is_instance(gpm.nodes, dict)
 
     def test_can_initialize_baseline(self):
         gpm = gp.GammaModel(self.N, self.K)
@@ -193,12 +193,13 @@ class Test_Gamma_Model:
         por = np.ones((self.U,))
         gpm.initialize_baseline(prior_shape=prs, 
             prior_rate=prr, post_shape=pos, post_rate=por)
-        assert_is_instance(gpm.baseline, nd.GammaNode)
-        npt.assert_array_equal(prs, gpm.baseline.prior_shape)
-        npt.assert_array_equal(prr, gpm.baseline.prior_rate)
-        npt.assert_array_equal(pos, gpm.baseline.post_shape)
-        npt.assert_array_equal(por, gpm.baseline.post_rate)
-        assert_in(gpm.baseline, gpm.Lterms)
+        assert_in('baseline', gpm.nodes)
+        assert_is_instance(gpm.nodes['baseline'], nd.GammaNode)
+        baseline = gpm.nodes['baseline']
+        npt.assert_array_equal(prs, baseline.prior_shape)
+        npt.assert_array_equal(prr, baseline.prior_rate)
+        npt.assert_array_equal(pos, baseline.post_shape)
+        npt.assert_array_equal(por, baseline.post_rate)
 
     def test_can_initialize_baseline_hierarchy(self):
         parent_shape = (1,)
@@ -212,8 +213,8 @@ class Test_Gamma_Model:
             'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**vals)
-        assert_in(gpm.baseline, gpm.Lterms)
-        assert_is_instance(gpm.baseline_shape, nd.GammaNode)
+        assert_in('baseline', gpm.nodes)
+        assert_is_instance(gpm.nodes['baseline_shape'], nd.GammaNode)
 
     def test_can_initialize_fr_latents(self):
         vv = np.random.rand(self.K, self.U)
@@ -221,8 +222,8 @@ class Test_Gamma_Model:
             'post_shape': vv, 'post_rate': vv }) 
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_fr_latents(**vals)
-        assert_in(gpm.fr_latents, gpm.Lterms)
-        assert_is_instance(gpm.fr_latents, nd.GammaNode)
+        assert_in('fr_latents', gpm.nodes)
+        assert_is_instance(gpm.nodes['fr_latents'], nd.GammaNode)
 
     def test_can_initialize_fr_latents_hierarchy(self):
         parent_shape = (self.K,)
@@ -236,17 +237,18 @@ class Test_Gamma_Model:
             'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_fr_latents(**vals)
-        assert_in(gpm.fr_latents, gpm.Lterms)
-        assert_is_instance(gpm.fr_latents_shape, nd.GammaNode)
+        assert_in('fr_latents', gpm.nodes)
+        assert_is_instance(gpm.nodes['fr_latents'], nd.GammaNode)
+        assert_is_instance(gpm.nodes['fr_latents_shape'], nd.GammaNode)
 
     def test_can_initialize_fr_regressors(self):
         vv = np.random.rand(self.R, self.U)
         vals = ({'prior_shape': vv, 'prior_rate': vv, 
             'post_shape': vv, 'post_rate': vv }) 
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_latents(**vals)
-        assert_in(gpm.fr_latents, gpm.Lterms)
-        assert_is_instance(gpm.fr_latents, nd.GammaNode)
+        gpm.initialize_fr_regressors(**vals)
+        assert_in('fr_regressors', gpm.nodes)
+        assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
 
     def test_can_initialize_fr_regressors_hierarchy(self):
         parent_shape = (self.R,)
@@ -259,6 +261,7 @@ class Test_Gamma_Model:
             'post_mean_shape': ps, 'post_mean_rate': ps,
             'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_latents(**vals)
-        assert_in(gpm.fr_latents, gpm.Lterms)
-        assert_is_instance(gpm.fr_latents_shape, nd.GammaNode)
+        gpm.initialize_fr_regressors(**vals)
+        assert_in('fr_regressors', gpm.nodes)
+        assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
+        assert_is_instance(gpm.nodes['fr_regressors_shape'], nd.GammaNode)

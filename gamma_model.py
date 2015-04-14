@@ -46,9 +46,10 @@ class GammaModel:
         self.K = K
         self.U = U
 
+        self.nodes = {}  # dict for variable nodes in graphical model
+
         self.log = {'L': [], 'H': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective
-        self.Lterms = []  # holds piece of optimization objective
 
         self._parse_frames(data)
 
@@ -96,9 +97,7 @@ class GammaModel:
             nodes = nd.initialize_gamma(name, node_shape, **kwargs)
 
         for n in nodes:
-            setattr(self, n.name, n)
-
-        self.Lterms.extend(nodes)
+            self.nodes.update({n.name: n})
 
     def initialize_baseline(self, **kwargs):
         """
