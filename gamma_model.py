@@ -135,4 +135,11 @@ class GammaModel:
             (1,), **kwargs)
 
         return self
-        
+
+    def initialize_latents(self, **kwargs):
+        nodes = nd.initialize_HMM(self.K, 2, self.T, **kwargs)
+
+        for n in nodes:
+            self.nodes.update({n.name: n})
+
+        return self

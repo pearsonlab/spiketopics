@@ -291,3 +291,30 @@ class Test_Gamma_Model:
         assert_in('overdispersion', gpm.nodes)
         assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
         assert_is_instance(gpm.nodes['overdispersion_shape'], nd.GammaNode)
+
+    def test_can_initialize_latents(self):
+        K = self.K
+        M = 2
+        T = self.T
+        A_shape = (M, M, K)
+        pi_shape = (M, K)
+        z_shape = (M, T, K)
+        zz_shape = (M, M, T - 1, K)
+        logZ_shape = (K,)
+        A = np.ones(A_shape)
+        pi = np.ones(pi_shape)
+        z = np.ones(z_shape)
+        zz = np.ones(zz_shape)
+        logZ = np.ones(logZ_shape)
+        vals = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 
+            'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
+
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_latents(**vals)
+
+        assert_in('z', gpm.nodes)
+        assert_in('A', gpm.nodes)
+        assert_in('pi', gpm.nodes)
+        assert_is_instance(gpm.nodes['z'], nd.MarkovChainNode)
+        assert_is_instance(gpm.nodes['A'], nd.DirichletNode)
+        assert_is_instance(gpm.nodes['pi'], nd.DirichletNode)
