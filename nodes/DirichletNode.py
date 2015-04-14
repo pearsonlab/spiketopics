@@ -2,16 +2,12 @@ import numpy as np
 from scipy.special import digamma, gammaln
 from ConstNode import ConstNode
 
-class TransitionMatrixNode:
+class DirichletNode:
     """
-    Markov transition matrix. May be an array of matrices. Columns of 
-    A must sum to 1. 
+    Dirichlet distribution. May be an array. Axis 0 is assumed to be
+    the probability dimension.
     """
     def __init__(self, prior, post, name='A'):
-        if prior.shape[0] != prior.shape[1]:
-            raise ValueError('First two indices of prior must be a square matrix')
-        if post.shape[0] != post.shape[1]:
-            raise ValueError('First two indices of posterior must be a square matrix')
         try: 
             np.broadcast(prior, post)
         except:
