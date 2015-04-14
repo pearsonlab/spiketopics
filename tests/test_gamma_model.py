@@ -163,6 +163,7 @@ class Test_Gamma_Model:
         df = df.merge(self.X)
 
         self.N = df
+        self.M = self.N.shape[0]
 
     @classmethod
     def _normalize_count_frame(self):
@@ -265,3 +266,28 @@ class Test_Gamma_Model:
         assert_in('fr_regressors', gpm.nodes)
         assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
         assert_is_instance(gpm.nodes['fr_regressors_shape'], nd.GammaNode)
+
+    def test_can_initialize_overdispersion(self):
+        vv = np.random.rand(self.M)
+        vals = ({'prior_shape': vv, 'prior_rate': vv, 
+            'post_shape': vv, 'post_rate': vv }) 
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_overdispersion(**vals)
+        assert_in('overdispersion', gpm.nodes)
+        assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
+
+    def test_can_initialize_overdispersion_hierarchy(self):
+        parent_shape = (1,)
+        child_shape = (self.M,)
+        ps = np.random.rand(*parent_shape)
+        cs = np.random.rand(*child_shape)
+        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+            'prior_mean_shape': ps, 'prior_mean_rate': ps,
+            'post_shape_shape': ps, 'post_shape_rate': ps,
+            'post_mean_shape': ps, 'post_mean_rate': ps,
+            'post_child_shape': cs, 'post_child_rate': cs})
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_overdispersion(**vals)
+        assert_in('overdispersion', gpm.nodes)
+        assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
+        assert_is_instance(gpm.nodes['overdispersion_shape'], nd.GammaNode)

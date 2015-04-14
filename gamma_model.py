@@ -126,3 +126,12 @@ class GammaModel:
             (self.R,), **kwargs)
 
         return self
+
+    def initialize_overdispersion(self, **kwargs):
+        """
+        Set up trial-to-trial overdispersion on firing rates.
+        """
+        self._initialize_gamma_nodes('overdispersion', (self.M,), 
+            (1,), **kwargs)
+
+        return self
