@@ -54,3 +54,31 @@ def test_can_initialize_gamma_hierarchy():
     assert_equals({'foo', 'foo_shape', 'foo_mean'}, 
         {n.name for n in nodes})
     assert_is_instance(nodes[0], nd.GammaNode)
+
+def test_can_initialize_HMM():
+    K = 5
+    M = 3
+    T = 50
+    A_shape = (M, M, K)
+    pi_shape = (M, K)
+    z_shape = (M, T, K)
+    zz_shape = (M, M, T - 1, K)
+    logZ_shape = (K,)
+    A = np.ones(A_shape)
+    pi = np.ones(pi_shape)
+    z = np.ones(z_shape)
+    zz = np.ones(zz_shape)
+    logZ = np.ones(logZ_shape)
+    vals = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 
+        'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
+
+    nodes = nd.initialize_HMM(K, M, T, **vals)
+
+    node_dict = {n.name: n for n in nodes}
+
+    assert_equals(len(nodes), 3)
+    assert_equals({'A', 'pi', 'z'}, set(node_dict.keys()))
+    assert_is_instance(node_dict['A'], nd.DirichletNode)
+    assert_is_instance(node_dict['pi'], nd.DirichletNode)
+    assert_is_instance(node_dict['z'], nd.MarkovChainNode)
+

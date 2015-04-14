@@ -7,7 +7,7 @@ class DirichletNode:
     Dirichlet distribution. May be an array. Axis 0 is assumed to be
     the probability dimension.
     """
-    def __init__(self, prior, post, name='A'):
+    def __init__(self, prior, post, name='dirichlet'):
         try: 
             np.broadcast(prior, post)
         except:
@@ -68,3 +68,4 @@ class DirichletNode:
 
     def update(self):
         raise NotImplementedError('Instances should define this method for each model')
+

@@ -135,3 +135,4 @@ class GammaModel:
             (1,), **kwargs)
 
         return self
+        

@@ -2,6 +2,8 @@
 Helper functions for dealing with nodes.
 """
 from .GammaNode import GammaNode
+from .DirichletNode import DirichletNode
+from .MarkovChainNode import MarkovChainNode
 from .utility_nodes import ProductNode
 
 def check_shapes(par_shapes, pars):
@@ -66,3 +68,29 @@ def initialize_gamma_hierarchy(basename, parent_shape,
 
     return (shape, mean, child)
 
+def initialize_HMM(n_chains, n_states, n_times, **kwargs):
+    """
+    Initialize nodes that compose a Hidden Markov Model. 
+    Nodes are:
+        z: latent states (taking values 0...n_states-1 x n_times times; 
+            0...n_chains-1 copies)
+        A: n_chains copies of a n_states x n_states transition matrix
+        pi: n_chains copies of a n_states vector of initial probabilities
+
+    Returns a tuple of three nodes (z, A, pi)
+    """
+    K = n_chains
+    M = n_states
+    T = n_times
+    par_shapes = ({'A_prior': (M, M, K), 'A_post': (M, M, K),
+        'pi_prior': (M, K), 'pi_post': (M, K), 'z_prior': (M, T, K), 
+        'zz_prior': (M, M, T - 1, K), 'logZ_prior': (K,)})
+
+    check_shapes(par_shapes, kwargs)
+
+    A = DirichletNode(kwargs['A_prior'], kwargs['A_post'], name='A')
+    pi = DirichletNode(kwargs['pi_prior'], kwargs['pi_post'], name='pi')
+    z = MarkovChainNode(kwargs['z_prior'], kwargs['zz_prior'], 
+        kwargs['logZ_prior'], name='z')
+
+    return (z, A, pi)
