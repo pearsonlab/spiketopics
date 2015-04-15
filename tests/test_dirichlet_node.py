@@ -33,7 +33,7 @@ def test_expected_x():
 
 def test_expected_log_x():
     dn = DirichletNode(prior=prior_mat, post=post_mat)
-    log_x = digamma(post_mat) / digamma(np.sum(post_mat, axis=0, keepdims=True))
+    log_x = digamma(post_mat) - digamma(np.sum(post_mat, axis=0, keepdims=True))
     npt.assert_array_equal(dn.expected_log_x(), log_x)
 
 def test_log_prior_shape():

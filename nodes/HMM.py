@@ -60,7 +60,7 @@ class HMMNode:
     the latent states, a DirichletNode for the transition matrix, and a 
     DirichletNode for the initial state probabilities.
     """
-    def __init__(self, z, A, pi):
+    def __init__(self, z, A, pi, name='HMM'):
         M = z.shape[0]
         T = z.shape[1]
         if len(z.shape) > 2:
@@ -78,6 +78,7 @@ class HMMNode:
         self.T = T
         self.K = K
         self.shape = z.shape
+        self.name = name
 
         self.nodes = {'z': z, 'A': A, 'pi': pi} 
         self.Hz = np.empty(K)

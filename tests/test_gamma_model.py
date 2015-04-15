@@ -312,9 +312,4 @@ class Test_Gamma_Model:
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_latents(**vals)
 
-        assert_in('z', gpm.nodes)
-        assert_in('A', gpm.nodes)
-        assert_in('pi', gpm.nodes)
-        assert_is_instance(gpm.nodes['z'], nd.MarkovChainNode)
-        assert_is_instance(gpm.nodes['A'], nd.DirichletNode)
-        assert_is_instance(gpm.nodes['pi'], nd.DirichletNode)
+        assert_in('HMM', gpm.nodes)

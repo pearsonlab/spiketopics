@@ -3,7 +3,7 @@ Helper functions for dealing with nodes.
 """
 from .GammaNode import GammaNode
 from .DirichletNode import DirichletNode
-from .HMM import MarkovChainNode
+from .HMM import MarkovChainNode, HMMNode
 from .utility_nodes import ProductNode
 
 def check_shapes(par_shapes, pars):
@@ -93,4 +93,4 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
     z = MarkovChainNode(kwargs['z_prior'], kwargs['zz_prior'], 
         kwargs['logZ_prior'], name='z')
 
-    return (z, A, pi)
+    return HMMNode(z, A, pi)

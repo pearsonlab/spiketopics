@@ -1,9 +1,6 @@
 from __future__ import division
 import numpy as np
-import pandas as pd
-from scipy.special import digamma, gammaln, betaln
 from scipy.optimize import minimize
-from forward_backward import fb_infer
 import numexpr as ne
 import spiketopics.nodes as nd
 
@@ -137,9 +134,11 @@ class GammaModel:
         return self
 
     def initialize_latents(self, **kwargs):
-        nodes = nd.initialize_HMM(self.K, 2, self.T, **kwargs)
+        node = nd.initialize_HMM(self.K, 2, self.T, **kwargs)
 
-        for n in nodes:
-            self.nodes.update({n.name: n})
+        self.nodes.update({node.name: node})
 
         return self
+
+    def tester(self):
+        return self.M
