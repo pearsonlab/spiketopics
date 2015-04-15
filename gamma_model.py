@@ -209,6 +209,9 @@ class GammaModel:
 
         return logpsi
 
+    def update_fr_regressors(self):
+        pass
+
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
         nn = self.Nframe['count']
@@ -233,12 +236,14 @@ class GammaModel:
             self.latents = True
             self.F_prod(update=True)
             self.nodes['fr_latents'].update = self.update_fr_latents
+            self.nodes['HMM'].update_finalizer = (lambda x: self.F_prod(update=True))
         else:
             self.latents = False
 
         if 'fr_regressors' in self.nodes:
             self.regressors = True
             self.G_prod(update=True)
+            self.nodes['fr_regressors'].update = self.update_fr_regressors
         else:
             self.regressors = False
 

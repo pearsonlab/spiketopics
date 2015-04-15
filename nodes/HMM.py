@@ -82,6 +82,7 @@ class HMMNode:
         self.K = K
         self.shape = z.shape
         self.name = name
+        self.update_finalizer = None
 
         self.nodes = {'z': z, 'A': A, 'pi': pi} 
         self.Hz = np.empty(K)
@@ -124,6 +125,9 @@ class HMMNode:
         transition_piece = np.sum(Xi * A_par[..., np.newaxis])
         logq = emission_piece + initial_piece + transition_piece
         self.Hz[idx] = -logq + logZ
+
+        if self.update_finalizer is not None:
+            self.update_finalizer()
 
         return self
 
