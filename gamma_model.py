@@ -144,17 +144,88 @@ class GammaModel:
     def update_baseline(self):
         node = self.nodes['baseline']
 
-
         node.post_shape = node.prior_shape + np.sum(self.N, axis=0)
-        node.post_rate 
+        node.post_rate = node.prior_rate + np.sum(self.F_prod(), axis=0)
+
+    def update_fr_latents(self, idx):
+        lam = self.nodes['fr_latents']
+        xi = self.nodes['HMM'].nodes['z'].z[1]
+        Nz = xi[:, idx].dot(self.N)
+
+        if self.overdispersion:
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+            od = self.nodes['overdispersion'].expected_x()
+            bl = self.nodes['baseline'].expected_x()[uu]
+            Fz = self.F_prod(idx, flat=True) * xi[tt, idx]
+            G = self.G_prod(flat=True)
+            allprod = bl * od * Fz * G
+            eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
+        else:
+            bl = self.nodes['baseline'].expected_x()
+            Fz = self.F_prod(idx) * xi[:, np.newaxis, idx] 
+            G = self.G_prod()
+            allprod = bl * Fz * G
+            eff_rate = np.sum(allprod, axis=0)
+
+        lam.post_shape[idx] = lam.prior_shape[idx] + Nz
+        lam.post_rate[idx] = lam.prior_rate[idx] + eff_rate
+
+    def calc_log_evidence(self, idx):
+        """
+        Calculate p(y|z, theta) for use in updating HMM. Need only be
+        correct up to an overall constant.
+        """ 
+        logpsi = np.empty((self.T, 2))
+
+        lam = self.nodes['fr_latents']
+        if self.overdispersion:
+            N = self.Nframe
+            nn = N['count']
+            uu = N['unit']
+            od = self.nodes['overdispersion'].expected_x()
+            bl = self.nodes['baseline'].expected_x()[uu]
+            Fk = self.F_prod(idx, flat=True)
+            G = self.G_prod(flat=True)
+            Gbar = np.mean(G)  # helps if we use this as a normalizer
+            allprod = -bl * od * Fk * G / Gbar
+            bar_log_lam = lam.expected_log_x()[idx, uu]
+
+            N['lam0'] = allprod
+            N['lam1'] = allprod + (nn *  bar_log_lam/ Gbar)
+
+            logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
+
+        else:
+            bl = self.nodes['baseline'].expected_x()
+            Fk = self.F_prod(idx)
+            G = self.G_prod()
+            Gbar = np.mean(G)
+            allprod = -np.sum(bl * Fk * G / Gbar, axis=1)
+            bar_log_lam = lam.expected_log_x()[idx]
+
+            logpsi[:, 0] = allprod
+            logpsi[:, 1] = allprod + np.sum(self.N * bar_log_lam, axis=1)
+
+        return logpsi
+
+    def update_overdispersion(self):
+        node = self.nodes['overdispersion']
+
+
 
     def finalize(self):
         """
         This should be called once all the relevant variables are initialized.
         """
+        if 'baseline' in self.nodes:
+            self.baseline = True
+            self.nodes['baseline'].update = self.update_baseline
+
         if {'HMM', 'fr_latents'}.issubset(self.nodes):
             self.latents = True
             self.F_prod(update=True)
+            self.nodes['fr_latents'].update = self.update_fr_latents
         else:
             self.latents = False
 
@@ -168,8 +239,6 @@ class GammaModel:
             self.overdispersion = True
         else:
             self.overdispersion = False
-
-        # update functions attach to nodes here...
 
         return self
 

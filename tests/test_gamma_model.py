@@ -416,3 +416,30 @@ class Test_Gamma_Model:
         npt.assert_allclose(gpm.G_prod(1), gpm._Gtuk[..., 1])
         npt.assert_allclose(gpm.G_prod(), gpm._Gtu)
         npt.assert_allclose(gpm.G_prod(flat=True), gpm._Gtu_flat)
+
+    def test_updates(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        baseline = gpm.nodes['baseline']
+        baseline.update()
+        npt.assert_allclose(baseline.post_shape, 
+            baseline.prior_shape + np.sum(gpm.N, axis=0))
+
+        fr_latents = gpm.nodes['fr_latents']
+        fr_latents.update(1)
+
+    def test_calc_log_evidence(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        logpsi = gpm.calc_log_evidence(2)
+        assert_equals(logpsi.shape, (self.T, 2))
