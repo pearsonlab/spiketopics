@@ -144,7 +144,7 @@ class GammaModel:
     def update_baseline(self):
         node = self.nodes['baseline']
 
-        node.post_shape = node.prior_shape + np.sum(self.N, axis=0)
+        node.post_shape = node.prior_shape + np.sum(self.N, axis=0).data
         node.post_rate = node.prior_rate + np.sum(self.F_prod(), axis=0)
 
     def update_fr_latents(self, idx):
@@ -210,7 +210,75 @@ class GammaModel:
         return logpsi
 
     def update_fr_regressors(self):
-        pass
+        lam = self.nodes['fr_regressors']
+        nn = self.Nframe['count']
+        uu = self.Nframe['unit']
+        NX = nn[:, np.newaxis] * self.Xframe
+
+        lam.post_shape = lam.prior_shape + NX.groupby(uu).sum().values.T
+
+        # now to find the rates, we have to optimize
+        starts = lam.post_rate
+        lam.post_rate = self.optimize_regressor_rates(starts)
+        self.G_prod(update=True)
+
+    def optimize_regressor_rates(self, starts):
+        """
+        Solve for log(prior_rate) via black-box optimization. 
+        Use log(b) since this is the natural parameter.
+        Updater is the name of a factory function that returns a function
+        to be minimized based on current parameter values.
+        """
+        aa = self.nodes['fr_regressors'].post_shape
+        minfun = self._make_exact_minfun()
+
+        eps_starts = np.log(aa / starts)
+        res = minimize(minfun, eps_starts, jac=True)
+        if not res.success:
+            print "Warning: optimization terminated without success."
+            print res.message
+        eps = res.x.reshape(self.R, self.U)
+        bb = aa * np.exp(-eps)
+        return bb
+
+    def _make_exact_minfun(self):
+        """
+        Factory function that returns a function to be minimized.
+        This version uses an exact minimization objective.
+        """
+        uu = self.Nframe['unit']
+        if self.overdispersion:
+            od = self.nodes['overdispersion'].expected_x()
+        else:
+            od = 1
+        F = self.F_prod(flat=True)
+        bl = self.nodes['baseline'].expected_x()[uu]
+
+        aa = self.nodes['fr_regressors'].post_shape
+        ww = self.nodes['fr_regressors'].prior_rate
+
+        def minfun(epsilon): 
+            """
+            This is the portion of the evidence lower bound that depends on 
+            the b parameter. eps = log(a/b)
+            """
+            eps = epsilon.reshape(self.R, self.U)
+            sum_log_G = np.sum(eps[:, uu].T * self.Xframe.values, axis=1)
+            G = np.exp(sum_log_G)
+
+            elbo = np.sum(aa * eps)
+            elbo += -np.sum(ww * np.exp(eps))
+            FthG = (bl * od * F * G).view(np.ndarray)
+            elbo += -np.sum(FthG)
+
+            # grad = grad(elbo)
+            grad = aa - ww * np.exp(eps)
+            grad -= (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values.T
+
+            # minimization objective is log(-elbo)
+            return np.log(-elbo), grad.ravel() / elbo
+
+        return minfun
 
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
@@ -222,7 +290,6 @@ class GammaModel:
 
         node.post_shape = node.prior_shape + nn
         node.post_rate = node.prior_rate + bl * F * G
-
 
     def finalize(self):
         """

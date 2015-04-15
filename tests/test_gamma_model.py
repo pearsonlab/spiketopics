@@ -425,6 +425,9 @@ class Test_Gamma_Model:
         gpm.initialize_latents(**self.latent_dict)
         gpm.initialize_fr_regressors(**self.fr_regressors_dict)
         gpm.finalize()
+        assert_true(gpm.baseline)
+        assert_true(gpm.latents)
+        assert_true(gpm.regressors)
 
         baseline = gpm.nodes['baseline']
         baseline.update()
@@ -433,6 +436,9 @@ class Test_Gamma_Model:
 
         fr_latents = gpm.nodes['fr_latents']
         fr_latents.update(1)
+
+        fr_regressors = gpm.nodes['fr_regressors']
+        fr_regressors.update()
 
         # add overdispersion
         gpm.initialize_overdispersion(**self.overdisp_dict)
