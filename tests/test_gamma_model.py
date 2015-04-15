@@ -376,7 +376,6 @@ class Test_Gamma_Model:
         assert_true(not gpm.overdispersion)
         gpm.G_prod()
 
-
     def test_F_prod(self):
         # initialize model
         gpm = gp.GammaModel(self.N, self.K)
@@ -394,9 +393,9 @@ class Test_Gamma_Model:
         assert_equals(gpm.F_prod(flat=True).shape, (self.M,))
 
         # test caching
-        npt.assert_allclose(gpm.F_prod(1), gpm._Ftku[:, 1, :])
+        npt.assert_allclose(gpm.F_prod(1), gpm._Ftuk[..., 1])
         npt.assert_allclose(gpm.F_prod(), gpm._Ftu)
-        npt.assert_allclose(gpm.F_prod(flat=True), gpm._Fflat)
+        npt.assert_allclose(gpm.F_prod(flat=True), gpm._Ftu_flat)
 
     def test_G_prod(self):
         # initialize model
@@ -409,9 +408,11 @@ class Test_Gamma_Model:
         gpm.G_prod(update=True)
 
         # test shapes
-        assert_equals(gpm.G_prod(1).shape, (self.M,))
-        assert_equals(gpm.G_prod().shape, (self.M,))
+        assert_equals(gpm.G_prod(1).shape, (self.T, self.U))
+        assert_equals(gpm.G_prod().shape, (self.T, self.U))
+        assert_equals(gpm.G_prod(flat=True).shape, (self.M,))
 
         # test caching
-        npt.assert_allclose(gpm.G_prod(1), gpm._Gtku[:, 1])
+        npt.assert_allclose(gpm.G_prod(1), gpm._Gtuk[..., 1])
         npt.assert_allclose(gpm.G_prod(), gpm._Gtu)
+        npt.assert_allclose(gpm.G_prod(flat=True), gpm._Gtu_flat)

@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import pandas as pd
 from scipy.optimize import minimize
 import numexpr as ne
 import spiketopics.nodes as nd
@@ -140,6 +141,13 @@ class GammaModel:
 
         return self
 
+    def update_baseline(self):
+        node = self.nodes['baseline']
+
+
+        node.post_shape = node.prior_shape + np.sum(self.N, axis=0)
+        node.post_rate 
+
     def finalize(self):
         """
         This should be called once all the relevant variables are initialized.
@@ -161,6 +169,8 @@ class GammaModel:
         else:
             self.overdispersion = False
 
+        # update functions attach to nodes here...
+
         return self
 
     def F_prod(self, k=None, update=False, flat=False):
@@ -173,37 +183,47 @@ class GammaModel:
         version of F_{tu}.
         """
         if update:
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+
             xi = self.nodes['HMM'].nodes['z'].z[1]
             lam = self.nodes['fr_latents'].expected_x()
             if k is not None:
-                zz = xi[:, k, np.newaxis]
-                w = lam[k]
+                zz = xi[tt, k]
+                w = lam[k][uu]
                 vv = ne.evaluate("1 - zz + zz * w")
-                self._Fpre[:, k, :] = vv
+                self._Fpre[:, k] = vv
             else:
-                zz = xi[:, :, np.newaxis]
-                w = lam
+                zz = xi[tt]
+                w = lam[:, uu].T
                 vv = ne.evaluate("1 - zz + zz * w")
                 self._Fpre = vv
 
             # work in log space to avoid over/underflow
-            uu = self.Nframe['unit']
-            tt = self.Nframe['time']
             Fpre = self._Fpre
             dd = ne.evaluate("sum(log(Fpre), axis=1)")
-            self._Ftu = ne.evaluate("exp(dd)")
-            ddd = dd[:, np.newaxis, :]
-            self._Ftku = ne.evaluate("exp(ddd - log(Fpre))")
-            self._Fflat = self._Ftu[tt, uu]
+            self._Ftu_flat = ne.evaluate("exp(dd)")
+            ddd = dd[:, np.newaxis]
+            self._Ftuk_flat = ne.evaluate("exp(ddd - log(Fpre))")
+
+            # make non-flat versions
+            Ftu = pd.DataFrame(self._Ftu_flat).groupby([tt, uu]).sum()
+            self._Ftu = Ftu.values.reshape(self.T, self.U)
+            Ftuk = pd.DataFrame(self._Ftuk_flat).groupby([tt, uu]).sum()
+            self._Ftuk = Ftuk.values.reshape(self.T, self.U, -1)
 
         if k is not None:
-            return self._Ftku[:, k, :]
-        elif flat:
-            return self._Fflat
+            if flat:
+                return self._Ftuk_flat[..., k]
+            else:
+                return self._Ftuk[..., k]
         else:
-            return self._Ftu
+            if flat:
+                return self._Ftu_flat
+            else:
+                return self._Ftu
 
-    def G_prod(self, k=None, update=False):
+    def G_prod(self, k=None, update=False, flat=False):
         """
         Return the value of the G product.
         If k is specified, return G_{tku} (product over all but k),
@@ -217,8 +237,10 @@ class GammaModel:
         result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
         """
         if update:
-            lam = self.nodes['fr_regressors'].expected_x()
             uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+
+            lam = self.nodes['fr_regressors'].expected_x()
             if k is not None:
                 zz = lam[k][uu]
                 # get x values for kth regressor
@@ -235,13 +257,25 @@ class GammaModel:
             # work in log space to avoid over/underflow
             Gpre = self._Gpre
             dd = ne.evaluate("sum(log(Gpre), axis=1)")
-            self._Gtu = ne.evaluate("exp(dd)")
+            self._Gtu_flat = ne.evaluate("exp(dd)")
             ddd = dd[:, np.newaxis]
-            self._Gtku = ne.evaluate("exp(ddd - log(Gpre))")
+            self._Gtuk_flat = ne.evaluate("exp(ddd - log(Gpre))")
+
+            # make non-flat versions
+            Gtu = pd.DataFrame(self._Gtu_flat).groupby([tt, uu]).sum()
+            self._Gtu = Gtu.values.reshape(self.T, self.U)
+            Gtuk = pd.DataFrame(self._Gtuk_flat).groupby([tt, uu]).sum()
+            self._Gtuk = Gtuk.values.reshape(self.T, self.U, -1)
 
         if k is not None:
-            return self._Gtku[:, k]
+            if flat:
+                return self._Gtuk_flat[..., k]
+            else:
+                return self._Gtuk[..., k]
         else:
-            return self._Gtu
+            if flat:
+                return self._Gtu_flat
+            else:
+                return self._Gtu
 
 
