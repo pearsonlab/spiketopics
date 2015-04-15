@@ -1,6 +1,7 @@
 """
 Define a constant node that is just a thin wrapper over a NumPy array.
 """
+from __future__ import division
 import numpy as np
 
 class ConstNode(np.ndarray):

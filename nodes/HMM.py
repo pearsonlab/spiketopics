@@ -1,6 +1,7 @@
 """
 Nodes related to Hidden Markov Models
 """
+from __future__ import division
 import numpy as np
 from ..forward_backward import fb_infer
 
@@ -43,8 +44,10 @@ class MarkovChainNode:
 
         self.name = name
         self.shape = z_prior.shape
-        self.z = z_prior
-        self.zz = zz_prior
+
+        # set inits (but normalize)
+        self.z = z_prior / np.sum(z_prior, axis=0, keepdims=True)
+        self.zz = zz_prior / np.sum(zz_prior, axis=0, keepdims=True)
         self.logZ = logZ_prior
 
     def update(self, idx, new_z, new_zz, new_logZ):

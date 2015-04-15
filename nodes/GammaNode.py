@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from scipy.special import digamma, gammaln
 from utility_nodes import ConstNode

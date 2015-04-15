@@ -140,6 +140,17 @@ class GammaModel:
 
         return self
 
+    def finalize(self):
+        """
+        This should be called once all the relevant variables are initialized.
+        """
+        if {'HMM', 'fr_latents'}.issubset(self.nodes):
+            self.F_prod(update=True)
+        if 'fr_regressors' in self.nodes:
+            self.G_prod(update=True)
+
+        return self
+
     def F_prod(self, k=None, update=False, flat=False):
         """
         Accessor method to return the value of the F product.

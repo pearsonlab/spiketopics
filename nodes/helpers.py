@@ -1,6 +1,7 @@
 """
 Helper functions for dealing with nodes.
 """
+from __future__ import division
 from .GammaNode import GammaNode
 from .DirichletNode import DirichletNode
 from .HMM import MarkovChainNode, HMMNode
@@ -65,6 +66,11 @@ def initialize_gamma_hierarchy(basename, parent_shape,
     child = GammaNode(shape, ProductNode(shape, mean),
         kwargs['post_child_shape'], kwargs['post_child_rate'], 
         name=basename)
+
+    # to do: wire up update functions for mean and shape here, since
+    # all the necessary nodes are present
+    # might even wire up update for child to autocall these before calling
+    # a personal update method (to be set in model)
 
     return (shape, mean, child)
 
