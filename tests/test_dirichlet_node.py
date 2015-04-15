@@ -17,10 +17,6 @@ def test_init_sets_priors_and_posts():
     npt.assert_array_equal(dn.prior, prior_mat)
     npt.assert_array_equal(dn.post, post_mat)
 
-def test_misshapen_inputs_raises_error():
-    pm = np.array([10, 2, 1., 5, 6, 7, 2, 2, 2]).reshape(3, 3)
-    assert_raises(ValueError, DirichletNode, prior=prior_mat, post=pm)
-
 def test_can_set_name():
     dn = DirichletNode(prior=prior_mat, post=post_mat, name='tester')
     assert_equals(dn.name, 'tester')

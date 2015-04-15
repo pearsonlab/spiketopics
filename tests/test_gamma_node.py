@@ -29,9 +29,6 @@ def test_misshapen_inputs_raises_error():
     assert_raises(ValueError, GammaNode, prior_shape=prior_shape, 
         prior_rate=prior_rate, post_shape=post_shape, 
         post_rate=np.array(1.))
-    assert_raises(ValueError, GammaNode, prior_shape=prior_shape, 
-        prior_rate=prior_rate, post_shape=np.array([1., 2., 3.]), 
-        post_rate=np.array([1., 2., 3.]))
 
 def test_can_set_name():
     gn = GammaNode(prior_shape=prior_shape, prior_rate=prior_rate, 

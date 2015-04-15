@@ -9,11 +9,6 @@ class DirichletNode:
     the probability dimension.
     """
     def __init__(self, prior, post, name='dirichlet'):
-        try: 
-            np.broadcast(prior, post)
-        except:
-            raise ValueError('Dimensions of prior and posterior could not be broadcast together.')
-
         self.M = prior.shape[0]  # number of states
 
         if isinstance(prior, np.ndarray):

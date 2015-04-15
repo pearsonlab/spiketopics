@@ -13,10 +13,6 @@ class GammaNode:
             raise ValueError('Dimensions of priors must agree!')
         if post_shape.shape != post_rate.shape:
             raise ValueError('Dimensions of posteriors must agree!')
-        try: 
-            np.broadcast(post_shape, prior_shape)
-        except:
-            raise ValueError('Dimensions of prior and posterior could not be broadcast together.')
 
         # if any parameters are passed as arrays, wrap in 
         # constant node
