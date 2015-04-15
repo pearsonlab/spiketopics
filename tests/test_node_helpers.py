@@ -55,6 +55,28 @@ def test_can_initialize_gamma_hierarchy():
         {n.name for n in nodes})
     assert_is_instance(nodes[0], nd.GammaNode)
 
+def test_hierarchy_updates():
+    parent_shape = (5, 6)
+    child_shape = (10, 5, 6)
+    basename = 'foo'
+    ps = np.ones(parent_shape)
+    cs = np.ones(child_shape)
+    vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+        'prior_mean_shape': ps, 'prior_mean_rate': ps,
+        'post_shape_shape': ps, 'post_shape_rate': ps,
+        'post_mean_shape': ps, 'post_mean_rate': ps,
+        'post_child_shape': cs, 'post_child_rate': cs})
+
+    nodes = nd.initialize_gamma_hierarchy(basename, parent_shape, 
+        child_shape, **vals)
+    node_dict = {n.name: n for n in nodes}
+
+    shape = node_dict['foo_shape']
+    mean = node_dict['foo_mean']
+    shape.update(1)
+    mean.update(2)
+    shape.update((0, 1))
+
 def test_can_initialize_HMM():
     K = 5
     M = 3
@@ -73,10 +95,10 @@ def test_can_initialize_HMM():
         'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
 
     nodes = nd.initialize_HMM(K, M, T, **vals)
+    hmm_node = nodes[0]
+    node_dict = hmm_node.nodes
 
-    node_dict = {n.name: n for n in nodes}
-
-    assert_equals(len(nodes), 3)
+    assert_equals(len(nodes), 1)
     assert_equals({'A', 'pi', 'z'}, set(node_dict.keys()))
     assert_is_instance(node_dict['A'], nd.DirichletNode)
     assert_is_instance(node_dict['pi'], nd.DirichletNode)

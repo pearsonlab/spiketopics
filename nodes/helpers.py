@@ -2,6 +2,7 @@
 Helper functions for dealing with nodes.
 """
 from __future__ import division
+import numpy as np
 from .GammaNode import GammaNode
 from .DirichletNode import DirichletNode
 from .HMM import MarkovChainNode, HMMNode
@@ -67,10 +68,41 @@ def initialize_gamma_hierarchy(basename, parent_shape,
         kwargs['post_child_shape'], kwargs['post_child_rate'], 
         name=basename)
 
-    # to do: wire up update functions for mean and shape here, since
-    # all the necessary nodes are present
-    # might even wire up update for child to autocall these before calling
-    # a personal update method (to be set in model)
+    def update_shape(idx):
+        """
+        Update for shape variable in terms of mean and child nodes.
+        """ 
+        # calculate number of units
+        n_units = np.sum(np.ones(child_shape)[idx])
+
+        shape.post_shape[idx] = shape.prior_shape[idx] 
+        shape.post_shape[idx] += 0.5 * n_units
+
+        shape.post_rate[idx] = shape.post_rate[idx] 
+        shape.post_rate[idx] += - n_units * (1 + mean.expected_log_x()[idx])
+        shape.post_rate[idx] += np.sum(mean.expected_x()[idx] * 
+            child.expected_x()[idx] - child.expected_log_x()[idx])
+
+    def update_mean(idx):
+        """
+        Update for mean variable in terms of shape and child nodes.
+        """
+        # calculate number of units
+        n_units = np.sum(np.ones(child_shape)[idx])
+
+        mean.post_shape[idx] = mean.prior_shape[idx]
+        mean.post_shape[idx] += n_units * shape.expected_x()[idx]
+       
+        mean.post_rate[idx] = mean.prior_rate[idx]
+        mean.post_rate[idx] += (shape.expected_x()[idx] * 
+            np.sum(child.expected_x()[idx]))
+
+    def update_parents(idx):
+        shape.update(idx)
+        mean.update(idx)
+
+    shape.update = update_shape
+    mean.update = update_mean
 
     return (shape, mean, child)
 
@@ -99,4 +131,4 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
     z = MarkovChainNode(kwargs['z_prior'], kwargs['zz_prior'], 
         kwargs['logZ_prior'], name='z')
 
-    return HMMNode(z, A, pi)
+    return (HMMNode(z, A, pi),)

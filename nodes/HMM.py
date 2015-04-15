@@ -47,7 +47,7 @@ class MarkovChainNode:
 
         # set inits (but normalize)
         self.z = z_prior / np.sum(z_prior, axis=0, keepdims=True)
-        self.zz = zz_prior / np.sum(zz_prior, axis=0, keepdims=True)
+        self.zz = zz_prior / np.sum(zz_prior, axis=(0, 1), keepdims=True)
         self.logZ = logZ_prior
 
     def update(self, idx, new_z, new_zz, new_logZ):
