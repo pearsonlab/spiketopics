@@ -261,8 +261,9 @@ class Test_Gamma_Model:
     @classmethod
     def _setup_overdispersion(self):
         vv = np.random.rand(self.M)
+        ww = np.random.rand(self.M)
         self.overdisp_dict = ({'prior_shape': vv, 'prior_rate': vv, 
-            'post_shape': vv, 'post_rate': vv }) 
+            'post_shape': ww, 'post_rate': ww }) 
 
         parent_shape = (1,)
         child_shape = (self.M,)
@@ -432,6 +433,12 @@ class Test_Gamma_Model:
 
         fr_latents = gpm.nodes['fr_latents']
         fr_latents.update(1)
+
+        # add overdispersion
+        gpm.initialize_overdispersion(**self.overdisp_dict)
+        gpm.finalize()
+        od = gpm.nodes['overdispersion']
+        od.update()
 
     def test_calc_log_evidence(self):
         gpm = gp.GammaModel(self.N, self.K)

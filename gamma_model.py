@@ -211,7 +211,14 @@ class GammaModel:
 
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
+        nn = self.Nframe['count']
+        uu = self.Nframe['unit']
+        bl = self.nodes['baseline'].expected_x()[uu]
+        F = self.F_prod(flat=True)
+        G = self.G_prod(flat=True)
 
+        node.post_shape = node.prior_shape + nn
+        node.post_rate = node.prior_rate + bl * F * G
 
 
     def finalize(self):
@@ -237,6 +244,7 @@ class GammaModel:
 
         if 'overdispersion' in self.nodes:
             self.overdispersion = True
+            self.nodes['overdispersion'].update = self.update_overdispersion
         else:
             self.overdispersion = False
 
