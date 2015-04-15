@@ -2,7 +2,7 @@
 Tests for Gamma model.
 """
 from __future__ import division
-from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, assert_is, set_trace
+from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, assert_is, set_trace, with_setup
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
@@ -35,6 +35,17 @@ class Test_Gamma_Model:
         self._make_count_frame()
 
         self._normalize_count_frame()
+
+        self._setup_baseline()
+
+        self._setup_latents()
+
+        self._setup_fr_latents()
+
+        self._setup_fr_regressors()
+
+        self._setup_overdispersion()
+
 
     @classmethod
     def _setup_constants(self):
@@ -169,6 +180,100 @@ class Test_Gamma_Model:
     def _normalize_count_frame(self):
         self.N = frames_to_times(self.N)
 
+    @classmethod
+    def _setup_baseline(self):
+        prs = np.ones((self.U,))
+        prr = np.ones((self.U,))
+        pos = np.ones((self.U,))
+        por = np.ones((self.U,))
+        self.baseline_dict = ({'prior_shape': prs, 
+            'prior_rate': prr, 'post_shape': pos, 
+            'post_rate': por})
+
+        parent_shape = (1,)
+        child_shape = (self.U,)
+        ps = np.ones(parent_shape)
+        cs = np.ones(child_shape)
+        self.baseline_hier_dict = ({
+            'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+            'prior_mean_shape': ps, 'prior_mean_rate': ps,
+            'post_shape_shape': ps, 'post_shape_rate': ps,
+            'post_mean_shape': ps, 'post_mean_rate': ps,
+            'post_child_shape': cs, 'post_child_rate': cs})
+
+    @classmethod
+    def _setup_latents(self):
+        K = self.K
+        M = 2
+        T = self.T
+        A_shape = (M, M, K)
+        pi_shape = (M, K)
+        z_shape = (M, T, K)
+        zz_shape = (M, M, T - 1, K)
+        logZ_shape = (K,)
+        A = np.ones(A_shape)
+        pi = np.ones(pi_shape)
+        z = np.ones(z_shape)
+        zz = np.ones(zz_shape)
+        logZ = np.ones(logZ_shape)
+        self.latent_dict = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
+
+    @classmethod
+    def _setup_fr_latents(self):
+        self.fr_latent_dict = ({
+        'prior_shape': np.random.rand(self.K, self.U),
+        'prior_rate': np.random.rand(self.K, self.U),
+        'post_shape': np.random.rand(self.K, self.U),
+        'post_rate': np.random.rand(self.K, self.U),
+        }) 
+
+        parent_shape = (self.K,)
+        child_shape = (self.K, self.U)
+        ps = np.random.rand(*parent_shape)
+        cs = np.random.rand(*child_shape)
+        self.fr_latent_hier_dict = ({
+            'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+            'prior_mean_shape': ps, 'prior_mean_rate': ps,
+            'post_shape_shape': ps, 'post_shape_rate': ps,
+            'post_mean_shape': ps, 'post_mean_rate': ps,
+            'post_child_shape': cs, 'post_child_rate': cs})
+
+    @classmethod
+    def _setup_fr_regressors(self):
+        self.fr_regressors_dict = ({
+        'prior_shape': np.random.rand(self.R, self.U),
+        'prior_rate': np.random.rand(self.R, self.U),
+        'post_shape': np.random.rand(self.R, self.U),
+        'post_rate': np.random.rand(self.R, self.U),
+        }) 
+
+        parent_shape = (self.R,)
+        child_shape = (self.R, self.U)
+        ps = np.random.rand(*parent_shape)
+        cs = np.random.rand(*child_shape)
+        self.fr_regressors_hier_dict = ({
+            'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+            'prior_mean_shape': ps, 'prior_mean_rate': ps,
+            'post_shape_shape': ps, 'post_shape_rate': ps,
+            'post_mean_shape': ps, 'post_mean_rate': ps,
+            'post_child_shape': cs, 'post_child_rate': cs})
+
+    @classmethod
+    def _setup_overdispersion(self):
+        vv = np.random.rand(self.M)
+        self.overdisp_dict = ({'prior_shape': vv, 'prior_rate': vv, 
+            'post_shape': vv, 'post_rate': vv }) 
+
+        parent_shape = (1,)
+        child_shape = (self.M,)
+        ps = np.random.rand(*parent_shape)
+        cs = np.random.rand(*child_shape)
+        self.overdisp_hier_dict = ({
+            'prior_shape_shape': ps, 'prior_shape_rate': ps, 
+            'prior_mean_shape': ps, 'prior_mean_rate': ps,
+            'post_shape_shape': ps, 'post_shape_rate': ps,
+            'post_mean_shape': ps, 'post_mean_rate': ps,
+            'post_child_shape': cs, 'post_child_rate': cs})
 
     def test_can_instantiate_model_object(self):
         gpm = gp.GammaModel(self.N, self.K)
@@ -188,160 +293,97 @@ class Test_Gamma_Model:
 
     def test_can_initialize_baseline(self):
         gpm = gp.GammaModel(self.N, self.K)
-        prs = np.ones((self.U,))
-        prr = np.ones((self.U,))
-        pos = np.ones((self.U,))
-        por = np.ones((self.U,))
-        gpm.initialize_baseline(prior_shape=prs, 
-            prior_rate=prr, post_shape=pos, post_rate=por)
+        gpm.initialize_baseline(**self.baseline_dict)
         assert_in('baseline', gpm.nodes)
         assert_is_instance(gpm.nodes['baseline'], nd.GammaNode)
         baseline = gpm.nodes['baseline']
+        prs = self.baseline_dict['prior_shape']
+        prr = self.baseline_dict['prior_rate']
+        pos = self.baseline_dict['post_shape']
+        por = self.baseline_dict['post_rate']
         npt.assert_array_equal(prs, baseline.prior_shape)
         npt.assert_array_equal(prr, baseline.prior_rate)
         npt.assert_array_equal(pos, baseline.post_shape)
         npt.assert_array_equal(por, baseline.post_rate)
 
     def test_can_initialize_baseline_hierarchy(self):
-        parent_shape = (1,)
-        child_shape = (self.U,)
-        ps = np.ones(parent_shape)
-        cs = np.ones(child_shape)
-        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
-            'prior_mean_shape': ps, 'prior_mean_rate': ps,
-            'post_shape_shape': ps, 'post_shape_rate': ps,
-            'post_mean_shape': ps, 'post_mean_rate': ps,
-            'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_baseline(**vals)
+        gpm.initialize_baseline(**self.baseline_hier_dict)
         assert_in('baseline', gpm.nodes)
         assert_is_instance(gpm.nodes['baseline_shape'], nd.GammaNode)
 
     def test_can_initialize_fr_latents(self):
-        vv = np.random.rand(self.K, self.U)
-        vals = ({'prior_shape': vv, 'prior_rate': vv, 
-            'post_shape': vv, 'post_rate': vv }) 
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_latents(**vals)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
         assert_in('fr_latents', gpm.nodes)
         assert_is_instance(gpm.nodes['fr_latents'], nd.GammaNode)
 
     def test_can_initialize_fr_latents_hierarchy(self):
-        parent_shape = (self.K,)
-        child_shape = (self.K, self.U)
-        ps = np.random.rand(*parent_shape)
-        cs = np.random.rand(*child_shape)
-        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
-            'prior_mean_shape': ps, 'prior_mean_rate': ps,
-            'post_shape_shape': ps, 'post_shape_rate': ps,
-            'post_mean_shape': ps, 'post_mean_rate': ps,
-            'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_latents(**vals)
+        gpm.initialize_fr_latents(**self.fr_latent_hier_dict)
         assert_in('fr_latents', gpm.nodes)
         assert_is_instance(gpm.nodes['fr_latents'], nd.GammaNode)
         assert_is_instance(gpm.nodes['fr_latents_shape'], nd.GammaNode)
 
     def test_can_initialize_fr_regressors(self):
-        vv = np.random.rand(self.R, self.U)
-        vals = ({'prior_shape': vv, 'prior_rate': vv, 
-            'post_shape': vv, 'post_rate': vv }) 
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_regressors(**vals)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
         assert_in('fr_regressors', gpm.nodes)
         assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
 
     def test_can_initialize_fr_regressors_hierarchy(self):
-        parent_shape = (self.R,)
-        child_shape = (self.R, self.U)
-        ps = np.random.rand(*parent_shape)
-        cs = np.random.rand(*child_shape)
-        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
-            'prior_mean_shape': ps, 'prior_mean_rate': ps,
-            'post_shape_shape': ps, 'post_shape_rate': ps,
-            'post_mean_shape': ps, 'post_mean_rate': ps,
-            'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_fr_regressors(**vals)
+        gpm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
         assert_in('fr_regressors', gpm.nodes)
         assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
         assert_is_instance(gpm.nodes['fr_regressors_shape'], nd.GammaNode)
 
     def test_can_initialize_overdispersion(self):
-        vv = np.random.rand(self.M)
-        vals = ({'prior_shape': vv, 'prior_rate': vv, 
-            'post_shape': vv, 'post_rate': vv }) 
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_overdispersion(**vals)
+        gpm.initialize_overdispersion(**self.overdisp_dict)
         assert_in('overdispersion', gpm.nodes)
         assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
 
     def test_can_initialize_overdispersion_hierarchy(self):
-        parent_shape = (1,)
-        child_shape = (self.M,)
-        ps = np.random.rand(*parent_shape)
-        cs = np.random.rand(*child_shape)
-        vals = ({'prior_shape_shape': ps, 'prior_shape_rate': ps, 
-            'prior_mean_shape': ps, 'prior_mean_rate': ps,
-            'post_shape_shape': ps, 'post_shape_rate': ps,
-            'post_mean_shape': ps, 'post_mean_rate': ps,
-            'post_child_shape': cs, 'post_child_rate': cs})
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_overdispersion(**vals)
+        gpm.initialize_overdispersion(**self.overdisp_hier_dict)
         assert_in('overdispersion', gpm.nodes)
         assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
         assert_is_instance(gpm.nodes['overdispersion_shape'], nd.GammaNode)
 
     def test_can_initialize_latents(self):
-        K = self.K
-        M = 2
-        T = self.T
-        A_shape = (M, M, K)
-        pi_shape = (M, K)
-        z_shape = (M, T, K)
-        zz_shape = (M, M, T - 1, K)
-        logZ_shape = (K,)
-        A = np.ones(A_shape)
-        pi = np.ones(pi_shape)
-        z = np.ones(z_shape)
-        zz = np.ones(zz_shape)
-        logZ = np.ones(logZ_shape)
-        vals = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 
-            'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
-
         gpm = gp.GammaModel(self.N, self.K)
-        gpm.initialize_latents(**vals)
+        gpm.initialize_latents(**self.latent_dict)
 
         assert_in('HMM', gpm.nodes)
+
+    def test_finalize(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.finalize()
+
+        assert_true(gpm.latents)
+        assert_true(not gpm.regressors)
+        assert_true(not gpm.overdispersion)
+        gpm.F_prod()
+
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        assert_true(gpm.latents)
+        assert_true(gpm.regressors)
+        assert_true(not gpm.overdispersion)
+        gpm.G_prod()
+
 
     def test_F_prod(self):
         # initialize model
         gpm = gp.GammaModel(self.N, self.K)
 
-        # initialize fr effects
-        vv = np.random.rand(self.K, self.U)
-        ww = np.random.rand(self.K, self.U)
-        vals = ({'prior_shape': vv, 'prior_rate': ww, 
-            'post_shape': vv, 'post_rate': vv }) 
-        gpm.initialize_fr_latents(**vals)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
 
-        # initialize latents
-        K = self.K
-        M = 2
-        T = self.T
-        A_shape = (M, M, K)
-        pi_shape = (M, K)
-        z_shape = (M, T, K)
-        zz_shape = (M, M, T - 1, K)
-        logZ_shape = (K,)
-        A = np.random.rand(*A_shape)
-        pi = np.random.rand(*pi_shape)
-        z = np.random.rand(*z_shape)
-        zz = np.random.rand(*zz_shape)
-        logZ = np.random.rand(*logZ_shape)
-        vals = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 
-            'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
-        gpm.initialize_latents(**vals)
+        gpm.initialize_latents(**self.latent_dict)
 
         # initialize/cache F_prod
         gpm.F_prod(update=True)
@@ -361,11 +403,7 @@ class Test_Gamma_Model:
         gpm = gp.GammaModel(self.N, self.K)
 
         # initialize fr effects
-        vv = np.random.rand(self.K, self.U)
-        ww = np.random.rand(self.K, self.U)
-        vals = ({'prior_shape': vv, 'prior_rate': ww, 
-            'post_shape': vv, 'post_rate': vv }) 
-        gpm.initialize_fr_regressors(**vals)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
 
         # initialize/cache F_prod
         gpm.G_prod(update=True)

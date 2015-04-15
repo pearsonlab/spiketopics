@@ -145,9 +145,21 @@ class GammaModel:
         This should be called once all the relevant variables are initialized.
         """
         if {'HMM', 'fr_latents'}.issubset(self.nodes):
+            self.latents = True
             self.F_prod(update=True)
+        else:
+            self.latents = False
+
         if 'fr_regressors' in self.nodes:
+            self.regressors = True
             self.G_prod(update=True)
+        else:
+            self.regressors = False
+
+        if 'overdispersion' in self.nodes:
+            self.overdispersion = True
+        else:
+            self.overdispersion = False
 
         return self
 
