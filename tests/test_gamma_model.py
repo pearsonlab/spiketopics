@@ -313,3 +313,67 @@ class Test_Gamma_Model:
         gpm.initialize_latents(**vals)
 
         assert_in('HMM', gpm.nodes)
+
+    def test_F_prod(self):
+        # initialize model
+        gpm = gp.GammaModel(self.N, self.K)
+
+        # initialize fr effects
+        vv = np.random.rand(self.K, self.U)
+        ww = np.random.rand(self.K, self.U)
+        vals = ({'prior_shape': vv, 'prior_rate': ww, 
+            'post_shape': vv, 'post_rate': vv }) 
+        gpm.initialize_fr_latents(**vals)
+
+        # initialize latents
+        K = self.K
+        M = 2
+        T = self.T
+        A_shape = (M, M, K)
+        pi_shape = (M, K)
+        z_shape = (M, T, K)
+        zz_shape = (M, M, T - 1, K)
+        logZ_shape = (K,)
+        A = np.random.rand(*A_shape)
+        pi = np.random.rand(*pi_shape)
+        z = np.random.rand(*z_shape)
+        zz = np.random.rand(*zz_shape)
+        logZ = np.random.rand(*logZ_shape)
+        vals = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 
+            'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
+        gpm.initialize_latents(**vals)
+
+        # initialize/cache F_prod
+        gpm.F_prod(update=True)
+
+        # test shapes
+        assert_equals(gpm.F_prod(1).shape, (self.T, self.U))
+        assert_equals(gpm.F_prod().shape, (self.T, self.U))
+        assert_equals(gpm.F_prod(flat=True).shape, (self.M,))
+
+        # test caching
+        npt.assert_allclose(gpm.F_prod(1), gpm._Ftku[:, 1, :])
+        npt.assert_allclose(gpm.F_prod(), gpm._Ftu)
+        npt.assert_allclose(gpm.F_prod(flat=True), gpm._Fflat)
+
+    def test_G_prod(self):
+        # initialize model
+        gpm = gp.GammaModel(self.N, self.K)
+
+        # initialize fr effects
+        vv = np.random.rand(self.K, self.U)
+        ww = np.random.rand(self.K, self.U)
+        vals = ({'prior_shape': vv, 'prior_rate': ww, 
+            'post_shape': vv, 'post_rate': vv }) 
+        gpm.initialize_fr_regressors(**vals)
+
+        # initialize/cache F_prod
+        gpm.G_prod(update=True)
+
+        # test shapes
+        assert_equals(gpm.G_prod(1).shape, (self.M,))
+        assert_equals(gpm.G_prod().shape, (self.M,))
+
+        # test caching
+        npt.assert_allclose(gpm.G_prod(1), gpm._Gtku[:, 1])
+        npt.assert_allclose(gpm.G_prod(), gpm._Gtu)

@@ -140,5 +140,85 @@ class GammaModel:
 
         return self
 
-    def tester(self):
-        return self.M
+    def F_prod(self, k=None, update=False, flat=False):
+        """
+        Accessor method to return the value of the F product.
+        If k is specified, return F_{tku} (product over all but k), 
+        else return F_{tu} (product over all k). If update=True, 
+        recalculate F before returning the result and cache the new 
+        matrix. If flat=True, return the one-row-per-observation 
+        version of F_{tu}.
+        """
+        if update:
+            xi = self.nodes['HMM'].nodes['z'].z[1]
+            lam = self.nodes['fr_latents'].expected_x()
+            if k is not None:
+                zz = xi[:, k, np.newaxis]
+                w = lam[k]
+                vv = ne.evaluate("1 - zz + zz * w")
+                self._Fpre[:, k, :] = vv
+            else:
+                zz = xi[:, :, np.newaxis]
+                w = lam
+                vv = ne.evaluate("1 - zz + zz * w")
+                self._Fpre = vv
+
+            # work in log space to avoid over/underflow
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+            Fpre = self._Fpre
+            dd = ne.evaluate("sum(log(Fpre), axis=1)")
+            self._Ftu = ne.evaluate("exp(dd)")
+            ddd = dd[:, np.newaxis, :]
+            self._Ftku = ne.evaluate("exp(ddd - log(Fpre))")
+            self._Fflat = self._Ftu[tt, uu]
+
+        if k is not None:
+            return self._Ftku[:, k, :]
+        elif flat:
+            return self._Fflat
+        else:
+            return self._Ftu
+
+    def G_prod(self, k=None, update=False):
+        """
+        Return the value of the G product.
+        If k is specified, return G_{tku} (product over all but k),
+        else return G_{tu} (product over all k). If update=True,
+        recalculate G before returning the result and cache the new 
+        matrix.
+        
+        NOTE: Because the regressors may vary by *presentation* and not 
+        simply by movie time, the regressors are in a "melted" dataframe
+        with each (unit, presentation) pair in a row by itself. As a 
+        result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
+        """
+        if update:
+            lam = self.nodes['fr_regressors'].expected_x()
+            uu = self.Nframe['unit']
+            if k is not None:
+                zz = lam[k][uu]
+                # get x values for kth regressor
+                xx = self.Xframe.values[:, k]
+                vv = ne.evaluate("zz ** xx")
+                self._Gpre[:, k] = vv
+            else:
+                zz = lam[:, uu].T
+                # get x values for kth regressor; col 0 = time
+                xx = self.Xframe.values
+                vv = ne.evaluate("zz ** xx")
+                self._Gpre = vv
+
+            # work in log space to avoid over/underflow
+            Gpre = self._Gpre
+            dd = ne.evaluate("sum(log(Gpre), axis=1)")
+            self._Gtu = ne.evaluate("exp(dd)")
+            ddd = dd[:, np.newaxis]
+            self._Gtku = ne.evaluate("exp(ddd - log(Gpre))")
+
+        if k is not None:
+            return self._Gtku[:, k]
+        else:
+            return self._Gtu
+
+
