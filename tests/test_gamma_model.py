@@ -456,3 +456,14 @@ class Test_Gamma_Model:
 
         logpsi = gpm.calc_log_evidence(2)
         assert_equals(logpsi.shape, (self.T, 2))
+
+    def test_expected_log_evidence(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        Elogp = gpm.expected_log_evidence()
+        assert_is_instance(Elogp, np.float64)

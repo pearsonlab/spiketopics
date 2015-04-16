@@ -85,7 +85,7 @@ class HMMNode:
         self.update_finalizer = None
 
         self.nodes = {'z': z, 'A': A, 'pi': pi} 
-        self.Hz = np.empty(K)
+        self.Hz = np.zeros(K)
 
     def update(self, idx, log_evidence):
         """

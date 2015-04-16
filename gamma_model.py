@@ -46,8 +46,8 @@ class GammaModel:
 
         self.nodes = {}  # dict for variable nodes in graphical model
 
-        self.log = {'L': [], 'H': []}  # for debugging
-        self.Lvalues = []  # for recording optimization objective
+        self.log = {'L': []}  # for debugging
+        self.Lvalues = []  # for recording optimization objective each iter
 
         self._parse_frames(data)
 
@@ -173,7 +173,7 @@ class GammaModel:
 
     def calc_log_evidence(self, idx):
         """
-        Calculate p(y|z, theta) for use in updating HMM. Need only be
+        Calculate p(N|z, theta) for use in updating HMM. Need only be
         correct up to an overall constant.
         """ 
         logpsi = np.empty((self.T, 2))
@@ -208,6 +208,54 @@ class GammaModel:
             logpsi[:, 1] = allprod + np.sum(self.N * bar_log_lam, axis=1)
 
         return logpsi
+
+    def expected_log_evidence(self):
+        """
+        Calculate E[log p(N, z|rest).
+        """
+        uu = self.Nframe['unit']
+        nn = self.Nframe['count']
+
+        Elogp = 0
+        eff_rate = 1
+
+        if self.baseline:
+            node = self.nodes['baseline']
+            bar_log_lam = node.expected_log_x()
+            bar_lam = node.expected_x()
+
+            Elogp += np.sum(self.N[:, np.newaxis, :] * 
+                bar_log_lam[..., np.newaxis])
+            eff_rate *= bar_lam[uu]
+
+        if self.latents:
+            node = self.nodes['fr_latents']
+            bar_log_lam = node.expected_log_x()
+            xi = self.nodes['HMM'].nodes['z'].z
+
+            Elogp += np.sum(self.N[:, np.newaxis, :] * xi[..., np.newaxis] *
+                bar_log_lam[np.newaxis, ...])
+            eff_rate *= self.F_prod(flat=True)
+
+        if self.regressors:
+            node = self.nodes['fr_regressors']
+            bar_log_lam = node.expected_log_x()
+            xx = self.Xframe.values
+
+            Elogp += np.sum(nn[:, np.newaxis] * xx * bar_log_lam[:, uu].T)
+            eff_rate *= self.G_prod(flat=True)
+
+        if self.overdispersion:
+            node = self.nodes['overdispersion']
+            bar_log_lam = node.expected_log_x()
+            bar_lam = node.expected_x()
+
+            Elogp += nn.dot(bar_log_lam)
+            eff_rate *= bar_lam
+
+        Elogp += -np.sum(eff_rate)
+        
+        return Elogp
 
     def update_fr_regressors(self):
         lam = self.nodes['fr_regressors']
@@ -427,4 +475,35 @@ class GammaModel:
             else:
                 return self._Gtu
 
+    def L(self, keeplog=False):
+        """
+        Calculate E[log p - log q] in the variational approximation.
+        This result is only valid immediately after the E-step (i.e, updating
+        E[z] in forward-backward). For a discussion of cancellations that 
+        occur in this context, cf. Beal (2003) ~ (3.79).
+        """
+        Elogp = self.expected_log_evidence()  # observation model
+        H = 0
 
+        for _, node in self.nodes.iteritems():
+            Elogp += node.expected_log_prior()
+            H += node.entropy()
+
+        L = Elogp + H
+
+        if keeplog:
+            self.log['L'].append(L)
+
+        return L
+
+    def iterate(self, verbosity=0, keeplog=False):
+        """
+        Do one iteration of variational inference, updating each chain in turn.
+        verbosity is a verbosity level:
+            0: no print to screen
+            1: print L value on each iteration
+            2: print L value each update during each iteration
+        keeplog = True does internal logging for debugging; values are kept in
+            the dict self.log
+        """
+        pass
