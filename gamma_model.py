@@ -225,61 +225,6 @@ class GammaModel:
 
         return logpsi
 
-    def calc_effective_rate(self, var=None, idx=Ellipsis):
-        """
-        Calculate effective firing rate (or conditional firing rate)
-        in Poisson observation model.
-        """
-        uu = self.Nframe['unit']
-        nn = self.Nframe['count']
-        tt = self.Nframe['time']
-        eff_rate = 1
-
-        if self.baseline:
-            if var != 'baseline':
-                bar_lam = self.nodes['baseline'].expected_x()
-                if self.overdispersion:
-                    eff_rate *= bar_lam[uu]
-                else:
-                    eff_rate *= bar_lam
-
-        if self.latents:
-            if var == 'latents':
-                if self.overdispersion:
-                    xi = self.nodes['HMM'].nodes['z'].z[1]
-                    Fz = self.F_prod(idx, flat=True) * xi[tt, idx]
-                else:
-                    Fz = self.F_prod(idx) * xi[:, np.newaxis, idx] 
-
-                eff_rate *= Fz
-            else:
-                if self.overdispersion:
-                    F = self.F_prod(idx, flat=True)
-                else:
-                    F = self.F_prod(idx)
-
-                eff_rate *= F
-
-        if self.regressors:
-            if var == 'regressors':
-                raise NotImplementedError(
-                    'This step currently done with optimization')
-            else:
-                if self.overdispersion:
-                    G = self.G_prod(idx, flat=True)
-                else:
-                    G = self.G_prod(idx)
-
-                eff_rate *= G
-
-        if self.overdispersion:
-            if var != 'overdispersion':
-                bar_lam = self.nodes['overdispersion'].expected_x()
-                eff_rate *= bar_lam
-
-        return eff_rate
-
-
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
