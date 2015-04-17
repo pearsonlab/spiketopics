@@ -579,3 +579,35 @@ class GammaModel:
                     Lval = self.L(keeplog=keeplog) 
                 if doprint:
                     print "chain {}: updated z: L = {}".format(k, Lval)
+                    
+    def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
+        maxiter=np.inf, delayed_iters=[]):
+        """
+        Perform variational inference by minimizing free energy.
+        delayed_iters is a dict of variable names that should not be
+        iterated over in the early going; once the algorithm has converged,
+        these variables are added in and inference run a second time
+        """
+        self.Lvalues.append(self.L())
+        delta = 1
+        idx = 0
+
+        while np.abs(delta) > tol and idx < maxiter:
+            if verbosity > 0:
+                print "Iteration {}: L = {}".format(idx, self.Lvalues[-1])
+                print "delta = " + str(delta)
+
+            self.iterate(verbosity=verbosity, keeplog=keeplog)
+            self.Lvalues.append(self.L())
+
+            delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
+                np.abs(self.Lvalues[-1]))
+            assert((delta > 0) | np.isclose(delta, 0))
+            idx += 1 
+
+        # now redo inference, this time including all variables that 
+        # were delayed
+        if len(delayed_iters) > 0:
+            print "Initial optimization done, adding {}".format(', '.join(delayed_iters))
+            self.do_inference(verbosity=verbosity, tol=tol, keeplog=keeplog,
+                maxiter=maxiter, delayed_iters=[])

@@ -512,3 +512,14 @@ class Test_Gamma_Model:
         L_init = gpm.L(keeplog=True)
         gpm.iterate(keeplog=True, verbosity=2)
         assert_true(gpm.L() > L_init)
+
+    def test_inference(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_hier_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        gpm.iterate()
+        assert_true(~np.isnan(gpm.L()))
