@@ -561,7 +561,6 @@ class GammaModel:
         """
         Elogp = self.expected_log_evidence()  # observation model
         H = 0
-        assert(False)
 
         for _, node in self.nodes.iteritems():
             Elogp += node.expected_log_prior()
