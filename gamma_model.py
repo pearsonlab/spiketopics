@@ -240,14 +240,13 @@ class GammaModel:
             bar_log_lam = node.expected_log_x()
             bar_lam = node.expected_x()
 
-            Elogp += np.sum(self.N[:, np.newaxis, :] * 
-                bar_log_lam[..., np.newaxis])
+            Elogp += np.sum(self.N * bar_log_lam[np.newaxis, :])
             eff_rate *= bar_lam[uu]
 
         if self.latents:
             node = self.nodes['fr_latents']
             bar_log_lam = node.expected_log_x()
-            xi = self.nodes['HMM'].nodes['z'].z
+            xi = self.nodes['HMM'].nodes['z'].z[1]
 
             Elogp += np.sum(self.N[:, np.newaxis, :] * xi[..., np.newaxis] *
                 bar_log_lam[np.newaxis, ...])

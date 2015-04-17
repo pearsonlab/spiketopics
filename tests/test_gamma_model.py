@@ -418,7 +418,6 @@ class Test_Gamma_Model:
         npt.assert_allclose(gpm.G_prod(), gpm._Gtu)
         npt.assert_allclose(gpm.G_prod(flat=True), gpm._Gtu_flat)
 
-    @nottest
     def test_updates(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
@@ -447,7 +446,6 @@ class Test_Gamma_Model:
         od = gpm.nodes['overdispersion']
         od.update()
 
-    @nottest
     def test_hier_updates(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_hier_dict)
@@ -468,7 +466,6 @@ class Test_Gamma_Model:
         fr_regressors = gpm.nodes['fr_regressors']
         fr_regressors.update()
 
-    @nottest
     def test_calc_log_evidence(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
@@ -480,7 +477,6 @@ class Test_Gamma_Model:
         logpsi = gpm.calc_log_evidence(2)
         assert_equals(logpsi.shape, (self.T, 2))
 
-    @nottest
     def test_expected_log_evidence(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
@@ -492,7 +488,6 @@ class Test_Gamma_Model:
         Elogp = gpm.expected_log_evidence()
         assert_is_instance(Elogp, np.float64)
 
-    @nottest
     def test_L(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
