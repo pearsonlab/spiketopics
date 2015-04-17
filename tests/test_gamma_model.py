@@ -2,7 +2,7 @@
 Tests for Gamma model.
 """
 from __future__ import division
-from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, assert_is, set_trace, with_setup
+from nose.tools import assert_equals, assert_is_instance, assert_raises, assert_true, assert_in, assert_not_in, assert_is, set_trace, nottest
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
@@ -418,6 +418,7 @@ class Test_Gamma_Model:
         npt.assert_allclose(gpm.G_prod(), gpm._Gtu)
         npt.assert_allclose(gpm.G_prod(flat=True), gpm._Gtu_flat)
 
+    @nottest
     def test_updates(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
@@ -446,6 +447,28 @@ class Test_Gamma_Model:
         od = gpm.nodes['overdispersion']
         od.update()
 
+    @nottest
+    def test_hier_updates(self):
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_hier_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_hier_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
+        gpm.finalize()
+        assert_true(gpm.baseline)
+        assert_true(gpm.latents)
+        assert_true(gpm.regressors)
+
+        baseline = gpm.nodes['baseline']
+        baseline.update()
+
+        fr_latents = gpm.nodes['fr_latents']
+        fr_latents.update(1)
+
+        fr_regressors = gpm.nodes['fr_regressors']
+        fr_regressors.update()
+
+    @nottest
     def test_calc_log_evidence(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
@@ -457,6 +480,7 @@ class Test_Gamma_Model:
         logpsi = gpm.calc_log_evidence(2)
         assert_equals(logpsi.shape, (self.T, 2))
 
+    @nottest
     def test_expected_log_evidence(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
@@ -468,8 +492,28 @@ class Test_Gamma_Model:
         Elogp = gpm.expected_log_evidence()
         assert_is_instance(Elogp, np.float64)
 
+    @nottest
     def test_L(self):
-        pass
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        assert_is_instance(gpm.L(), np.float64)
+        initial_log_len = len(gpm.log['L'])
+        L_init = gpm.L(keeplog=True)
+        assert_equals(len(gpm.log['L']), initial_log_len + 1)
 
     def test_iterate(self):
-        pass
+        gpm = gp.GammaModel(self.N, self.K)
+        gpm.initialize_baseline(**self.baseline_hier_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        L_init = gpm.L(keeplog=True)
+        gpm.iterate(keeplog=True, verbosity=2)
+        assert_true(gpm.L() > L_init)

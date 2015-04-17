@@ -99,7 +99,7 @@ class HMMNode:
         """
 
         # calculate some sufficient statistics
-        zz = self.nodes['z'].zz[:, :, idx]
+        zz = self.nodes['z'].zz[..., idx]
         zz_bar = np.sum(zz, axis=2)  # sum over time
         z0 = self.nodes['z'].z[:, 0, idx]  # time 0 only
 
@@ -115,8 +115,8 @@ class HMMNode:
         pi_par = self.nodes['pi'].expected_log_x()[..., idx]
 
         xi, logZ, Xi = fb_infer(np.exp(A_par), np.exp(pi_par), np.exp(psi))
-        xi = xi.T
-        Xi = Xi.transpose((1, 2, 0))
+        xi = xi.T  # now (M, T)
+        Xi = Xi.transpose((1, 2, 0))  # now (M, M, T - 1)
         self.nodes['z'].update(idx, xi, Xi, logZ) 
 
         ########### calculate entropy pieces
@@ -127,7 +127,7 @@ class HMMNode:
         self.Hz[idx] = -logq + logZ
 
         if self.update_finalizer is not None:
-            self.update_finalizer()
+            self.update_finalizer(idx)
 
         return self
 
@@ -138,3 +138,14 @@ class HMMNode:
     def expected_log_prior(self):
         return (self.nodes['A'].expected_log_prior() + 
             self.nodes['pi'].expected_log_prior())
+
+    def expected_log_state_sequence(self):
+        """
+        Return expected log probability of the sequence z
+        """
+        xi = self.nodes['z'].z
+        Xi = self.nodes['z'].zz
+        logpi = self.nodes['pi'].expected_log_x()
+        logA = self.nodes['A'].expected_log_x()
+
+        return (np.sum(xi[:, 0] * logpi) + np.sum(Xi * logA[:, :, np.newaxis]))

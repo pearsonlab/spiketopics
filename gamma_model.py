@@ -144,8 +144,23 @@ class GammaModel:
     def update_baseline(self):
         node = self.nodes['baseline']
 
-        node.post_shape = node.prior_shape + np.sum(self.N, axis=0).data
-        node.post_rate = node.prior_rate + np.sum(self.F_prod(), axis=0)
+        if self.overdispersion:
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+            od = self.nodes['overdispersion'].expected_x()
+            F = self.F_prod(flat=True)
+            G = self.G_prod(flat=True)
+            allprod = od * F * G
+            eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
+        else:
+            F = self.F_prod() 
+            G = self.G_prod()
+            allprod = F * G
+            eff_rate = np.sum(allprod, axis=0)
+
+        node.post_shape = (node.prior_shape.expected_x() + 
+            np.sum(self.N, axis=0).data)
+        node.post_rate = node.prior_rate.expected_x() + eff_rate
 
     def update_fr_latents(self, idx):
         lam = self.nodes['fr_latents']
@@ -168,8 +183,9 @@ class GammaModel:
             allprod = bl * Fz * G
             eff_rate = np.sum(allprod, axis=0)
 
-        lam.post_shape[idx] = lam.prior_shape[idx] + Nz
-        lam.post_rate[idx] = lam.prior_rate[idx] + eff_rate
+        lam.post_shape[idx] = lam.prior_shape.expected_x()[idx] + Nz
+        lam.post_rate[idx] = lam.prior_rate.expected_x()[idx] + eff_rate
+        self.F_prod(update=True)
 
     def calc_log_evidence(self, idx):
         """
@@ -209,6 +225,61 @@ class GammaModel:
 
         return logpsi
 
+    def calc_effective_rate(self, var=None, idx=Ellipsis):
+        """
+        Calculate effective firing rate (or conditional firing rate)
+        in Poisson observation model.
+        """
+        uu = self.Nframe['unit']
+        nn = self.Nframe['count']
+        tt = self.Nframe['time']
+        eff_rate = 1
+
+        if self.baseline:
+            if var != 'baseline':
+                bar_lam = self.nodes['baseline'].expected_x()
+                if self.overdispersion:
+                    eff_rate *= bar_lam[uu]
+                else:
+                    eff_rate *= bar_lam
+
+        if self.latents:
+            if var == 'latents':
+                if self.overdispersion:
+                    xi = self.nodes['HMM'].nodes['z'].z[1]
+                    Fz = self.F_prod(idx, flat=True) * xi[tt, idx]
+                else:
+                    Fz = self.F_prod(idx) * xi[:, np.newaxis, idx] 
+
+                eff_rate *= Fz
+            else:
+                if self.overdispersion:
+                    F = self.F_prod(idx, flat=True)
+                else:
+                    F = self.F_prod(idx)
+
+                eff_rate *= F
+
+        if self.regressors:
+            if var == 'regressors':
+                raise NotImplementedError(
+                    'This step currently done with optimization')
+            else:
+                if self.overdispersion:
+                    G = self.G_prod(idx, flat=True)
+                else:
+                    G = self.G_prod(idx)
+
+                eff_rate *= G
+
+        if self.overdispersion:
+            if var != 'overdispersion':
+                bar_lam = self.nodes['overdispersion'].expected_x()
+                eff_rate *= bar_lam
+
+        return eff_rate
+
+
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
@@ -237,6 +308,9 @@ class GammaModel:
                 bar_log_lam[np.newaxis, ...])
             eff_rate *= self.F_prod(flat=True)
 
+            # pieces for A and pi
+            Elogp += self.nodes['HMM'].expected_log_state_sequence()
+
         if self.regressors:
             node = self.nodes['fr_regressors']
             bar_log_lam = node.expected_log_x()
@@ -263,7 +337,8 @@ class GammaModel:
         uu = self.Nframe['unit']
         NX = nn[:, np.newaxis] * self.Xframe
 
-        lam.post_shape = lam.prior_shape + NX.groupby(uu).sum().values.T
+        lam.post_shape = (lam.prior_shape.expected_x().reshape(self.R, -1) + 
+            NX.groupby(uu).sum().values.T)
 
         # now to find the rates, we have to optimize
         starts = lam.post_rate
@@ -303,7 +378,7 @@ class GammaModel:
         bl = self.nodes['baseline'].expected_x()[uu]
 
         aa = self.nodes['fr_regressors'].post_shape
-        ww = self.nodes['fr_regressors'].prior_rate
+        ww = self.nodes['fr_regressors'].prior_rate.expected_x().reshape(self.R, -1)
 
         def minfun(epsilon): 
             """
@@ -351,7 +426,9 @@ class GammaModel:
             self.latents = True
             self.F_prod(update=True)
             self.nodes['fr_latents'].update = self.update_fr_latents
-            self.nodes['HMM'].update_finalizer = (lambda x: self.F_prod(update=True))
+
+            self.nodes['HMM'].update_finalizer = (
+                lambda idx: self.F_prod(idx, update=True))
         else:
             self.latents = False
 
@@ -484,6 +561,7 @@ class GammaModel:
         """
         Elogp = self.expected_log_evidence()  # observation model
         H = 0
+        assert(False)
 
         for _, node in self.nodes.iteritems():
             Elogp += node.expected_log_prior()
@@ -506,4 +584,55 @@ class GammaModel:
         keeplog = True does internal logging for debugging; values are kept in
             the dict self.log
         """
-        pass
+        doprint = verbosity > 1 
+        calc_L = doprint or keeplog
+        
+        # M step
+        if self.baseline:
+            self.nodes['baseline'].update()
+            if self.nodes['baseline'].has_parents:
+                self.nodes['baseline'].update_parents()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog) 
+            if doprint:
+                print "         updated baselines: L = {}".format(Lval)
+
+        if self.latents:
+            for k in xrange(self.K):
+                self.nodes['fr_latents'].update(k)
+                if self.nodes['fr_latents'].has_parents:
+                    self.nodes['fr_latents'].update_parents(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print ("chain {}: updated firing rate effects: L = {}"
+                        ).format(k, Lval)
+
+        if self.regressors:
+            self.nodes['fr_regressors'].update()
+            if self.nodes['fr_regressors'].has_parents:
+                self.nodes['fr_regressors'].update_parents()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog) 
+            if doprint:
+                print "         updated regressor effects: L = {}".format(Lval)
+
+        if self.overdispersion:
+            self.nodes['overdispersion'].update()
+            if self.nodes['overdispersion'].has_parents:
+                self.nodes['overdispersion'].update_parents()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog) 
+            if doprint:
+                print ("         updated overdispersion effects: L = {}"
+                    ).format(Lval)
+
+        # E step        
+        if self.latents:
+            for k in xrange(self.K):
+                logpsi = self.calc_log_evidence(k)
+                self.nodes['HMM'].update(k, logpsi)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog) 
+                if doprint:
+                    print "chain {}: updated z: L = {}".format(k, Lval)

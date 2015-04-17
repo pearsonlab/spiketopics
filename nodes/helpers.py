@@ -31,6 +31,8 @@ def initialize_gamma(name, node_shape, **kwargs):
     node = GammaNode(kwargs['prior_shape'], kwargs['prior_rate'], 
         kwargs['post_shape'], kwargs['post_rate'], name=name)
 
+    node.has_parents = False
+
     return (node,)
 
 def initialize_gamma_hierarchy(basename, parent_shape, 
@@ -68,7 +70,7 @@ def initialize_gamma_hierarchy(basename, parent_shape,
         kwargs['post_child_shape'], kwargs['post_child_rate'], 
         name=basename)
 
-    def update_shape(idx):
+    def update_shape(idx=Ellipsis):
         """
         Update for shape variable in terms of mean and child nodes.
         """ 
@@ -83,7 +85,7 @@ def initialize_gamma_hierarchy(basename, parent_shape,
         shape.post_rate[idx] += np.sum(mean.expected_x()[idx] * 
             child.expected_x()[idx] - child.expected_log_x()[idx])
 
-    def update_mean(idx):
+    def update_mean(idx=Ellipsis):
         """
         Update for mean variable in terms of shape and child nodes.
         """
@@ -97,12 +99,14 @@ def initialize_gamma_hierarchy(basename, parent_shape,
         mean.post_rate[idx] += (shape.expected_x()[idx] * 
             np.sum(child.expected_x()[idx]))
 
-    def update_parents(idx):
+    def update_parents(idx=Ellipsis):
         shape.update(idx)
         mean.update(idx)
 
     shape.update = update_shape
     mean.update = update_mean
+    child.has_parents = True
+    child.update_parents = update_parents
 
     return (shape, mean, child)
 
