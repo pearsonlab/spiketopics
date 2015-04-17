@@ -467,3 +467,9 @@ class Test_Gamma_Model:
 
         Elogp = gpm.expected_log_evidence()
         assert_is_instance(Elogp, np.float64)
+
+    def test_L(self):
+        pass
+
+    def test_iterate(self):
+        pass
