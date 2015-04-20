@@ -190,7 +190,7 @@ class Test_Gamma_Model:
             'prior_rate': prr, 'post_shape': pos, 
             'post_rate': por})
 
-        parent_shape = (1,)
+        parent_shape = ()
         child_shape = (self.U,)
         ps = np.ones(parent_shape)
         cs = np.ones(child_shape)
@@ -221,14 +221,14 @@ class Test_Gamma_Model:
     @classmethod
     def _setup_fr_latents(self):
         self.fr_latent_dict = ({
-        'prior_shape': np.random.rand(self.K, self.U),
-        'prior_rate': np.random.rand(self.K, self.U),
-        'post_shape': np.random.rand(self.K, self.U),
-        'post_rate': np.random.rand(self.K, self.U),
+        'prior_shape': np.random.rand(self.U, self.K),
+        'prior_rate': np.random.rand(self.U, self.K),
+        'post_shape': np.random.rand(self.U, self.K),
+        'post_rate': np.random.rand(self.U, self.K),
         }) 
 
         parent_shape = (self.K,)
-        child_shape = (self.K, self.U)
+        child_shape = (self.U, self.K)
         ps = np.random.rand(*parent_shape)
         cs = np.random.rand(*child_shape)
         self.fr_latent_hier_dict = ({
@@ -241,14 +241,14 @@ class Test_Gamma_Model:
     @classmethod
     def _setup_fr_regressors(self):
         self.fr_regressors_dict = ({
-        'prior_shape': np.random.rand(self.R, self.U),
-        'prior_rate': np.random.rand(self.R, self.U),
-        'post_shape': np.random.rand(self.R, self.U),
-        'post_rate': np.random.rand(self.R, self.U),
+        'prior_shape': np.random.rand(self.U, self.R),
+        'prior_rate': np.random.rand(self.U, self.R),
+        'post_shape': np.random.rand(self.U, self.R),
+        'post_rate': np.random.rand(self.U, self.R),
         }) 
 
         parent_shape = (self.R,)
-        child_shape = (self.R, self.U)
+        child_shape = (self.U, self.R)
         ps = np.random.rand(*parent_shape)
         cs = np.random.rand(*child_shape)
         self.fr_regressors_hier_dict = ({
@@ -265,7 +265,7 @@ class Test_Gamma_Model:
         self.overdisp_dict = ({'prior_shape': vv, 'prior_rate': vv, 
             'post_shape': ww, 'post_rate': ww }) 
 
-        parent_shape = (1,)
+        parent_shape = ()
         child_shape = (self.M,)
         ps = np.random.rand(*parent_shape)
         cs = np.random.rand(*child_shape)

@@ -111,7 +111,7 @@ class GammaModel:
         """
         Set up node for firing rate effects due to latent variables.
         """
-        self._initialize_gamma_nodes('fr_latents', (self.K, self.U), 
+        self._initialize_gamma_nodes('fr_latents', (self.U, self.K), 
             (self.K,), **kwargs)
 
         return self
@@ -120,7 +120,7 @@ class GammaModel:
         """
         Set up node for firing rate effects due to latent variables.
         """
-        self._initialize_gamma_nodes('fr_regressors', (self.R, self.U), 
+        self._initialize_gamma_nodes('fr_regressors', (self.U, self.R), 
             (self.R,), **kwargs)
 
         return self
@@ -183,8 +183,8 @@ class GammaModel:
             allprod = bl * Fz * G
             eff_rate = np.sum(allprod, axis=0)
 
-        lam.post_shape[idx] = lam.prior_shape.expected_x()[idx] + Nz
-        lam.post_rate[idx] = lam.prior_rate.expected_x()[idx] + eff_rate
+        lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
+        lam.post_rate[..., idx] = lam.prior_rate.expected_x()[..., idx] + eff_rate
         self.F_prod(update=True)
 
     def calc_log_evidence(self, idx):
@@ -218,7 +218,7 @@ class GammaModel:
             G = self.G_prod()
             Gbar = np.mean(G)
             allprod = -np.sum(bl * Fk * G / Gbar, axis=1)
-            bar_log_lam = lam.expected_log_x()[idx]
+            bar_log_lam = lam.expected_log_x()[..., idx]
 
             logpsi[:, 0] = allprod
             logpsi[:, 1] = allprod + np.sum(self.N * bar_log_lam, axis=1)
@@ -248,7 +248,7 @@ class GammaModel:
             bar_log_lam = node.expected_log_x()
             xi = self.nodes['HMM'].nodes['z'].z[1]
 
-            Elogp += np.sum(self.N[:, np.newaxis, :] * xi[..., np.newaxis] *
+            Elogp += np.sum(self.N[..., np.newaxis] * xi[..., np.newaxis, :] *
                 bar_log_lam[np.newaxis, ...])
             eff_rate *= self.F_prod(flat=True)
 
@@ -260,7 +260,7 @@ class GammaModel:
             bar_log_lam = node.expected_log_x()
             xx = self.Xframe.values
 
-            Elogp += np.sum(nn[:, np.newaxis] * xx * bar_log_lam[:, uu].T)
+            Elogp += np.sum(nn[:, np.newaxis] * xx * bar_log_lam[uu])
             eff_rate *= self.G_prod(flat=True)
 
         if self.overdispersion:
@@ -281,8 +281,8 @@ class GammaModel:
         uu = self.Nframe['unit']
         NX = nn[:, np.newaxis] * self.Xframe
 
-        lam.post_shape = (lam.prior_shape.expected_x().reshape(self.R, -1) + 
-            NX.groupby(uu).sum().values.T)
+        lam.post_shape = (lam.prior_shape.expected_x().reshape(-1, self.R) + 
+            NX.groupby(uu).sum().values)
 
         # now to find the rates, we have to optimize
         starts = lam.post_rate
@@ -304,7 +304,7 @@ class GammaModel:
         if not res.success:
             print "Warning: optimization terminated without success."
             print res.message
-        eps = res.x.reshape(self.R, self.U)
+        eps = res.x.reshape(self.U, self.R)
         bb = aa * np.exp(-eps)
         return bb
 
@@ -322,15 +322,15 @@ class GammaModel:
         bl = self.nodes['baseline'].expected_x()[uu]
 
         aa = self.nodes['fr_regressors'].post_shape
-        ww = self.nodes['fr_regressors'].prior_rate.expected_x().reshape(self.R, -1)
+        ww = self.nodes['fr_regressors'].prior_rate.expected_x().reshape(-1, self.R)
 
         def minfun(epsilon): 
             """
             This is the portion of the evidence lower bound that depends on 
             the b parameter. eps = log(a/b)
             """
-            eps = epsilon.reshape(self.R, self.U)
-            sum_log_G = np.sum(eps[:, uu].T * self.Xframe.values, axis=1)
+            eps = epsilon.reshape(self.U, self.R)
+            sum_log_G = np.sum(eps[uu] * self.Xframe.values, axis=1)
             G = np.exp(sum_log_G)
 
             elbo = np.sum(aa * eps)
@@ -340,7 +340,7 @@ class GammaModel:
 
             # grad = grad(elbo)
             grad = aa - ww * np.exp(eps)
-            grad -= (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values.T
+            grad -= (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values
 
             # minimization objective is log(-elbo)
             return np.log(-elbo), grad.ravel() / elbo
@@ -408,12 +408,12 @@ class GammaModel:
             lam = self.nodes['fr_latents'].expected_x()
             if k is not None:
                 zz = xi[tt, k]
-                w = lam[k][uu]
+                w = lam[uu, k]
                 vv = ne.evaluate("1 - zz + zz * w")
                 self._Fpre[:, k] = vv
             else:
                 zz = xi[tt]
-                w = lam[:, uu].T
+                w = lam[uu]
                 vv = ne.evaluate("1 - zz + zz * w")
                 self._Fpre = vv
 
@@ -460,13 +460,13 @@ class GammaModel:
 
             lam = self.nodes['fr_regressors'].expected_x()
             if k is not None:
-                zz = lam[k][uu]
+                zz = lam[uu][k]
                 # get x values for kth regressor
                 xx = self.Xframe.values[:, k]
                 vv = ne.evaluate("zz ** xx")
                 self._Gpre[:, k] = vv
             else:
-                zz = lam[:, uu].T
+                zz = lam[uu]
                 # get x values for kth regressor; col 0 = time
                 xx = self.Xframe.values
                 vv = ne.evaluate("zz ** xx")
