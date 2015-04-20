@@ -205,7 +205,7 @@ class GammaModel:
             G = self.G_prod(flat=True)
             Gbar = np.mean(G)  # helps if we use this as a normalizer
             allprod = -bl * od * Fk * G / Gbar
-            bar_log_lam = lam.expected_log_x()[idx, uu]
+            bar_log_lam = lam.expected_log_x()[uu, idx]
 
             N['lam0'] = allprod
             N['lam1'] = allprod + (nn *  bar_log_lam/ Gbar)
@@ -400,6 +400,9 @@ class GammaModel:
         matrix. If flat=True, return the one-row-per-observation 
         version of F_{tu}.
         """
+        if not self.latents:
+            return 1
+
         if update:
             uu = self.Nframe['unit']
             tt = self.Nframe['time']
@@ -454,6 +457,9 @@ class GammaModel:
         with each (unit, presentation) pair in a row by itself. As a 
         result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
         """
+        if not self.regressors:
+            return 1
+
         if update:
             uu = self.Nframe['unit']
             tt = self.Nframe['time']

@@ -55,18 +55,18 @@ def jitter_inits(init_dict, percent_jitter):
     inits = {}
     keys = [k for k in init_dict if 'prior' in k]
     for key in keys:
-        if key == 'xi':
-            # initialize pretty much at random (10% 1's)
-            rand_frac = 0.1
-            xi_mat = (rand_frac >= np.random.rand(T, K))
+        if key == 'z_prior':
+            old_z = init_dict['z_prior']
+            xi_mat = np.random.rand(*old_z.shape)
             xi_mat = xi_mat.astype('float')
-            xi_mat[:, 0] = 1  # assume a baseline (category 0) always present
-            inits['xi'] = xi_mat
+            z_prior = xi_mat / np.sum(xi_mat, axis=0, keepdims=True)
+            inits['z_prior'] = z_prior
+        elif key == 'zz_prior':
+            inits['zz_prior'] = np.random.rand(*init_dict['zz_prior'].shape)
         else:
             inits[key] = jitter_array(init_dict[key], percent_jitter)
             
     # hack this for now
-    # inits['bb'] = inits['aa'].copy()
     new_inits = init_dict.copy()
     new_inits.update(inits)
     return new_inits
