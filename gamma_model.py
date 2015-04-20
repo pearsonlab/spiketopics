@@ -103,7 +103,7 @@ class GammaModel:
         Assumes the prior is on f * dt, where f is the baseline firing
         rate and dt is the time bin size. 
         """
-        self._initialize_gamma_nodes('baseline', (self.U,), (1,), **kwargs)
+        self._initialize_gamma_nodes('baseline', (self.U,), (), **kwargs)
 
         return self
 
@@ -130,7 +130,7 @@ class GammaModel:
         Set up trial-to-trial overdispersion on firing rates.
         """
         self._initialize_gamma_nodes('overdispersion', (self.M,), 
-            (1,), **kwargs)
+            (), **kwargs)
 
         return self
 
@@ -579,7 +579,7 @@ class GammaModel:
                     Lval = self.L(keeplog=keeplog) 
                 if doprint:
                     print "chain {}: updated z: L = {}".format(k, Lval)
-                    
+
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
         maxiter=np.inf, delayed_iters=[]):
         """

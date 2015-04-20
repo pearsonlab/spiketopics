@@ -16,20 +16,21 @@ def check_shapes(par_shapes, pars):
     for var, shape in par_shapes.iteritems():
         if var not in pars:
             raise ValueError('Argument missing: {}'.format(var))
-        elif pars[var].shape != shape:
+        elif np.array(pars[var]).shape != shape:
             raise ValueError('Argument has wrong shape: {}'.format(var))
 
 def initialize_gamma(name, node_shape, **kwargs):
     """
     Initialize a gamma variable.
     """
+    pars = {k: np.array(v) for k, v in kwargs.iteritems()}
     par_shapes = ({'prior_shape': node_shape, 'prior_rate': node_shape,
         'post_shape': node_shape, 'post_rate': node_shape })
 
-    check_shapes(par_shapes, kwargs)
+    check_shapes(par_shapes, pars)
 
-    node = GammaNode(kwargs['prior_shape'], kwargs['prior_rate'], 
-        kwargs['post_shape'], kwargs['post_rate'], name=name)
+    node = GammaNode(pars['prior_shape'], pars['prior_rate'], 
+        pars['post_shape'], pars['post_rate'], name=name)
 
     node.has_parents = False
 
@@ -47,6 +48,7 @@ def initialize_gamma_hierarchy(basename, parent_shape,
     parent_shape and child_shape are the shapes of the parent and
         child variables
     """
+    pars = {k: np.array(v) for k, v in kwargs.iteritems()}
     par_shapes = ({'prior_shape_shape': parent_shape, 
         'prior_shape_rate': parent_shape, 
         'prior_mean_shape': parent_shape, 'prior_mean_rate': parent_shape, 
@@ -54,20 +56,20 @@ def initialize_gamma_hierarchy(basename, parent_shape,
         'post_mean_shape': parent_shape, 'post_mean_rate': parent_shape, 
         'post_child_shape': child_shape, 'post_child_rate': child_shape})
 
-    check_shapes(par_shapes, kwargs)
+    check_shapes(par_shapes, pars)
     
     shapename = basename + '_shape'
-    shape = GammaNode(kwargs['prior_shape_shape'], 
-        kwargs['prior_shape_rate'], kwargs['post_shape_shape'], 
-        kwargs['post_shape_rate'], name=shapename)
+    shape = GammaNode(pars['prior_shape_shape'], 
+        pars['prior_shape_rate'], pars['post_shape_shape'], 
+        pars['post_shape_rate'], name=shapename)
 
     meanname = basename + '_mean'
-    mean = GammaNode(kwargs['prior_mean_shape'], 
-        kwargs['prior_mean_rate'], kwargs['post_mean_shape'], 
-        kwargs['post_mean_rate'], name=meanname)
+    mean = GammaNode(pars['prior_mean_shape'], 
+        pars['prior_mean_rate'], pars['post_mean_shape'], 
+        pars['post_mean_rate'], name=meanname)
 
     child = GammaNode(shape, ProductNode(shape, mean),
-        kwargs['post_child_shape'], kwargs['post_child_rate'], 
+        pars['post_child_shape'], pars['post_child_rate'], 
         name=basename)
 
     def update_shape(idx=Ellipsis):
