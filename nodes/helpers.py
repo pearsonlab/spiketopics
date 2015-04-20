@@ -16,7 +16,7 @@ def check_shapes(par_shapes, pars):
     for var, shape in par_shapes.iteritems():
         if var not in pars:
             raise ValueError('Argument missing: {}'.format(var))
-        elif np.array(pars[var]).shape != shape:
+        elif pars[var].shape != shape:
             raise ValueError('Argument has wrong shape: {}'.format(var))
 
 def initialize_gamma(name, node_shape, **kwargs):
