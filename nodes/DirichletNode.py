@@ -57,9 +57,10 @@ class DirichletNode:
         Calculate differential entropy of posterior.
         """
         alpha = self.post
+        alpha0 = np.sum(alpha, axis=0)
         H = self.logB(alpha)
-        H += (alpha[0] - self.M) * digamma(alpha[0])
-        H += -np.sum((alpha[1:] - 1) * digamma(alpha[1:]), axis=0)
+        H += (alpha0 - self.M) * digamma(alpha0)
+        H += -np.sum((alpha - 1) * digamma(alpha), axis=0)
 
         return np.sum(H)
 
