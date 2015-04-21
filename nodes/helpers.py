@@ -75,31 +75,33 @@ def initialize_gamma_hierarchy(basename, parent_shape,
     def update_shape(idx=Ellipsis):
         """
         Update for shape variable in terms of mean and child nodes.
+        idx is assumed to index *last* dimension of arrays
         """ 
         # calculate number of units
-        n_units = np.sum(np.ones(child_shape)[idx])
+        n_units = np.sum(np.ones(child_shape).T[idx])
 
-        shape.post_shape[idx] = shape.prior_shape[idx] 
-        shape.post_shape[idx] += 0.5 * n_units
+        shape.post_shape.T[idx] = shape.prior_shape.T[idx] 
+        shape.post_shape.T[idx] += 0.5 * n_units
 
-        shape.post_rate[idx] = shape.post_rate[idx] 
-        shape.post_rate[idx] += - n_units * (1 + mean.expected_log_x()[idx])
-        shape.post_rate[idx] += np.sum(mean.expected_x()[idx] * 
-            child.expected_x()[idx] - child.expected_log_x()[idx])
+        shape.post_rate.T[idx] = shape.prior_rate.T[idx] 
+        eff_rate = (mean.expected_x() * child.expected_x() - 
+            mean.expected_log_x() - child.expected_log_x() - 1)
+        shape.post_rate.T[idx] += np.sum(eff_rate.T[idx])
 
     def update_mean(idx=Ellipsis):
         """
         Update for mean variable in terms of shape and child nodes.
+        idx is assumed to index *last* dimension of arrays
         """
         # calculate number of units
-        n_units = np.sum(np.ones(child_shape)[idx])
+        n_units = np.sum(np.ones(child_shape).T[idx])
 
-        mean.post_shape[idx] = mean.prior_shape[idx]
-        mean.post_shape[idx] += n_units * shape.expected_x()[idx]
+        mean.post_shape.T[idx] = mean.prior_shape.T[idx]
+        mean.post_shape.T[idx] += n_units * shape.expected_x().T[idx]
        
-        mean.post_rate[idx] = mean.prior_rate[idx]
-        mean.post_rate[idx] += (shape.expected_x()[idx] * 
-            np.sum(child.expected_x()[idx]))
+        mean.post_rate.T[idx] = mean.prior_rate.T[idx]
+        mean.post_rate.T[idx] += (shape.expected_x().T[idx] * 
+            np.sum(child.expected_x().T[idx]))
 
     def update_parents(idx=Ellipsis):
         shape.update(idx)

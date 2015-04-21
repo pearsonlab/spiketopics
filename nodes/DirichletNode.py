@@ -12,11 +12,11 @@ class DirichletNode:
         self.M = prior.shape[0]  # number of states
 
         if isinstance(prior, np.ndarray):
-            self.prior = prior.view(ConstNode)
+            self.prior = prior.copy().view(ConstNode)
         else:
             self.prior = prior
 
-        self.post = post
+        self.post = post.copy()
         self.name = name
         self.shape = prior.shape
 

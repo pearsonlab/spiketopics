@@ -17,17 +17,17 @@ class GammaNode:
         # if any parameters are passed as arrays, wrap in 
         # constant node
         if isinstance(prior_shape, np.ndarray):
-            self.prior_shape = prior_shape.view(ConstNode)
+            self.prior_shape = prior_shape.copy().view(ConstNode)
         else:
             self.prior_shape = prior_shape
 
         if isinstance(prior_rate, np.ndarray):
-            self.prior_rate = prior_rate.view(ConstNode)
+            self.prior_rate = prior_rate.copy().view(ConstNode)
         else:
             self.prior_rate = prior_rate
 
-        self.post_shape = post_shape
-        self.post_rate = post_rate
+        self.post_shape = post_shape.copy()
+        self.post_rate = post_rate.copy()
         self.name = name
         self.shape = prior_shape.shape
 

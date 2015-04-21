@@ -48,7 +48,7 @@ class MarkovChainNode:
         # set inits (but normalize)
         self.z = z_prior / np.sum(z_prior, axis=0, keepdims=True)
         self.zz = zz_prior / np.sum(zz_prior, axis=(0, 1), keepdims=True)
-        self.logZ = logZ_prior
+        self.logZ = logZ_prior.copy()
 
     def update(self, idx, new_z, new_zz, new_logZ):
         self.z[:, :, idx] = new_z
@@ -125,6 +125,8 @@ class HMMNode:
         transition_piece = np.sum(Xi * A_par[..., np.newaxis])
         logq = emission_piece + initial_piece + transition_piece
         self.Hz[idx] = -logq + logZ
+
+        assert(np.all(self.Hz >= 0))
 
         if self.update_finalizer is not None:
             self.update_finalizer(idx)
