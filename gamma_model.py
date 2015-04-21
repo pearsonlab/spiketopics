@@ -188,7 +188,7 @@ class GammaModel:
 
     def calc_log_evidence(self, idx):
         """
-        Calculate p(N|z, theta) for use in updating HMM. Need only be
+        Calculate p(N|z, rest) for use in updating HMM. Need only be
         correct up to an overall constant.
         """ 
         logpsi = np.empty((self.T, 2))
@@ -202,11 +202,12 @@ class GammaModel:
             bl = self.nodes['baseline'].expected_x()[uu]
             Fk = self.F_prod(idx, flat=True)
             G = self.G_prod(flat=True)
-            allprod = -bl * od * Fk * G 
+            allprod = bl * od * Fk * G 
             bar_log_lam = lam.expected_log_x()[uu, idx]
+            bar_lam = lam.expected_x()[uu, idx]
 
-            N['lam0'] = allprod
-            N['lam1'] = allprod + (nn *  bar_log_lam)
+            N['lam0'] = -allprod
+            N['lam1'] = -(allprod * bar_lam) + (nn *  bar_log_lam)
 
             logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -214,13 +215,14 @@ class GammaModel:
             bl = self.nodes['baseline'].expected_x()
             Fk = self.F_prod(idx)
             G = self.G_prod()
-            allprod = -np.sum(bl * Fk * G, axis=1)
+            allprod = np.sum(bl * Fk * G, axis=1)
             bar_log_lam = lam.expected_log_x()[..., idx]
+            bar_lam = lam.expected_x()[..., idx]
 
-            logpsi[:, 0] = allprod
-            logpsi[:, 1] = allprod + np.sum(self.N * bar_log_lam, axis=1)
+            logpsi[:, 0] = -allprod
+            logpsi[:, 1] = -allprod * bar_lam + np.sum(self.N * bar_log_lam, axis=1)
 
-        return logpsi
+        return logpsi - np.mean(logpsi)
 
     def expected_log_evidence(self):
         """
@@ -282,6 +284,7 @@ class GammaModel:
             NX.groupby(uu).sum().values)
 
         # now to find the rates, we have to optimize
+        Lstart = self.L()
         starts = lam.post_rate
         lam.post_rate = self.optimize_regressor_rates(starts)
         self.G_prod(update=True)
@@ -510,6 +513,7 @@ class GammaModel:
         H = 0
 
         if print_pieces:
+            print
             print "xxxxxxxxxxxxxxxxxxxxxxxxxx"
             print "Elogp = {}".format(Elogp)
 
@@ -528,6 +532,7 @@ class GammaModel:
             self.log['L'].append(L)
         if print_pieces:
             print "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+            print
 
         return L
 
@@ -545,6 +550,8 @@ class GammaModel:
         doprint = verbosity > 1 
         print_pieces = verbosity > 2
         calc_L = doprint or keeplog
+
+        lastL = self.Lvalues[-1]
         
         # M step
         if self.baseline:
@@ -553,6 +560,8 @@ class GammaModel:
                 self.nodes['baseline'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                assert(Lval >= lastL)
+                lastL = Lval
             if doprint:
                 print "         updated baselines: L = {}".format(Lval)
 
@@ -563,6 +572,8 @@ class GammaModel:
                     self.nodes['fr_latents'].update_parents(k)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                    assert(Lval >= lastL)
+                    lastL = Lval
                 if doprint:
                     print ("chain {}: updated firing rate effects: L = {}"
                         ).format(k, Lval)
@@ -573,6 +584,8 @@ class GammaModel:
                 self.nodes['fr_regressors'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                assert(Lval >= lastL)
+                lastL = Lval
             if doprint:
                 print "         updated regressor effects: L = {}".format(Lval)
 
@@ -582,6 +595,8 @@ class GammaModel:
                 self.nodes['overdispersion'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                assert(Lval >= lastL)
+                lastL = Lval
             if doprint:
                 print ("         updated overdispersion effects: L = {}"
                     ).format(Lval)
@@ -593,6 +608,8 @@ class GammaModel:
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                    assert(Lval >= lastL)
+                    lastL = Lval
                 if doprint:
                     print "chain {}: updated z: L = {}".format(k, Lval)
 
