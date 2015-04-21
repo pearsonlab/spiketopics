@@ -202,12 +202,11 @@ class GammaModel:
             bl = self.nodes['baseline'].expected_x()[uu]
             Fk = self.F_prod(idx, flat=True)
             G = self.G_prod(flat=True)
-            Gbar = np.mean(G)  # helps if we use this as a normalizer
-            allprod = -bl * od * Fk * G / Gbar
+            allprod = -bl * od * Fk * G 
             bar_log_lam = lam.expected_log_x()[uu, idx]
 
             N['lam0'] = allprod
-            N['lam1'] = allprod + (nn *  bar_log_lam/Gbar)
+            N['lam1'] = allprod + (nn *  bar_log_lam)
 
             logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -215,8 +214,7 @@ class GammaModel:
             bl = self.nodes['baseline'].expected_x()
             Fk = self.F_prod(idx)
             G = self.G_prod()
-            Gbar = np.mean(G)
-            allprod = -np.sum(bl * Fk * G / Gbar, axis=1)
+            allprod = -np.sum(bl * Fk * G, axis=1)
             bar_log_lam = lam.expected_log_x()[..., idx]
 
             logpsi[:, 0] = allprod
@@ -512,6 +510,7 @@ class GammaModel:
         H = 0
 
         if print_pieces:
+            print "xxxxxxxxxxxxxxxxxxxxxxxxxx"
             print "Elogp = {}".format(Elogp)
 
         for _, node in self.nodes.iteritems():
@@ -527,6 +526,8 @@ class GammaModel:
 
         if keeplog:
             self.log['L'].append(L)
+        if print_pieces:
+            print "xxxxxxxxxxxxxxxxxxxxxxxxxx"
 
         return L
 
