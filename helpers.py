@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as stats
+import copy
 
 
 def matshow(X, **kwargs):
@@ -67,6 +68,6 @@ def jitter_inits(init_dict, percent_jitter):
             inits[key] = jitter_array(init_dict[key], percent_jitter)
             
     # hack this for now
-    new_inits = init_dict.copy()
+    new_inits = copy.deepcopy(init_dict)
     new_inits.update(inits)
     return new_inits

@@ -146,7 +146,6 @@ class GammaModel:
 
         if self.overdispersion:
             uu = self.Nframe['unit']
-            tt = self.Nframe['time']
             od = self.nodes['overdispersion'].expected_x()
             F = self.F_prod(flat=True)
             G = self.G_prod(flat=True)
@@ -164,28 +163,28 @@ class GammaModel:
 
     def update_fr_latents(self, idx):
         lam = self.nodes['fr_latents']
-        xi = self.nodes['HMM'].nodes['z'].z[1]
-        Nz = xi[:, idx].dot(self.N)
+        xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
+        Nz = xi.dot(self.N)
 
         if self.overdispersion:
             uu = self.Nframe['unit']
             tt = self.Nframe['time']
             od = self.nodes['overdispersion'].expected_x()
             bl = self.nodes['baseline'].expected_x()[uu]
-            Fz = self.F_prod(idx, flat=True) * xi[tt, idx]
+            Fz = self.F_prod(idx, flat=True) * xi[tt]
             G = self.G_prod(flat=True)
             allprod = bl * od * Fz * G
             eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
         else:
             bl = self.nodes['baseline'].expected_x()
-            Fz = self.F_prod(idx) * xi[:, np.newaxis, idx] 
+            Fz = self.F_prod(idx) * xi[:, np.newaxis] 
             G = self.G_prod()
             allprod = bl * Fz * G
             eff_rate = np.sum(allprod, axis=0)
 
         lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
         lam.post_rate[..., idx] = lam.prior_rate.expected_x()[..., idx] + eff_rate
-        self.F_prod(update=True)
+        self.F_prod(idx, update=True)
 
     def calc_log_evidence(self, idx):
         """
@@ -208,7 +207,7 @@ class GammaModel:
             bar_log_lam = lam.expected_log_x()[uu, idx]
 
             N['lam0'] = allprod
-            N['lam1'] = allprod + (nn *  bar_log_lam/ Gbar)
+            N['lam1'] = allprod + (nn *  bar_log_lam/Gbar)
 
             logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
@@ -502,7 +501,7 @@ class GammaModel:
             else:
                 return self._Gtu
 
-    def L(self, keeplog=False):
+    def L(self, keeplog=False, print_pieces=False):
         """
         Calculate E[log p - log q] in the variational approximation.
         This result is only valid immediately after the E-step (i.e, updating
@@ -512,9 +511,17 @@ class GammaModel:
         Elogp = self.expected_log_evidence()  # observation model
         H = 0
 
+        if print_pieces:
+            print "Elogp = {}".format(Elogp)
+
         for _, node in self.nodes.iteritems():
-            Elogp += node.expected_log_prior()
-            H += node.entropy()
+            logp = node.expected_log_prior()
+            logq = node.entropy()
+            if print_pieces:
+                print "{}: Elogp = {}, H = {}".format(node.name, logp, logq)
+
+            Elogp += logp
+            H += logq
 
         L = Elogp + H
 
@@ -530,10 +537,12 @@ class GammaModel:
             0: no print to screen
             1: print L value on each iteration
             2: print L value each update during each iteration
+            3: print all pieces of L
         keeplog = True does internal logging for debugging; values are kept in
             the dict self.log
         """
         doprint = verbosity > 1 
+        print_pieces = verbosity > 2
         calc_L = doprint or keeplog
         
         # M step
@@ -542,7 +551,7 @@ class GammaModel:
             if self.nodes['baseline'].has_parents:
                 self.nodes['baseline'].update_parents()
             if calc_L:
-                Lval = self.L(keeplog=keeplog) 
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
             if doprint:
                 print "         updated baselines: L = {}".format(Lval)
 
@@ -552,7 +561,7 @@ class GammaModel:
                 if self.nodes['fr_latents'].has_parents:
                     self.nodes['fr_latents'].update_parents(k)
                 if calc_L:
-                    Lval = self.L(keeplog=keeplog) 
+                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
                 if doprint:
                     print ("chain {}: updated firing rate effects: L = {}"
                         ).format(k, Lval)
@@ -562,7 +571,7 @@ class GammaModel:
             if self.nodes['fr_regressors'].has_parents:
                 self.nodes['fr_regressors'].update_parents()
             if calc_L:
-                Lval = self.L(keeplog=keeplog) 
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
             if doprint:
                 print "         updated regressor effects: L = {}".format(Lval)
 
@@ -571,7 +580,7 @@ class GammaModel:
             if self.nodes['overdispersion'].has_parents:
                 self.nodes['overdispersion'].update_parents()
             if calc_L:
-                Lval = self.L(keeplog=keeplog) 
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
             if doprint:
                 print ("         updated overdispersion effects: L = {}"
                     ).format(Lval)
@@ -582,7 +591,7 @@ class GammaModel:
                 logpsi = self.calc_log_evidence(k)
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
-                    Lval = self.L(keeplog=keeplog) 
+                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
                 if doprint:
                     print "chain {}: updated z: L = {}".format(k, Lval)
 
