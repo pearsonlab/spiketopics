@@ -54,16 +54,16 @@ def jitter_inits(init_dict, percent_jitter):
     percent_jitter is the variability of parameters around their values derived above
     """
     inits = {}
-    keys = [k for k in init_dict if 'prior' in k]
+    keys = [k for k in init_dict if 'post' in k or 'init' in k]
     for key in keys:
-        if key == 'z_prior':
-            old_z = init_dict['z_prior']
+        if key == 'z_init':
+            old_z = init_dict['z_init']
             xi_mat = np.random.rand(*old_z.shape)
             xi_mat = xi_mat.astype('float')
-            z_prior = xi_mat / np.sum(xi_mat, axis=0, keepdims=True)
-            inits['z_prior'] = z_prior
-        elif key == 'zz_prior':
-            inits['zz_prior'] = np.random.rand(*init_dict['zz_prior'].shape)
+            z_init = xi_mat / np.sum(xi_mat, axis=0, keepdims=True)
+            inits['z_init'] = z_init
+        elif key == 'zz_init':
+            inits['zz_init'] = np.random.rand(*init_dict['zz_init'].shape)
         else:
             inits[key] = jitter_array(init_dict[key], percent_jitter)
             

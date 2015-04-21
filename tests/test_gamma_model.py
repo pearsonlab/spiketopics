@@ -216,7 +216,7 @@ class Test_Gamma_Model:
         z = np.ones(z_shape)
         zz = np.ones(zz_shape)
         logZ = np.ones(logZ_shape)
-        self.latent_dict = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
+        self.latent_dict = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 'z_init': z, 'zz_init': zz, 'logZ_init': logZ})
 
     @classmethod
     def _setup_fr_latents(self):
@@ -385,6 +385,8 @@ class Test_Gamma_Model:
 
         gpm.initialize_latents(**self.latent_dict)
 
+        gpm.finalize()
+
         # initialize/cache F_prod
         gpm.F_prod(update=True)
 
@@ -404,6 +406,8 @@ class Test_Gamma_Model:
 
         # initialize fr effects
         gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+
+        gpm.finalize()
 
         # initialize/cache F_prod
         gpm.G_prod(update=True)

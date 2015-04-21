@@ -129,14 +129,14 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
     M = n_states
     T = n_times
     par_shapes = ({'A_prior': (M, M, K), 'A_post': (M, M, K),
-        'pi_prior': (M, K), 'pi_post': (M, K), 'z_prior': (M, T, K), 
-        'zz_prior': (M, M, T - 1, K), 'logZ_prior': (K,)})
+        'pi_prior': (M, K), 'pi_post': (M, K), 'z_init': (M, T, K), 
+        'zz_init': (M, M, T - 1, K), 'logZ_init': (K,)})
 
     check_shapes(par_shapes, kwargs)
 
     A = DirichletNode(kwargs['A_prior'], kwargs['A_post'], name='A')
     pi = DirichletNode(kwargs['pi_prior'], kwargs['pi_post'], name='pi')
-    z = MarkovChainNode(kwargs['z_prior'], kwargs['zz_prior'], 
-        kwargs['logZ_prior'], name='z')
+    z = MarkovChainNode(kwargs['z_init'], kwargs['zz_init'], 
+        kwargs['logZ_init'], name='z')
 
     return (HMMNode(z, A, pi),)

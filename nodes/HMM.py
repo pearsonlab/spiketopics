@@ -20,35 +20,35 @@ class MarkovChainNode:
         the expected values of the marginals z and zz, and the log 
         partition function, logZ. 
     """
-    def __init__(self, z_prior, zz_prior, logZ_prior, name='markov'):
-        if len(z_prior.shape) < 2:
+    def __init__(self, z_init, zz_init, logZ_init, name='markov'):
+        if len(z_init.shape) < 2:
             raise ValueError(
                 'State variable must have at least two dimensions')
-        if len(zz_prior.shape) < 3:
+        if len(zz_init.shape) < 3:
             raise ValueError(
                 'Transition marginal must have at least three dimensions')
 
-        self.M = z_prior.shape[0]
-        self.T = z_prior.shape[1]
-        if len(z_prior.shape) > 2:
-            self.K = z_prior.shape[2:]
+        self.M = z_init.shape[0]
+        self.T = z_init.shape[1]
+        if len(z_init.shape) > 2:
+            self.K = z_init.shape[2:]
         else:
             self.K = (1,)
 
-        if zz_prior.shape[0:3] != (self.M, self.M, self.T - 1):
+        if zz_init.shape[0:3] != (self.M, self.M, self.T - 1):
             raise ValueError(
                 'Transition marginal has shape inconsistent with prior')
-        if logZ_prior.shape != self.K:
+        if logZ_init.shape != self.K:
             raise ValueError(
                 'logZ has shape inconsistent with prior')
 
         self.name = name
-        self.shape = z_prior.shape
+        self.shape = z_init.shape
 
         # set inits (but normalize)
-        self.z = z_prior / np.sum(z_prior, axis=0, keepdims=True)
-        self.zz = zz_prior / np.sum(zz_prior, axis=(0, 1), keepdims=True)
-        self.logZ = logZ_prior.copy()
+        self.z = z_init / np.sum(z_init, axis=0, keepdims=True)
+        self.zz = zz_init / np.sum(zz_init, axis=(0, 1), keepdims=True)
+        self.logZ = logZ_init.copy()
 
     def update(self, idx, new_z, new_zz, new_logZ):
         self.z[:, :, idx] = new_z
