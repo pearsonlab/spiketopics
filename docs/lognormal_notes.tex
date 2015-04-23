@@ -187,6 +187,7 @@ and again
 \subsection{Observation model}
 Finally, we would like to calculate the piece of the evidence lower bound arising from the Poisson observation model:
 \begin{multline}
+    \label{obsmodel}
     \mathbb{E}_q \left[ \log \frac{p(N, z|\theta)}{q(z)} \right] =
     \sum_{mu} \left[
     N_{mu} \mathbb{E}_q [\log \lambda_{mu}]
@@ -220,7 +221,7 @@ and the fact that $z^2 = z$ since the latents are assumed to be binary.
 \section{Variational Updates}
 
 \subsection{$z$}
-Technically, $xi$ is not a variational parameter, but depends on the variational parameters in $q(z)$: $\xi = \xi(\eta, \tilde{A}, \tilde{\pi})$, and similarly for $\Xi$. For the actual variational parameters, the updates are straightforward:
+Technically, $\xi$ is not a variational parameter, but depends on the variational parameters in $q(z)$: $\xi = \xi(\eta, \tilde{A}, \tilde{\pi})$, and similarly for $\Xi$. For the actual variational parameters, the updates are straightforward:
 \begin{align}
     \eta_{tk} &\leftarrow \sum_{u; t(m) = t} 
     \begin{pmatrix}
@@ -286,6 +287,19 @@ The case of variation with respect to $\sigma^2$ is similar:
     - \frac{1}{2} \overline{\tau_{\beta j}} + \frac{1}{2\sigma^2_{\beta ju}} - \frac{1}{2} \sum_m x_{mj} \overline{\lambda_{mu}} \\
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon mu}} &= 
     -\frac{1}{2} \overline{\tau_{\epsilon u}} + \frac{1}{2\sigma^2_{\epsilon mu}} - \frac{1}{2} \overline{\lambda_{mu}}
+\end{align}
+
+\section{Khan et al. dual formulation}
+Here, we use a dual convex formulation by Khan et al. (2014) to reduce the number of parameters and, in principle, allow for full posterior covariances. For the moment, however, we will continue to assume that firing rates for individual units are independent from one another given population hyperparameters and effects for different latent states are also independent.
+
+As before, we let $m$ index observations (of which there are $M$ total), each observation corresponding to a single spike count at a given moment for a particular unit. That is, for each $m$, $u(m)$ is uniquely specified. As a result, we will replace $u$ indices with $m$ indices for simplicity. We also denote the log firing rate by $\eta$:
+\begin{equation}
+    \eta_m = \log \lambda_{mu} = \lambda_{0m} + \sum_k z_{mk} b_{k m} + \sum_r x_{mr} \beta_{r m} + \epsilon_m
+\end{equation}
+Now, we will introduce new variables $h_m \equiv \mathbb{E}_q[\eta_m]$, $\rho_m \equiv \mathrm{var}_q[\eta_m]$ with the constraints
+\begin{align}
+    h_m &= \mu_{0m} + \sum_k \xi_{mk} \mu_{bkm} + \sum_r x_{mr} \mu_{\beta rm} \\
+    \rho_m &= \sigma^2_{0m} 
 \end{align}
 
 
