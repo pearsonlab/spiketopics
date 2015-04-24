@@ -167,12 +167,12 @@ Here again, we will define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ so 
 \begin{multline}
     \mathbb{E}_{q(\tau)}\left[\log \frac{p(\tau)}{q(\tau)}\right] =
     \sum_k \mathbb{E}_q \left[
-    (s_{bk} - 1) \log \tau_{bk} - r_{bk} \tau_{bk} \right]  
+    (s_{b} - 1) \log \tau_{bk} - r_{b} \tau_{bk} \right]  
     + H_g(\varsigma_{bk}, \rho_{bk})    
     + \mathrm{const} \\
     = \sum_k \left[ 
-    (s_{bk} - 1) (\psi(\varsigma_{bk}) - \log \rho_{bk}) 
-    - r_{bk} \frac{\varsigma_{bk}}{\rho_{bk}} + H_g(\varsigma_{bk}, \rho_{bk})
+    (s_{b} - 1) (\psi(\varsigma_{bk}) - \log \rho_{bk}) 
+    - r_{b} \frac{\varsigma_{bk}}{\rho_{bk}} + H_g(\varsigma_{bk}, \rho_{bk})
     \right]
 \end{multline}
 where we have discarded constants that do not depend on the variational parameters $\varsigma$ and $\rho$ and $H_g$ is the differential entropy of the gamma distribution:
@@ -270,15 +270,77 @@ Given conjugacy, these are trivial to write down:
 \subsection{$v^2$}
 Here again, conjugacy makes the updates trivial for the $v^2$ terms. For both $b$ and $\beta$
 \begin{align}
-    \varsigma_k &\leftarrow s_k + \frac{U}{2} \\
-    \rho_k &\leftarrow r_k + \frac{1}{2}\sum_u (\sigma^2_{ku} + \mu^2_{ku}) \\
+    \varsigma_k &\leftarrow s + \frac{U}{2} \\
+    \rho_k &\leftarrow r + \frac{1}{2}\sum_u (\sigma^2_{ku} + \mu^2_{ku}) \\
 \end{align}
 while for $\eta$
 \begin{align}
-    \varsigma_u &\leftarrow s_u + \frac{M_u}{2} \\
-    \rho_u &\leftarrow r_u + \frac{1}{2} \sum_m (\sigma^2_{mu} + \mu^2_{mu})
+    \varsigma_u &\leftarrow s + \frac{M_u}{2} \\
+    \rho_u &\leftarrow r + \frac{1}{2} \sum_m (\sigma^2_{mu} + \mu^2_{mu})
 \end{align}
 where $M_u$ is the number of observations of unit $u$.
+
+\subsection{$\lambda_0$}
+Here, we calculate
+\begin{multline}
+    \frac{\partial\mathcal{L}}{\partial \mu_{0u}} = -\frac{1}{v_0^2} (\mu_{0u} - m_0) + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} 
+    \left( 
+    \mu_{\eta m} - \mu_{0u} - \sum_k \xi_{t(m) k} \mu_{bku} + 
+    \sum_r x_{mr} \mu_{\beta ru}
+    \right) = 0 \\
+    \Rightarrow \quad \mu_{0u} \leftarrow 
+    \left(\frac{m_0}{v_0^2} + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}}  \right)^{-1} 
+    \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} 
+    \left[
+    \mu_{\eta m} - \sum_k \xi_{t(m) k} \mu_{bku} + 
+    \sum_r x_{mr} \mu_{\beta ru}
+    \right]
+\end{multline}
+and similarly
+\begin{align}
+    &\frac{\partial\mathcal{L}}{\partial \sigma^2_{0u}} = -\frac{1}{2v_0^2} + 
+    \frac{1}{2\sigma^2_{0u}} - \frac{1}{2} \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} = 0 \\
+    \Rightarrow \quad &\tau_{0u} = \frac{1}{\sigma^2_{0u}} \leftarrow 
+    \frac{1}{v^2_0} + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}}
+\end{align}
+
+\subsection{$b$}
+Again, requiring 0 gradient gives
+\begin{multline}
+    &\frac{\partial\mathcal{L}}{\partial \mu_{bku}} = 
+    -\frac{\varsigma_{bk}}{\rho_{bk}} \mu_{bku} + \\
+    \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} 
+    \Bigg[ \xi_{t(m) k}
+    \left( 
+    \mu_{\eta m} - \mu_{0u} - \sum_j \xi_{t(m) j} \mu_{bju} + 
+    \sum_r x_{mr} \mu_{\beta ru}
+    \right)  
+    - \xi_{t(m) k} (1 - \xi_{t(m)k}) \mu_{bku} \Bigg] = 0 \\
+\end{multline}
+which yields the update equation
+\begin{align}
+    &\mu_{b u} \leftarrow \Lambda^{-1} \cdot \sum_{u(m) = u}
+    \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \xi_{t(m) } 
+    \left(
+    \mu_{\eta m} - \mu_{0u} + \sum_r x_{mr} \mu_{\beta r u}
+    \right) \\
+    &(\Lambda)_{kj} \equiv \frac{\varsigma_{bk}}{\rho_{bk}} \delta_{kj}
+    + \sum_{u(m) = u} \left(\xi_{t(m)k} \xi_{t(m) j} 
+    + \xi_{t(m) k} (1 - \xi_{t(m)k}) \delta_{kj} \right)
+\end{align}
+where we have written the update in matrix form, suppressing the latent 
+state index $k$, and the update requires solving a $K x K$ system of linear equations.
+
+Similarly,
+\begin{align}
+    &\frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} = 
+    -\frac{1}{2}\frac{\varsigma_{bk}}{\rho_{bk}} + \frac{1}{2\sigma^2_{bku}}
+    - \frac{1}{2}\sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \xi_{t(m) k} = 0\\
+    \Rightarrow \quad &\tau_{bku} = \frac{1}{\sigma^2_{bku}} \leftarrow 
+    \frac{\varsigma_{bk}}{\rho_{bk}} + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \xi_{t(m) k}
+\end{align}
+
+
 
 \subsection{$\lambda_0$ $b$, $\beta$, $\eta$}
 Here, the nonlinearity in $\overline{\lambda_{mu}}$ makes updates less straightforward. In each case, we have something like
