@@ -16,7 +16,7 @@ where $N_{m}$ is the count from observation $m$ and the effective rate $\eta_{m}
     \label{loglambda}
     \eta_m = \lambda_{0u(m)} + \sum_k z_{t(m)k} b_{ku(m)} + \sum_r x_{mr} \beta_{ru(m)} + \epsilon_{m}
 \end{equation}
-Here, the coefficients $b_{ku}$ index responses of each unit to the (binary) latent states $z_{mk}$ while the $\beta_{ru}$ index responses to (non-latent) regressors $x_{mr}$. The final ($\epsilon$) term represents moment-to-moment fluctuations of each unit. (This is of course equivalent to $\eta \sim \mathcal{N}(\overline{\eta}, v^2_\eta)$.) We have also assumed functions $u(m)$ and $t(m)$ mapping each observation to its appropriate unit and time, respectively.
+Here, the coefficients $b_{ku}$ index responses of each unit to the (binary) latent states $z_{mk}$ while the $\beta_{ru}$ index responses to (non-latent) regressors $x_{mr}$. The final ($\epsilon$) term represents moment-to-moment fluctuations of each unit. We have also assumed functions $u(m)$ and $t(m)$ mapping each observation to its appropriate unit and time, respectively.
 
 \section{Latent feature model}
 We will assume a Hidden Markov Model (HMM) for the latent states $z$. We will likewise assume that these latent features are present in the stimulus, so that they are indexed by the stimulus time $t(m)$. When the meaning is clear, we will drop the dependency of stimulus time on observation number and simply write $t$.
@@ -36,13 +36,13 @@ Given this notation, it is straightforward to write the probability of a sequenc
 \section{Priors}
 In addition to the model (\ref{loglambda}) above and the HMM ansatz, we posit the following hierarchical generative model for the parameters:
 \begin{align}
-    \eta_m &\sim \mathcal{N}(\overline{\eta}_{u(m)}, v^2_{\eta u(m)}) \\
     \lambda_{0u} &\sim \mathcal{N}(m_0, v^2_0) \\
     b_{ku} &\sim \mathcal{N}\left(0, (v^2_b)_{k}\right) \\
     \beta_{ku} &\sim \mathcal{N}\left(0, (v^2_\beta)_{k}\right) \\
+    \epsilon_m &\sim \mathcal{N}\left(0, (v^2_\epsilon)_{u(m)}\right) \\
     (v^2_b)_{k} &\sim \text{Inv-Ga}\left(s_b, r_b \right) \\
     (v^2_\beta)_{r} &\sim \text{Inv-Ga}\left(s_\beta, r_\beta \right) \\
-    (v^2_\eta)_{u} &\sim \text{Inv-Ga}\left(s_\eta, r_\eta \right) \\
+    (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left(s_\epsilon, r_\epsilon \right) \\
     \pi_k &\sim \mathrm{Beta}\left((a_\pi)_k, (b_\pi)_k \right) \\ 
     \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((a_A)_{ki}, (b_A)_{ki} \right)  
     \end{align}
@@ -53,30 +53,30 @@ Note also that, by putting sparse priors on the $v^2$ terms, we can implement au
 \section{Variational ansatz}
 We would like to approximate the joint posterior density 
 \begin{multline}
-    p(\eta, \lambda_0, b, \beta, A, \pi, z|N) \propto p(N|\eta) p(\eta|\lambda_0, z, b, \beta) p(z|A, \pi) \\
-    \times p(\lambda_0) p(b) p(\beta) p(A) p(\pi) p(v^2_b) p(v^2_\beta) p(v^2_\eta)
+    p(\lambda_0, b, \beta, A, \pi, z, \epsilon|N) \propto p(N|\lambda_0, z, b, \beta, \epsilon) p(z|A, \pi) \\
+    \times p(\lambda_0) p(b) p(\beta) p(A) p(\pi) p(\epsilon) p(v^2_b) p(v^2_\beta) p(v^2_\eta) p(v^2_\epsilon)
 \end{multline}
 with a structured mean field form that factorizes over units and chains:
 \begin{multline}
-    q(\eta, \lambda_0, b, \beta, A, \pi, z) = \prod_m q(\eta_m) \prod_{ku} q(\lambda_{0u}) 
+    q(\lambda_0, b, \beta, A, \pi, z, \epsilon) = \prod_m q(\epsilon_m) \prod_{ku} q(\lambda_{0u}) 
     q(b_{ku}) q(\beta_{ku}) q(z_k) q(A_k) q(\pi_k) \\
     \times q(v^2_{bk}) q(v^2_{\beta k}) q(v^2_{\eta u})
 \end{multline}
 For this, we will use the posterior variational ansatz
 \begin{align}
-    \eta_m &\sim \mathcal{N}\left(\mu_{\eta m}, \sigma^2_{\eta m}\right) \\
     \lambda_{0u} &\sim \mathcal{N}\left(\mu_{0u}, \sigma^2_{0u}\right) \\
     b_{ku} &\sim \mathcal{N}\left((\mu_b)_{ku}, (\sigma^2_b)_{ku}\right) \\
     \beta_{ku} &\sim \mathcal{N}\left((\mu_\beta)_{ku}, (\sigma^2_\beta)_{ku}\right) \\
+    \epsilon_m &\sim \mathcal{N}\left(\mu_{\epsilon m}, \sigma^2_{\epsilon m}\right) \\
     (v^2_b)_{k} &\sim \text{Inv-Ga}\left((\varsigma_b)_{k}, (\rho_b)_{k} \right) \\
     (v^2_\beta)_{r} &\sim \text{Inv-Ga}\left((\varsigma_\beta)_r, (\rho_\beta)_r \right) \\
-    (v^2_\eta)_{u} &\sim \text{Inv-Ga}\left((\varsigma_\eta)_u, (\rho_\eta)_u \right) \\
+    (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left((\varsigma_\epsilon)_u, (\rho_\epsilon)_u \right) \\
     \pi_k &\sim \mathrm{Beta}\left((\gamma_\pi)_k, (\delta_\pi)_k \right) \\ 
     \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((\gamma_A)_{ki}, (\delta_A)_{ki} \right)  
 \end{align}
 
 \section{HMM inference}
-Given the parameters of our observation model $\theta = (\eta, b, \beta, A, \pi)$, the well-known Forward-Backward Algorithm returns the following posteriors
+Given the parameters of our observation model $\theta = (\lambda_0, b, \beta, A, \pi)$, the well-known Forward-Backward Algorithm returns the following posteriors
 \begin{align}
     \xi_t \equiv p(z_t|N, \theta) &\qquad \text{posterior marginals} \\
     \Xi_{t, ij} \equiv p(z_{t+1} = j, z_t = i|N, \theta) &\qquad \text{two-slice marginals} \\
@@ -129,39 +129,6 @@ Where we have used $v^2 \sim \text{Inv-Ga}(\varsigma, \rho)$ to define $\tau = v
 \end{align}
 with $\psi(x)$ the digamma function.
 
-\subsection{$\beta$}
-Formulas in this case are the same as those given above for $b$, with only trivial substitutions required.
-
-\subsection{$\eta$}
-First, from (\ref{loglambda}), we know that $p(\eta|\lambda_0, b, z, \beta)$ is normal, such that
-\begin{multline}
-    \mathbb{E}_{q}\left[ \log \frac{p(\eta|\lambda_0, b, z, \beta)}{q(\eta)}\right] = 
-    \sum_m \mathbb{E}_q \Bigg[
-    -\frac{1}{2 v^2_{\eta u(m)}} 
-        \left(
-        \eta_m - \lambda_{0u} - \sum_k z_{t(m) k} b_{k u(m)} - 
-        \sum_r x_{mr} \beta_{r u(m)} 
-        \right)^2  \\
-    -\frac{1}{2} \log 2\pi v^2_{\eta u(m)}
-    + \frac{1}{2\sigma^2_{\eta m}} (\eta_m - \mu_{\eta m})^2 + 
-    \frac{1}{2} \log 2\pi \sigma^2_{\eta m}
-    \Bigg] \\
-    = \sum_m \Bigg[ -\frac{1}{2}\frac{\varsigma_{\eta u(m)}}{\rho_{\eta u(m)}} 
-    \Bigg(
-        \sigma^2_{\eta m} + \sigma^2_{0 u(m)} + 
-        \sum_k \left[ \xi_{t(m) k} \sigma^2_{b k u(m)} +
-        \xi_{t(m) k} (1 - \xi_{t(m) k}) \mu^2_{bk u(m)}\right] + \\
-        \sum_r x^2_{r u(m)} \sigma^2_{\beta r u(m)}
-    +
-    \Big(
-    \mu_{\eta m} - \mu_{0 u(m)} - \sum_k \xi_{t(m) k} \mu_{b k u(m)} 
-    - \sum_r x_{mr} \mu_{\beta r u(m)}
-    \Big)^2 \Bigg)  \\
-    + \frac{1}{2}(\psi(\varsigma_{\eta u(m)}) - \log \rho_{\eta u(m)}) - \log \sqrt{2\pi}
-    + \frac{1}{2} \log 2\pi e \sigma^2_{\eta m}
-    \Bigg]
-\end{multline}
-
 \subsection{$v^2_b$}
 Here again, we will define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ so that we can write
 \begin{multline}
@@ -179,6 +146,9 @@ where we have discarded constants that do not depend on the variational paramete
 \begin{equation}
     H_g(a, b) = a - \log b + \log \Gamma(a) + (1 - a)\psi(a)
 \end{equation}
+
+\subsection{$\beta$, $\epsilon$}
+Formulas in this case are the same as those given above for $b$, with only trivial substitutions required.
 
 \subsection{$\pi$}
 First, we have
@@ -215,28 +185,39 @@ and again
     H(A_{k1i}) = H_b(\gamma_{Aki}, \delta_{Aki})
 \end{equation}
 
-\subsection{$z$}
-For the Hidden Markov Model, we would like to calculate the probability of the sequence of hidden states in the generative model and the posterior over hidden states:
+\subsection{Observation model}
+Finally, we would like to calculate the piece of the evidence lower bound arising from the Poisson observation model:
 \begin{multline}
     \label{obsmodel}
-    \mathbb{E}_q \left[ \log \frac{p(z|A, \pi)}{q(z)} \right] =
-    \sum_{kt}  \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right] \\
-    - \sum_{kt} \left[ \xi_{tk}^T \nu_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
+    \mathbb{E}_q \left[ \log \frac{p(N, z|\theta)}{q(z)} \right] =
+    \sum_{m} \left[
+    N_{m} \mathbb{E}_q [\eta_m]
+    - \mathbb{E}_q[e^{\eta_m}] \right]
+    + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right] \\
+    - \sum_{kt} \left[ \xi_{tk}^T \eta_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
 \end{multline}
-with $\xi$ and $\Xi$ defined as the expected value of $z$ and the two-slice marginals, as above, and $(\nu, \tilde{\pi}, \tilde{A})$ the variational parameters in the posterior $q(z)$. Roughly, the three terms above correspond to $\log p(z|A, \pi)$ and $\log q(z)$.
+with $\xi$ and $\Xi$ defined as the expected value of $z$ and the two-slice marginals, as above, and $(\eta, \tilde{\pi}, \tilde{A})$ the variational parameters in the posterior $q(z)$. Roughly, the three terms above correspond to $\log p(N|z, \theta)$, $\log p(z|A, \pi)$, and $\log q(z)$.
 
-\subsection{Observation model}
-This piece of the model is trivial:
-\begin{multline}
-    \mathbb{E}_q \left[ \log p(N|\eta) \right] = 
-    \sum_m \mathbb{E}_q \left[ N_m \eta_m - e^{\eta_m} \right] = 
-    \sum_m \left[N_m \mu_{\eta m} - e^{\mu_{\eta m} + \frac{1}{2} \sigma^2_{\eta m}} \right]
-\end{multline}
-where we have used the expression for the moment generating function of a normally distributed variable:
+The first two terms involving expectations of $\lambda_{mu}$ can be calculated from (\ref{loglambda}) above and the variational ansatz:
+\begin{align}
+    \mathbb{E}_q [\eta_m] &= \overline{\eta_m} =  
+    \mu_{0u(m)} + \sum_{k} \xi_{t(m) k} \mu_{bku(m)} + \sum_j x_{mj} \mu_{\beta j u(m)} + \mu_{\epsilon m} \\
+    \mathbb{E}_q [e^{\eta_m}] &= \exp \left( 
+    \overline{\eta_{m \setminus b}}
+    + \frac{1}{2} \left[ \sigma^2_{0u} 
+    + \sum_j x^2_{m j} \sigma^2_{\beta ku} + \sigma^2_{\epsilon m u}
+    \right]
+    \right) \\ \nonumber
+    &\times \left[
+    \prod_k \left(
+    1 - \xi_{t(m) k} + \xi_{t(m) k} e^{\mu_{bku} + \sigma^2_{bku} / 2}
+    \right)\right]
+\end{align}
+with $\overline{\eta_{m \setminus b}}$ the same as $\overline{\eta_m}$ with $zb$ terms removed. We have also used the expression for the moment generating function of a normally distributed variable:
 \begin{equation}
     \mathbb{E}[e^{tX}] = e^{t\mu + \frac{1}{2} t^2\sigma^2}
 \end{equation}
-and ignored constants $\log N_m!$.
+and the fact that $z^2 = z$ since the latents are assumed to be binary.
 
 
 \section{Variational Updates}
@@ -244,19 +225,21 @@ and ignored constants $\log N_m!$.
 \subsection{$z$}
 Technically, $\xi$ is not a variational parameter, but depends on the variational parameters in $q(z)$: $\xi = \xi(\nu, \tilde{A}, \tilde{\pi})$, and similarly for $\Xi$. For the actual variational parameters, the updates are straightforward:
 \begin{align}
-    \nu_{tk} &\leftarrow \sum_{t(m) = t} 
+    \nu_{tk} &\leftarrow \sum_{u; t(m) = t} 
     \begin{pmatrix}
-        0 \\
-        \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \left(
-        \mu_{\eta m}\mu_{bku} - \frac{1}{2} \mu_{bku}^2 
-        - \sigma^2_{bku} \right)
+        - F_{mku} \\
+        N_{mu} \mu_{bku} -
+        e^{\mu_{bku} + \sigma^2_{bku} / 2} F_{mku} 
     \end{pmatrix} \\
     \tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
     \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
 \end{align}
-Here, we sum over all observations $m$ corresponding to stimulus time $t$, implicitly using $u = u(m)$. To determine $\nu$, the local evidence for $z$, we set $z = 0$ or $z = 1$ in $p(\eta|z, \lambda_0, b, \beta)$ but also make use of the fact that this term need only be defined up to an overall constant (i.e., the probability need not be normalized) to remove terms not dependent on $z$. 
+Here, we sum over all observations at stimulus time $t$, and $\eta$ the local evidence for $z$ is calculated by setting the relevant $z$ to 0 or 1. For simplicity, we also define
+\begin{equation}
+    F_{mku} = \frac{\overline{e^{\eta_m}}}{1 - \xi_{t(m) k} + \xi_{t(m) k} e^{\mu_{bku} + \sigma^2_{bku} / 2}}
+\end{equation}
 
-We also note, after Beal, that as a result of these updates, $\tilde{A}$ and $\tilde{\pi}$ are subadditive (i.e., they do not sum to 1), but that the forward-backward algorithm nonetheless returns a correctly normalized posterior.
+We note, after Beal, that as a result of these updates, $\tilde{A}$ and $\tilde{\pi}$ are subadditive (i.e., they do not sum to 1), but that the forward-backward algorithm nonetheless returns a correctly normalized posterior.
 
 \subsection{$\pi$, $A$}
 Given conjugacy, these are trivial to write down:
@@ -273,76 +256,13 @@ Here again, conjugacy makes the updates trivial for the $v^2$ terms. For both $b
     \varsigma_k &\leftarrow s + \frac{U}{2} \\
     \rho_k &\leftarrow r + \frac{1}{2}\sum_u (\sigma^2_{ku} + \mu^2_{ku}) \\
 \end{align}
-while for $\eta$
+while for $\epsilon$
 \begin{align}
     \varsigma_u &\leftarrow s + \frac{M_u}{2} \\
     \rho_u &\leftarrow r + \frac{1}{2} \sum_m (\sigma^2_{mu} + \mu^2_{mu})
 \end{align}
-where $M_u$ is the number of observations of unit $u$.
 
-\subsection{$\lambda_0$}
-Here, we calculate
-\begin{multline}
-    \frac{\partial\mathcal{L}}{\partial \mu_{0u}} = -\frac{1}{v_0^2} (\mu_{0u} - m_0) + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} 
-    \left( 
-    \mu_{\eta m} - \mu_{0u} - \sum_k \xi_{t(m) k} \mu_{bku} + 
-    \sum_r x_{mr} \mu_{\beta ru}
-    \right) = 0 \\
-    \Rightarrow \quad \mu_{0u} \leftarrow 
-    \left(\frac{m_0}{v_0^2} + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}}  \right)^{-1} 
-    \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} 
-    \left[
-    \mu_{\eta m} - \sum_k \xi_{t(m) k} \mu_{bku} + 
-    \sum_r x_{mr} \mu_{\beta ru}
-    \right]
-\end{multline}
-and similarly
-\begin{align}
-    &\frac{\partial\mathcal{L}}{\partial \sigma^2_{0u}} = -\frac{1}{2v_0^2} + 
-    \frac{1}{2\sigma^2_{0u}} - \frac{1}{2} \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} = 0 \\
-    \Rightarrow \quad &\tau_{0u} = \frac{1}{\sigma^2_{0u}} \leftarrow 
-    \frac{1}{v^2_0} + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}}
-\end{align}
-
-\subsection{$b$}
-Again, requiring 0 gradient gives
-\begin{multline}
-    &\frac{\partial\mathcal{L}}{\partial \mu_{bku}} = 
-    -\frac{\varsigma_{bk}}{\rho_{bk}} \mu_{bku} + \\
-    \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} 
-    \Bigg[ \xi_{t(m) k}
-    \left( 
-    \mu_{\eta m} - \mu_{0u} - \sum_j \xi_{t(m) j} \mu_{bju} + 
-    \sum_r x_{mr} \mu_{\beta ru}
-    \right)  
-    - \xi_{t(m) k} (1 - \xi_{t(m)k}) \mu_{bku} \Bigg] = 0 \\
-\end{multline}
-which yields the update equation
-\begin{align}
-    &\mu_{b u} \leftarrow \Lambda^{-1} \cdot \sum_{u(m) = u}
-    \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \xi_{t(m) } 
-    \left(
-    \mu_{\eta m} - \mu_{0u} + \sum_r x_{mr} \mu_{\beta r u}
-    \right) \\
-    &(\Lambda)_{kj} \equiv \frac{\varsigma_{bk}}{\rho_{bk}} \delta_{kj}
-    + \sum_{u(m) = u} \left(\xi_{t(m)k} \xi_{t(m) j} 
-    + \xi_{t(m) k} (1 - \xi_{t(m)k}) \delta_{kj} \right)
-\end{align}
-where we have written the update in matrix form, suppressing the latent 
-state index $k$, and the update requires solving a $K x K$ system of linear equations.
-
-Similarly,
-\begin{align}
-    &\frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} = 
-    -\frac{1}{2}\frac{\varsigma_{bk}}{\rho_{bk}} + \frac{1}{2\sigma^2_{bku}}
-    - \frac{1}{2}\sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \xi_{t(m) k} = 0\\
-    \Rightarrow \quad &\tau_{bku} = \frac{1}{\sigma^2_{bku}} \leftarrow 
-    \frac{\varsigma_{bk}}{\rho_{bk}} + \sum_{u(m) = u} \frac{\varsigma_{\eta u}}{\rho_{\eta u}} \xi_{t(m) k}
-\end{align}
-
-
-
-\subsection{$\lambda_0$ $b$, $\beta$, $\eta$}
+\subsection{$\lambda_0$ $b$, $\beta$, $\epsilon$}
 Here, the nonlinearity in $\overline{\lambda_{mu}}$ makes updates less straightforward. In each case, we have something like
 \begin{equation}
     \frac{\partial\mathcal{L}}{\partial \mu} = \frac{\partial\mathcal{E}}{\partial \mu} + \sum_{mu} \left[N_{mu} \frac{\partial\overline{\log \lambda_{mu}}}{\partial \mu} - \frac{\partial\overline{\lambda_{mu}}}{\partial \mu}\right] = 0
@@ -354,8 +274,8 @@ which works out in the various cases as
     - \mu_{bku} \overline{\tau_{bk}} + \sum_m [N_{mu} - e^{\mu_{bku} + \sigma^2_{bku} / 2} F_{mku} ] \xi_{t(m) k} \\
     \frac{\partial\mathcal{L}}{\partial \mu_{\beta ju}} &= 
     - \mu_{\beta ju} \overline{\tau_{\beta j}} + \sum_m [N_{mu} - \overline{\lambda_{mu}}] x_{mj}  \\
-    \frac{\partial\mathcal{L}}{\partial \mu_{\eta mu}} &= 
-    - \mu_{\eta mu} \overline{\tau_{\eta u}} + N_{mu} - 
+    \frac{\partial\mathcal{L}}{\partial \mu_{\epsilon mu}} &= 
+    - \mu_{\epsilon mu} \overline{\tau_{\epsilon u}} + N_{mu} - 
     \overline{\lambda_{mu}}
 \end{align}
 Unfortunately, $\overline{\lambda_{mu}}$ depends on the $\mu$ variables in question, requiring us to solve a transcendental equation in each case.
@@ -367,23 +287,9 @@ The case of variation with respect to $\sigma^2$ is similar:
     - \frac{1}{2} \overline{\tau_{bk}} + \frac{1}{2\sigma^2_{bku}} - \frac{1}{2}\sum_m \xi_{t(m)k} e^{\mu_{bku} + \sigma^2_{bku} / 2} F_{mku}  \\
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{\beta ju}} &= 
     - \frac{1}{2} \overline{\tau_{\beta j}} + \frac{1}{2\sigma^2_{\beta ju}} - \frac{1}{2} \sum_m x_{mj} \overline{\lambda_{mu}} \\
-    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\eta mu}} &= 
-    -\frac{1}{2} \overline{\tau_{\eta u}} + \frac{1}{2\sigma^2_{\eta mu}} - \frac{1}{2} \overline{\lambda_{mu}}
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon mu}} &= 
+    -\frac{1}{2} \overline{\tau_{\epsilon u}} + \frac{1}{2\sigma^2_{\epsilon mu}} - \frac{1}{2} \overline{\lambda_{mu}}
 \end{align}
-
-\section{Khan et al. dual formulation}
-Here, we use a dual convex formulation by Khan et al. (2014) to reduce the number of parameters and, in principle, allow for full posterior covariances. For the moment, however, we will continue to assume that firing rates for individual units are independent from one another given population hyperparameters and effects for different latent states are also independent.
-
-As before, we let $m$ index observations (of which there are $M$ total), each observation corresponding to a single spike count at a given moment for a particular unit. That is, for each $m$, $u(m)$ is uniquely specified. As a result, we will replace $u$ indices with $m$ indices for simplicity. We also denote the log firing rate by $\eta$:
-\begin{equation}
-    \eta_m = \log \lambda_{mu} = \lambda_{0m} + \sum_k z_{mk} b_{k m} + \sum_r x_{mr} \beta_{r m} + \eta_m
-\end{equation}
-Now, we will introduce new variables $h_m \equiv \mathbb{E}_q[\eta_m]$, $\rho_m \equiv \mathrm{var}_q[\eta_m]$ with the constraints
-\begin{align}
-    h_m &= \mu_{0m} + \sum_k \xi_{mk} \mu_{bkm} + \sum_r x_{mr} \mu_{\beta rm} \\
-    \rho_m &= \sigma^2_{0m} 
-\end{align}
-
 
 
 \end{document}
