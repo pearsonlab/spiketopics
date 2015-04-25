@@ -269,7 +269,7 @@ Here, the nonlinearity in $\overline{e^{\eta_m}}$ makes updates less straightfor
 \end{equation}
 which works out in the various cases as
 \begin{align}
-    \frac{\partial\mathcal{L}}{\partial \mu_{0u}} &= -(\mu_{0u} - m_0)\tau_0^2 + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] \\
+    \frac{\partial\mathcal{L}}{\partial \mu_{0u}} &= -(\mu_{0u} - m_0)\tau_0 + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] \\
     \frac{\partial\mathcal{L}}{\partial \mu_{bku}} &= 
     - \mu_{bku} \overline{\tau_{bk}} + \sum_{u(m) = u} [N_{m} - e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk} ] \xi_{t(m) k} \\
     \frac{\partial\mathcal{L}}{\partial \mu_{\beta ju}} &= 
@@ -290,6 +290,19 @@ The case of variation with respect to $\sigma^2$ is similar:
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon m}} &= 
     -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} + \frac{1}{2\sigma^2_{\epsilon m}} - \frac{1}{2} \overline{e^{\eta_m}}
 \end{align}
+where $\overline{\tau} = \mathbb{E}[1/v^2] = \varsigma / \rho$.
+
+\subsubsection{Hessians}
+Because the structure of the observation model is a sum over (independent)observations and each observation corresponds to a particular $(t, u)$ the Hessian matrix takes on a particularly simple form within each sub-block:
+\begin{align}
+    \frac{\partial^2\mathcal{L}}{\partial \mu_{0u}\partial \mu_{0u'}} &=
+    -\left[\tau_0 + \sum_{u(m)=u} \overline{e^{\eta_m}}\right]\delta_{uu'} \\
+    \frac{\partial^2\mathcal{L}}{\partial \mu_{bku}\partial \mu_{bk'u'}} &=
+    -\left[\overline{\tau_{bk}} + \xi_{t(m) k}\sum_{u(m) = u} e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk} \right]\delta_{uu'} \delta_{k k'} \\
+    \frac{\partial^2\mathcal{L}}{\partial \mu_{\beta ru}\partial \mu_{\beta r'u'}} &=
+    -\left[\overline{\tau_{\beta r}} + \sum_{u(m) = u} x^2_{mr} \overline{e^{\eta_m}} \right]\delta_{uu'} \delta_{r r'} \\
+\end{align}
+to be continued...
 
 
 \end{document}
