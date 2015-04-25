@@ -39,6 +39,9 @@ class GaussianNode:
     def expected_prec_x(self):
         return self.post_prec 
 
+    def expected_exp_x(self):
+        return np.exp(self.post_mean + 0.5 / self.post_prec)
+
     def expected_log_prior(self):
         """
         Calculate expected value of log prior under the posterior distribution.

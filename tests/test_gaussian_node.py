@@ -43,6 +43,10 @@ def test_expected_var_x():
 def test_expected_prec_x():
     npt.assert_array_equal(gn.expected_prec_x(), post_prec)
 
+def test_expected_exp_x():
+    npt.assert_array_equal(gn.expected_exp_x(), 
+        np.exp(post_mean + 0.5 / post_prec))
+
 def test_log_prior():
     gn.expected_log_prior()
 
