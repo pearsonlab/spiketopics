@@ -29,7 +29,7 @@ class GammaNode:
         self.post_shape = post_shape.copy()
         self.post_rate = post_rate.copy()
         self.name = name
-        self.shape = prior_shape.shape
+        self.shape = post_shape.shape
 
     def expected_x(self):
         return self.post_shape / self.post_rate

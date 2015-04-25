@@ -18,7 +18,7 @@ class DirichletNode:
 
         self.post = post.copy()
         self.name = name
-        self.shape = prior.shape
+        self.shape = post.shape
 
     def expected_x(self):
         """
