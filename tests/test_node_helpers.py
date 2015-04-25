@@ -117,3 +117,26 @@ def test_can_initialize_gaussian():
     assert_equals({'foo'}, {n.name for n in nodes})
     assert_is_instance(nodes[0], nd.GaussianNode)
 
+def test_can_initialize_gaussian_hierarchy():
+    grandparent_shape = ()
+    parent_shape = (5,)
+    child_shape = (10, 5)
+    basename = 'foo'
+    gs = np.ones(grandparent_shape)
+    ps = np.ones(parent_shape)
+    cs = np.ones(child_shape)
+    vals = ({
+        'prior_prec_shape': gs, 
+        'prior_prec_rate': gs, 
+        'post_mean': cs,
+        'post_prec': cs,
+        'post_prec_shape': ps,
+        'post_prec_rate': ps
+        })
+
+    nodes = nd.initialize_gaussian_hierarchy(basename, child_shape,  parent_shape, grandparent_shape, **vals)
+    assert_equals(len(nodes), 2)
+    assert_equals({'foo', 'foo_prec'}, {n.name for n in nodes})
+    assert_is_instance(nodes[0], nd.GammaNode)
+    assert_is_instance(nodes[1], nd.GaussianNode)
+

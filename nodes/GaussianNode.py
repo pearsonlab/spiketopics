@@ -28,7 +28,7 @@ class GaussianNode:
         self.post_mean = post_mean.copy()
         self.post_prec = post_prec.copy()
         self.name = name
-        self.shape = prior_mean.shape
+        self.shape = post_mean.shape
 
     def expected_x(self):
         return self.post_mean 

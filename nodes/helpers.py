@@ -159,3 +159,44 @@ def initialize_gaussian(name, node_shape, **kwargs):
 
     return (node,)
 
+def initialize_gaussian_hierarchy(basename, child_shape, parent_shape, 
+    grandparent_shape, **kwargs):
+    """
+    Initialize a hierarchical gaussian variable: 
+        x ~ N(0, v^2)
+        v^2 ~ Inv-Gamma(s, r)
+
+    basename is the name of the name of the child variable 
+    child_shape is the shape of x
+    parent_shape is the shape of v^2
+    grandparent_shape is the shape of s and r
+
+    Our strategy is to put a Gamma node prior on tau = 1/v^2 
+    """
+    pars = {k: np.array(v) for k, v in kwargs.iteritems()}
+    par_shapes = ({
+        'prior_prec_shape': grandparent_shape, 
+        'prior_prec_rate': grandparent_shape, 
+        'post_mean': child_shape,
+        'post_prec': child_shape,
+        'post_prec_shape': parent_shape,
+        'post_prec_rate': parent_shape
+        })
+
+    check_shapes(par_shapes, pars)
+
+    prec_name = basename + '_prec'
+    prec = GammaNode(pars['prior_prec_shape'], 
+        pars['prior_prec_rate'], pars['post_prec_shape'], 
+        pars['post_prec_rate'], name=prec_name)
+
+    prior_mean = np.zeros(parent_shape)
+    child = GaussianNode(prior_mean, prec,
+        pars['post_mean'], pars['post_prec'], name=basename)
+
+    # shape.update = update_shape
+    # mean.update = update_mean
+    # child.update_parents = update_parents
+    child.has_parents = True
+
+    return (prec, child)
