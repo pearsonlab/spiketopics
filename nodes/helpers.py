@@ -4,6 +4,7 @@ Helper functions for dealing with nodes.
 from __future__ import division
 import numpy as np
 from .GammaNode import GammaNode
+from .GaussianNode import GaussianNode
 from .DirichletNode import DirichletNode
 from .HMM import MarkovChainNode, HMMNode
 from .utility_nodes import ProductNode
@@ -140,3 +141,21 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
         kwargs['logZ_init'], name='z')
 
     return (HMMNode(z, A, pi),)
+
+def initialize_gaussian(name, node_shape, **kwargs):
+    """
+    Initialize a gaussian variable.
+    """
+    pars = {k: np.array(v) for k, v in kwargs.iteritems()}
+    par_shapes = ({'prior_mean': node_shape, 'prior_prec': node_shape,
+        'post_mean': node_shape, 'post_prec': node_shape })
+
+    check_shapes(par_shapes, pars)
+
+    node = GaussianNode(pars['prior_mean'], pars['prior_prec'], 
+        pars['post_mean'], pars['post_prec'], name=name)
+
+    node.has_parents = False
+
+    return (node,)
+

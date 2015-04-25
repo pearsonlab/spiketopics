@@ -92,7 +92,7 @@ def test_can_initialize_HMM():
     zz = np.ones(zz_shape)
     logZ = np.ones(logZ_shape)
     vals = ({'A_prior': A, 'A_post': A, 'pi_prior': pi, 'pi_post': pi, 
-        'z_prior': z, 'zz_prior': zz, 'logZ_prior': logZ})
+        'z_init': z, 'zz_init': zz, 'logZ_init': logZ})
 
     nodes = nd.initialize_HMM(K, M, T, **vals)
     hmm_node = nodes[0]
@@ -103,4 +103,17 @@ def test_can_initialize_HMM():
     assert_is_instance(node_dict['A'], nd.DirichletNode)
     assert_is_instance(node_dict['pi'], nd.DirichletNode)
     assert_is_instance(node_dict['z'], nd.MarkovChainNode)
+
+def test_can_initialize_gaussian():
+    child_shape = (10, 5)
+    basename = 'foo'
+    cs = np.ones(child_shape)
+    vals = ({'prior_mean': cs, 'prior_prec': cs, 
+        'post_mean': cs, 'post_prec': cs })
+
+    nodes = nd.initialize_gaussian(basename, child_shape, **vals)
+
+    assert_equals(len(nodes), 1)
+    assert_equals({'foo'}, {n.name for n in nodes})
+    assert_is_instance(nodes[0], nd.GaussianNode)
 
