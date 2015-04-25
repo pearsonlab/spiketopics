@@ -194,9 +194,30 @@ def initialize_gaussian_hierarchy(basename, child_shape, parent_shape,
     child = GaussianNode(prior_mean, prec,
         pars['post_mean'], pars['post_prec'], name=basename)
 
-    # shape.update = update_shape
-    # mean.update = update_mean
-    # child.update_parents = update_parents
+    def update_prec(idx=Ellipsis):
+        """
+        Update for precision variable in terms of child node.
+        idx is assumed to index *last* dimension of arrays
+        """ 
+        # calculate number of units
+        n_units = np.sum(np.ones(child_shape).T[idx])
+
+        arr_list = np.broadcast_arrays(prec.post_shape.T, 
+            prec.prior_shape.T)
+        prec.post_shape.T[idx] = arr_list[1][idx] 
+        prec.post_shape.T[idx] += 0.5 * n_units
+
+        arr_list = np.broadcast_arrays(prec.post_rate.T, 
+            prec.prior_rate.T)
+        prec.post_rate.T[idx] = arr_list[1][idx]
+        eff_rate = 0.5 * (child.expected_var_x() + child.expected_x() ** 2)
+        prec.post_rate.T[idx] += np.sum(eff_rate.T[idx])
+
+    def update_parents(idx=Ellipsis):
+        prec.update(idx)
+
+    prec.update = update_prec
+    child.update_parents = update_parents
     child.has_parents = True
 
     return (prec, child)
