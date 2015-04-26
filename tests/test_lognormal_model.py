@@ -206,8 +206,8 @@ class Test_LogNormal_Model:
     @classmethod
     def _setup_fr_latents(self):
         self.fr_latent_dict = ({
-        'prior_mean': np.random.rand(self.U, self.K),
-        'prior_prec': np.random.rand(self.U, self.K),
+        'prior_mean': np.random.rand(self.K,),
+        'prior_prec': np.random.rand(self.K,),
         'post_mean': np.random.rand(self.U, self.K),
         'post_prec': np.random.rand(self.U, self.K),
         }) 
@@ -230,15 +230,15 @@ class Test_LogNormal_Model:
     @classmethod
     def _setup_fr_regressors(self):
         self.fr_regressors_dict = ({
-        'prior_mean': np.random.rand(self.U, self.K),
-        'prior_prec': np.random.rand(self.U, self.K),
-        'post_mean': np.random.rand(self.U, self.K),
-        'post_prec': np.random.rand(self.U, self.K),
+        'prior_mean': np.random.rand(self.R,),
+        'prior_prec': np.random.rand(self.R,),
+        'post_mean': np.random.rand(self.U, self.R),
+        'post_prec': np.random.rand(self.U, self.R),
         }) 
 
         grandparent_shape = ()
-        parent_shape = (self.K,)
-        child_shape = (self.U, self.K)
+        parent_shape = (self.R,)
+        child_shape = (self.U, self.R)
         gs = np.random.rand(*grandparent_shape)
         ps = np.random.rand(*parent_shape)
         cs = np.random.rand(*child_shape)
@@ -292,223 +292,217 @@ class Test_LogNormal_Model:
         npt.assert_array_equal(pos, baseline.post_mean)
         npt.assert_array_equal(por, baseline.post_prec)
 
-    # def test_can_initialize_baseline_hierarchy(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_hier_dict)
-    #     assert_in('baseline', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['baseline_shape'], nd.GammaNode)
+    def test_can_initialize_fr_latents(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        assert_in('fr_latents', lnm.nodes)
+        assert_is_instance(lnm.nodes['fr_latents'], nd.GaussianNode)
 
-    # def test_can_initialize_fr_latents(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     assert_in('fr_latents', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['fr_latents'], nd.GammaNode)
+    def test_can_initialize_fr_latents_hierarchy(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_fr_latents(**self.fr_latent_hier_dict)
+        assert_in('fr_latents', lnm.nodes)
+        assert_is_instance(lnm.nodes['fr_latents'], nd.GaussianNode)
+        assert_is_instance(lnm.nodes['fr_latents_prec'], nd.GammaNode)
 
-    # def test_can_initialize_fr_latents_hierarchy(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_fr_latents(**self.fr_latent_hier_dict)
-    #     assert_in('fr_latents', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['fr_latents'], nd.GammaNode)
-    #     assert_is_instance(gpm.nodes['fr_latents_shape'], nd.GammaNode)
+    def test_can_initialize_fr_regressors(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        assert_in('fr_regressors', lnm.nodes)
+        assert_is_instance(lnm.nodes['fr_regressors'], nd.GaussianNode)
 
-    # def test_can_initialize_fr_regressors(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     assert_in('fr_regressors', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
-
-    # def test_can_initialize_fr_regressors_hierarchy(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
-    #     assert_in('fr_regressors', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['fr_regressors'], nd.GammaNode)
-    #     assert_is_instance(gpm.nodes['fr_regressors_shape'], nd.GammaNode)
+    def test_can_initialize_fr_regressors_hierarchy(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
+        assert_in('fr_regressors', lnm.nodes)
+        assert_is_instance(lnm.nodes['fr_regressors'], nd.GaussianNode)
+        assert_is_instance(lnm.nodes['fr_regressors_prec'], nd.GammaNode)
 
     # def test_can_initialize_overdispersion(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_overdispersion(**self.overdisp_dict)
-    #     assert_in('overdispersion', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_overdispersion(**self.overdisp_dict)
+    #     assert_in('overdispersion', lnm.nodes)
+    #     assert_is_instance(lnm.nodes['overdispersion'], nd.GammaNode)
 
     # def test_can_initialize_overdispersion_hierarchy(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_overdispersion(**self.overdisp_hier_dict)
-    #     assert_in('overdispersion', gpm.nodes)
-    #     assert_is_instance(gpm.nodes['overdispersion'], nd.GammaNode)
-    #     assert_is_instance(gpm.nodes['overdispersion_shape'], nd.GammaNode)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_overdispersion(**self.overdisp_hier_dict)
+    #     assert_in('overdispersion', lnm.nodes)
+    #     assert_is_instance(lnm.nodes['overdispersion'], nd.GammaNode)
+    #     assert_is_instance(lnm.nodes['overdispersion_shape'], nd.GammaNode)
 
     # def test_can_initialize_latents(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_latents(**self.latent_dict)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_latents(**self.latent_dict)
 
-    #     assert_in('HMM', gpm.nodes)
+    #     assert_in('HMM', lnm.nodes)
 
     # def test_finalize(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.finalize()
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.finalize()
 
-    #     assert_true(gpm.latents)
-    #     assert_true(not gpm.regressors)
-    #     assert_true(not gpm.overdispersion)
-    #     gpm.F_prod()
+    #     assert_true(lnm.latents)
+    #     assert_true(not lnm.regressors)
+    #     assert_true(not lnm.overdispersion)
+    #     lnm.F_prod()
 
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
 
-    #     assert_true(gpm.latents)
-    #     assert_true(gpm.regressors)
-    #     assert_true(not gpm.overdispersion)
-    #     gpm.G_prod()
+    #     assert_true(lnm.latents)
+    #     assert_true(lnm.regressors)
+    #     assert_true(not lnm.overdispersion)
+    #     lnm.G_prod()
 
     # def test_F_prod(self):
     #     # initialize model
-    #     gpm = gp.GammaModel(self.N, self.K)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
 
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
 
-    #     gpm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
 
-    #     gpm.finalize()
+    #     lnm.finalize()
 
     #     # initialize/cache F_prod
-    #     gpm.F_prod(update=True)
+    #     lnm.F_prod(update=True)
 
     #     # test shapes
-    #     assert_equals(gpm.F_prod(1).shape, (self.T, self.U))
-    #     assert_equals(gpm.F_prod().shape, (self.T, self.U))
-    #     assert_equals(gpm.F_prod(flat=True).shape, (self.M,))
+    #     assert_equals(lnm.F_prod(1).shape, (self.T, self.U))
+    #     assert_equals(lnm.F_prod().shape, (self.T, self.U))
+    #     assert_equals(lnm.F_prod(flat=True).shape, (self.M,))
 
     #     # test caching
-    #     npt.assert_allclose(gpm.F_prod(1), gpm._Ftuk[..., 1])
-    #     npt.assert_allclose(gpm.F_prod(), gpm._Ftu)
-    #     npt.assert_allclose(gpm.F_prod(flat=True), gpm._Ftu_flat)
+    #     npt.assert_allclose(lnm.F_prod(1), lnm._Ftuk[..., 1])
+    #     npt.assert_allclose(lnm.F_prod(), lnm._Ftu)
+    #     npt.assert_allclose(lnm.F_prod(flat=True), lnm._Ftu_flat)
 
     # def test_G_prod(self):
     #     # initialize model
-    #     gpm = gp.GammaModel(self.N, self.K)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
 
     #     # initialize fr effects
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
 
-    #     gpm.finalize()
+    #     lnm.finalize()
 
     #     # initialize/cache F_prod
-    #     gpm.G_prod(update=True)
+    #     lnm.G_prod(update=True)
 
     #     # test shapes
-    #     assert_equals(gpm.G_prod(1).shape, (self.T, self.U))
-    #     assert_equals(gpm.G_prod().shape, (self.T, self.U))
-    #     assert_equals(gpm.G_prod(flat=True).shape, (self.M,))
+    #     assert_equals(lnm.G_prod(1).shape, (self.T, self.U))
+    #     assert_equals(lnm.G_prod().shape, (self.T, self.U))
+    #     assert_equals(lnm.G_prod(flat=True).shape, (self.M,))
 
     #     # test caching
-    #     npt.assert_allclose(gpm.G_prod(1), gpm._Gtuk[..., 1])
-    #     npt.assert_allclose(gpm.G_prod(), gpm._Gtu)
-    #     npt.assert_allclose(gpm.G_prod(flat=True), gpm._Gtu_flat)
+    #     npt.assert_allclose(lnm.G_prod(1), lnm._Gtuk[..., 1])
+    #     npt.assert_allclose(lnm.G_prod(), lnm._Gtu)
+    #     npt.assert_allclose(lnm.G_prod(flat=True), lnm._Gtu_flat)
 
     # def test_updates(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
-    #     assert_true(gpm.baseline)
-    #     assert_true(gpm.latents)
-    #     assert_true(gpm.regressors)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
+    #     assert_true(lnm.baseline)
+    #     assert_true(lnm.latents)
+    #     assert_true(lnm.regressors)
 
-    #     baseline = gpm.nodes['baseline']
+    #     baseline = lnm.nodes['baseline']
     #     baseline.update()
     #     npt.assert_allclose(baseline.post_shape, 
-    #         baseline.prior_shape + np.sum(gpm.N, axis=0))
+    #         baseline.prior_shape + np.sum(lnm.N, axis=0))
 
-    #     fr_latents = gpm.nodes['fr_latents']
+    #     fr_latents = lnm.nodes['fr_latents']
     #     fr_latents.update(1)
 
-    #     fr_regressors = gpm.nodes['fr_regressors']
+    #     fr_regressors = lnm.nodes['fr_regressors']
     #     fr_regressors.update()
 
     #     # add overdispersion
-    #     gpm.initialize_overdispersion(**self.overdisp_dict)
-    #     gpm.finalize()
-    #     od = gpm.nodes['overdispersion']
+    #     lnm.initialize_overdispersion(**self.overdisp_dict)
+    #     lnm.finalize()
+    #     od = lnm.nodes['overdispersion']
     #     od.update()
 
     # def test_hier_updates(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_hier_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_hier_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
-    #     gpm.finalize()
-    #     assert_true(gpm.baseline)
-    #     assert_true(gpm.latents)
-    #     assert_true(gpm.regressors)
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_hier_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_hier_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
+    #     lnm.finalize()
+    #     assert_true(lnm.baseline)
+    #     assert_true(lnm.latents)
+    #     assert_true(lnm.regressors)
 
-    #     baseline = gpm.nodes['baseline']
+    #     baseline = lnm.nodes['baseline']
     #     baseline.update()
 
-    #     fr_latents = gpm.nodes['fr_latents']
+    #     fr_latents = lnm.nodes['fr_latents']
     #     fr_latents.update(1)
 
-    #     fr_regressors = gpm.nodes['fr_regressors']
+    #     fr_regressors = lnm.nodes['fr_regressors']
     #     fr_regressors.update()
 
     # def test_calc_log_evidence(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
 
-    #     logpsi = gpm.calc_log_evidence(2)
-    #     assert_equals(logpsi.shape, (self.T, 2))
+    #     lolnsi = lnm.calc_log_evidence(2)
+    #     assert_equals(lolnsi.shape, (self.T, 2))
 
     # def test_expected_log_evidence(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
 
-    #     Elogp = gpm.expected_log_evidence()
-    #     assert_is_instance(Elogp, np.float64)
+    #     Eloln = lnm.expected_log_evidence()
+    #     assert_is_instance(Eloln, np.float64)
 
     # def test_L(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
 
-    #     assert_is_instance(gpm.L(), np.float64)
-    #     initial_log_len = len(gpm.log['L'])
-    #     L_init = gpm.L(keeplog=True)
-    #     assert_equals(len(gpm.log['L']), initial_log_len + 1)
+    #     assert_is_instance(lnm.L(), np.float64)
+    #     initial_log_len = len(lnm.log['L'])
+    #     L_init = lnm.L(keeplog=True)
+    #     assert_equals(len(lnm.log['L']), initial_log_len + 1)
 
     # def test_iterate(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_hier_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_hier_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
 
-    #     L_init = gpm.L(keeplog=True)
-    #     gpm.iterate(keeplog=True, verbosity=2)
-    #     assert_true(gpm.L() > L_init)
+    #     L_init = lnm.L(keeplog=True)
+    #     lnm.iterate(keeplog=True, verbosity=2)
+    #     assert_true(lnm.L() > L_init)
 
     # def test_inference(self):
-    #     gpm = gp.GammaModel(self.N, self.K)
-    #     gpm.initialize_baseline(**self.baseline_hier_dict)
-    #     gpm.initialize_fr_latents(**self.fr_latent_dict)
-    #     gpm.initialize_latents(**self.latent_dict)
-    #     gpm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     gpm.finalize()
+    #     lnm = ln.LogNormalModel(self.N, self.K)
+    #     lnm.initialize_baseline(**self.baseline_hier_dict)
+    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+    #     lnm.initialize_latents(**self.latent_dict)
+    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+    #     lnm.finalize()
 
-    #     gpm.iterate()
-    #     assert_true(~np.isnan(gpm.L()))
+    #     lnm.iterate()
+    #     assert_true(~np.isnan(lnm.L()))

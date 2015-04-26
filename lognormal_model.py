@@ -90,7 +90,7 @@ class LogNormalModel:
         """
         # test if parameters indicate there's a hierarchy
         if 'prior_prec_shape' in kwargs:
-            nodes = nd.initialize_guassian_hierarchy(name, node_shape,
+            nodes = nd.initialize_gaussian_hierarchy(name, node_shape,
                 parent_shape, grandparent_shape, **kwargs)
         else:
             nodes = nd.initialize_gaussian(name, node_shape, 
