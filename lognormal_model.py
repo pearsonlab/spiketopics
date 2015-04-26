@@ -188,6 +188,73 @@ class LogNormalModel:
         
         return Elogp
 
+    def F(self, k=None, update=False):
+        """
+        Accessor method to return the value of the F product.
+        If k is specified, return F_{mu} (product over all but k), 
+        else return F_{m} (product over all k). If update=True, 
+        recalculate F before returning the result and cache the new 
+        matrix. If flat=True, return the one-row-per-observation 
+        version of F_{tu}.
+        """
+        if not self.latents:
+            return 1
+
+        if update:
+            uu = self.Nframe['unit']
+            tt = self.Nframe['time']
+
+            xi = self.nodes['HMM'].nodes['z'].z[1]
+            bb = self.nodes['fr_latents'].expected_exp_x()
+            if k is not None:
+                zz = xi[tt, k]
+                w = bb[uu, k]
+                vv = ne.evaluate("1 - zz + zz * w")
+                self._Fpre[:, k] = vv
+            else:
+                zz = xi[tt]
+                w = bb[uu]
+                vv = ne.evaluate("1 - zz + zz * w")
+                self._Fpre = vv
+
+            # get other variables ready
+            if self.baseline:
+                lam = self.nodes['baseline'].expected_x()[uu]
+                var_lam = self.nodes['baseline'].expected_var_x()[uu]
+            else:
+                lam = 0
+                var_lam = 0
+
+            if self.regressors:
+                beta = self.nodes['fr_regressors'].expected_x()[uu]
+                var_beta = self.nodes['fr_regressors'].expected_var_x()[uu]
+                xbeta = np.sum(self.Xframe.values * beta, axis=1)
+                xvb = np.sum(var_beta * self.Xframe.values ** 2, axis=1)
+            else:
+                xbeta = 0
+                xvb = 0
+
+            if self.overdispersion:
+                od = self.nodes['overdispersion'].expected_x()
+                var_od = self.nodes['overdispersion'].expected_var_x()
+            else:
+                od = 0
+                var_od = 0
+
+            rest = lam + xbeta + od + 0.5 * (var_lam + xvb + var_od)
+
+            # work in log space to avoid over/underflow
+            Fpre = self._Fpre
+            dd = ne.evaluate("sum(log(Fpre), axis=1)")
+            self._F_flat = ne.evaluate("exp(dd + rest)")
+            ddd = dd[:, np.newaxis]
+            self._Fk_flat = ne.evaluate("exp(ddd - log(Fpre) + rest)")
+
+        if k is not None:
+            return self._Fk_flat[..., k]
+        else:
+            return self._F_flat
+
     def update_baseline(self):
         node = self.nodes['baseline']
 
