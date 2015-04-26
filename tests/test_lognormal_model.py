@@ -330,69 +330,44 @@ class Test_LogNormal_Model:
 
         assert_in('HMM', lnm.nodes)
 
-    # def test_finalize(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.finalize()
+    def test_finalize(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.finalize()
 
-    #     assert_true(lnm.latents)
-    #     assert_true(not lnm.regressors)
-    #     assert_true(not lnm.overdispersion)
-    #     lnm.F_prod()
+        assert_true(lnm.latents)
+        assert_true(not lnm.regressors)
+        assert_true(not lnm.overdispersion)
+        lnm.F()
 
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
 
-    #     assert_true(lnm.latents)
-    #     assert_true(lnm.regressors)
-    #     assert_true(not lnm.overdispersion)
-    #     lnm.G_prod()
+        assert_true(lnm.latents)
+        assert_true(lnm.regressors)
+        assert_true(not lnm.overdispersion)
 
-    # def test_F_prod(self):
-    #     # initialize model
-    #     lnm = ln.LogNormalModel(self.N, self.K)
+    def test_F(self):
+        # initialize model
+        lnm = ln.LogNormalModel(self.N, self.K)
 
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
 
-    #     lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
 
-    #     lnm.finalize()
+        lnm.finalize()
 
-    #     # initialize/cache F_prod
-    #     lnm.F_prod(update=True)
+        # initialize/cache F_prod
+        lnm.F(update=True)
 
-    #     # test shapes
-    #     assert_equals(lnm.F_prod(1).shape, (self.T, self.U))
-    #     assert_equals(lnm.F_prod().shape, (self.T, self.U))
-    #     assert_equals(lnm.F_prod(flat=True).shape, (self.M,))
+        # test shapes
+        assert_equals(lnm.F(1).shape, (self.M,))
+        assert_equals(lnm.F().shape, (self.M,))
 
-    #     # test caching
-    #     npt.assert_allclose(lnm.F_prod(1), lnm._Ftuk[..., 1])
-    #     npt.assert_allclose(lnm.F_prod(), lnm._Ftu)
-    #     npt.assert_allclose(lnm.F_prod(flat=True), lnm._Ftu_flat)
-
-    # def test_G_prod(self):
-    #     # initialize model
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-
-    #     # initialize fr effects
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-
-    #     lnm.finalize()
-
-    #     # initialize/cache F_prod
-    #     lnm.G_prod(update=True)
-
-    #     # test shapes
-    #     assert_equals(lnm.G_prod(1).shape, (self.T, self.U))
-    #     assert_equals(lnm.G_prod().shape, (self.T, self.U))
-    #     assert_equals(lnm.G_prod(flat=True).shape, (self.M,))
-
-    #     # test caching
-    #     npt.assert_allclose(lnm.G_prod(1), lnm._Gtuk[..., 1])
-    #     npt.assert_allclose(lnm.G_prod(), lnm._Gtu)
-    #     npt.assert_allclose(lnm.G_prod(flat=True), lnm._Gtu_flat)
+        # test caching
+        npt.assert_allclose(lnm.F(1), lnm._Fk_flat[..., 1])
+        npt.assert_allclose(lnm.F(), lnm._F_flat)
 
     # def test_updates(self):
     #     lnm = ln.LogNormalModel(self.N, self.K)
