@@ -204,13 +204,13 @@ The first two terms involving expectations of $\lambda_{mu}$ can be calculated f
     \mu_{0u(m)} + \sum_{k} \xi_{t(m) k} \mu_{bku(m)} + \sum_r x_{mr} \mu_{\beta r u(m)} + \mu_{\epsilon m} \\
     \mathbb{E}_q [e^{\eta_m}] &= \overline{e^{\eta_m}} = \exp \left( 
     \overline{\eta_{m \setminus b}}
-    + \frac{1}{2} \left[ \sigma^2_{0u} 
-    + \sum_j x^2_{m r} \sigma^2_{\beta ru} + \sigma^2_{\epsilon m u}
+    + \frac{1}{2} \left[ \sigma^2_{0u(m)} 
+    + \sum_j x^2_{m r} \sigma^2_{\beta ru(m)} + \sigma^2_{\epsilon u(m)}
     \right]
     \right) \\ \nonumber
     &\times \left[
     \prod_k \left(
-    1 - \xi_{t(m) k} + \xi_{t(m) k} e^{\mu_{bku} + \sigma^2_{bku} / 2}
+    1 - \xi_{t(m) k} + \xi_{t(m) k} e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2}
     \right)\right]
 \end{align}
 with $\overline{\eta_{m \setminus b}}$ the same as $\overline{\eta_m}$ with $zb$ terms removed. We have also used the expression for the moment generating function of a normally distributed variable:
@@ -272,8 +272,8 @@ which works out in the various cases as
     \frac{\partial\mathcal{L}}{\partial \mu_{0u}} &= -(\mu_{0u} - m_0)\tau_0 + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] \\
     \frac{\partial\mathcal{L}}{\partial \mu_{bku}} &= 
     - \mu_{bku} \overline{\tau_{bk}} + \sum_{u(m) = u} [N_{m} - e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk} ] \xi_{t(m) k} \\
-    \frac{\partial\mathcal{L}}{\partial \mu_{\beta ju}} &= 
-    - \mu_{\beta ju} \overline{\tau_{\beta j}} + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] x_{mj}  \\
+    \frac{\partial\mathcal{L}}{\partial \mu_{\beta ru}} &= 
+    - \mu_{\beta ru} \overline{\tau_{\beta r}} + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] x_{mr}  \\
     \frac{\partial\mathcal{L}}{\partial \mu_{\epsilon m}} &= 
     - \mu_{\epsilon m} \overline{\tau_{\epsilon u(m)}} + N_{m} - 
     \overline{e^{\eta_m}}
@@ -282,7 +282,7 @@ Unfortunately, $\overline{e^{\eta_m}}$ depends on the $\mu$ variables in questio
 
 The case of variation with respect to $\sigma^2$ is similar:
 \begin{align}
-    \frac{\partial\mathcal{L}}{\partial \sigma^2_{0u}} &= -\frac{1}{2}\tau_0^2 + \frac{1}{2\sigma^2_{0u}} - \frac{1}{2} \sum_{u(m) = u} \overline{e^{\eta_m}} \\
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{0u}} &= -\frac{1}{2}\tau_0 + \frac{1}{2\sigma^2_{0u}} - \frac{1}{2} \sum_{u(m) = u} \overline{e^{\eta_m}} \\
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} &= 
     - \frac{1}{2} \overline{\tau_{bk}} + \frac{1}{2\sigma^2_{bku}} - \frac{1}{2}\sum_{u(m) = u} \xi_{t(m)k} e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk}  \\
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{\beta ru}} &= 
@@ -291,6 +291,19 @@ The case of variation with respect to $\sigma^2$ is similar:
     -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} + \frac{1}{2\sigma^2_{\epsilon m}} - \frac{1}{2} \overline{e^{\eta_m}}
 \end{align}
 where $\overline{\tau} = \mathbb{E}[1/v^2] = \varsigma / \rho$.
+
+Note, however, that for unconstrained minimization, we need to shift parameterization to $\sigma^2 = e^\kappa$, with the result that
+
+\begin{align}
+    \frac{\partial\mathcal{L}}{\partial \kappa_{0u}} &= -\frac{1}{2}\tau_0 e^{\kappa_{0u}} + \frac{1}{2} - \frac{1}{2} \sum_{u(m) = u} e^{\kappa_{0u}} \overline{e^{\eta_m}} \\
+    \frac{\partial\mathcal{L}}{\partial \kappa_{bku}} &= 
+    - \frac{1}{2} \overline{\tau_{bk}} e^{\kappa_{bku}} + \frac{1}{2} - \frac{1}{2}\sum_{u(m) = u} \xi_{t(m)k} e^{\mu_{bku(m)} + \frac{1}{2} e^{\kappa_{bku}} + \kappa_{bku}} F_{mk}  \\
+    \frac{\partial\mathcal{L}}{\partial \kappa_{\beta ru}} &= 
+    - \frac{1}{2} \overline{\tau_{\beta r}} e^{\kappa_{\beta bru}} + 
+    \frac{1}{2} - \frac{1}{2} \sum_{u(m) = u} x_{mr} e^{\kappa_{\beta ru}} \overline{e^{\eta_m}} \\
+    \frac{\partial\mathcal{L}}{\partial \kappa_{\epsilon m}} &= 
+    -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} e^{\kappa_{\epsilon m}} + \frac{1}{2} - \frac{1}{2} e^{\kappa_{\epsilon m}} \overline{e^{\eta_m}}
+\end{align}
 
 \subsubsection{Hessians}
 Because the structure of the observation model is a sum over (independent)observations and each observation corresponds to a particular $(t, u)$ the Hessian matrix takes on a particularly simple form within each sub-block:
