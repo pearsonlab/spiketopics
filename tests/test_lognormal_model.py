@@ -318,24 +318,17 @@ class Test_LogNormal_Model:
         assert_is_instance(lnm.nodes['fr_regressors'], nd.GaussianNode)
         assert_is_instance(lnm.nodes['fr_regressors_prec'], nd.GammaNode)
 
-    # def test_can_initialize_overdispersion(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_overdispersion(**self.overdisp_dict)
-    #     assert_in('overdispersion', lnm.nodes)
-    #     assert_is_instance(lnm.nodes['overdispersion'], nd.GammaNode)
+    def test_can_initialize_overdispersion(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_overdispersion(**self.overdisp_dict)
+        assert_in('overdispersion', lnm.nodes)
+        assert_is_instance(lnm.nodes['overdispersion'], nd.GaussianNode)
 
-    # def test_can_initialize_overdispersion_hierarchy(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_overdispersion(**self.overdisp_hier_dict)
-    #     assert_in('overdispersion', lnm.nodes)
-    #     assert_is_instance(lnm.nodes['overdispersion'], nd.GammaNode)
-    #     assert_is_instance(lnm.nodes['overdispersion_shape'], nd.GammaNode)
+    def test_can_initialize_latents(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_latents(**self.latent_dict)
 
-    # def test_can_initialize_latents(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_latents(**self.latent_dict)
-
-    #     assert_in('HMM', lnm.nodes)
+        assert_in('HMM', lnm.nodes)
 
     # def test_finalize(self):
     #     lnm = ln.LogNormalModel(self.N, self.K)
