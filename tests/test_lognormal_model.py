@@ -206,10 +206,10 @@ class Test_LogNormal_Model:
     @classmethod
     def _setup_fr_latents(self):
         self.fr_latent_dict = ({
-        'prior_mean': np.random.rand(self.K,),
-        'prior_prec': np.random.rand(self.K,),
-        'post_mean': np.random.rand(self.U, self.K),
-        'post_prec': np.random.rand(self.U, self.K),
+        'prior_mean': np.zeros(self.K,),
+        'prior_prec': 1000 * np.random.rand(self.K,),
+        'post_mean': np.zeros((self.U, self.K)),
+        'post_prec': 1000 * np.random.rand(self.U, self.K),
         }) 
 
         grandparent_shape = ()
@@ -220,9 +220,9 @@ class Test_LogNormal_Model:
         cs = np.random.rand(*child_shape)
         self.fr_latent_hier_dict = ({
             'prior_prec_shape': gs, 
-            'prior_prec_rate': gs, 
+            'prior_prec_rate': 1000 * gs, 
             'post_mean': cs,
-            'post_prec': cs,
+            'post_prec': 1000 * cs,
             'post_prec_shape': ps,
             'post_prec_rate': ps
             })
@@ -230,10 +230,10 @@ class Test_LogNormal_Model:
     @classmethod
     def _setup_fr_regressors(self):
         self.fr_regressors_dict = ({
-        'prior_mean': np.random.rand(self.R,),
-        'prior_prec': np.random.rand(self.R,),
-        'post_mean': np.random.rand(self.U, self.R),
-        'post_prec': np.random.rand(self.U, self.R),
+        'prior_mean': np.zeros(self.R,),
+        'prior_prec': 1000 * np.random.rand(self.R,),
+        'post_mean': np.zeros((self.U, self.R)),
+        'post_prec': 1000 * np.random.rand(self.U, self.R),
         }) 
 
         grandparent_shape = ()
@@ -244,9 +244,9 @@ class Test_LogNormal_Model:
         cs = np.random.rand(*child_shape)
         self.fr_regressors_hier_dict = ({
             'prior_prec_shape': gs, 
-            'prior_prec_rate': gs, 
+            'prior_prec_rate': 1000 * gs, 
             'post_mean': cs,
-            'post_prec': cs,
+            'post_prec': 1000 * cs,
             'post_prec_shape': ps,
             'post_prec_rate': ps
             })
@@ -369,33 +369,32 @@ class Test_LogNormal_Model:
         npt.assert_allclose(lnm.F(1), lnm._Fk_flat[..., 1])
         npt.assert_allclose(lnm.F(), lnm._F_flat)
 
-    # def test_updates(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
-    #     assert_true(lnm.baseline)
-    #     assert_true(lnm.latents)
-    #     assert_true(lnm.regressors)
+    def test_updates(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_hier_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
+        assert_true(lnm.baseline)
+        assert_true(lnm.latents)
+        assert_true(lnm.regressors)
 
-    #     baseline = lnm.nodes['baseline']
-    #     baseline.update()
-    #     npt.assert_allclose(baseline.post_shape, 
-    #         baseline.prior_shape + np.sum(lnm.N, axis=0))
+        set_trace()
+        baseline = lnm.nodes['baseline']
+        baseline.update()
 
-    #     fr_latents = lnm.nodes['fr_latents']
-    #     fr_latents.update(1)
+        fr_latents = lnm.nodes['fr_latents']
+        fr_latents.update(1)
 
-    #     fr_regressors = lnm.nodes['fr_regressors']
-    #     fr_regressors.update()
+        fr_regressors = lnm.nodes['fr_regressors']
+        fr_regressors.update(1)
 
-    #     # add overdispersion
-    #     lnm.initialize_overdispersion(**self.overdisp_dict)
-    #     lnm.finalize()
-    #     od = lnm.nodes['overdispersion']
-    #     od.update()
+        # add overdispersion
+        lnm.initialize_overdispersion(**self.overdisp_dict)
+        lnm.finalize()
+        od = lnm.nodes['overdispersion']
+        od.update()
 
     # def test_hier_updates(self):
     #     lnm = ln.LogNormalModel(self.N, self.K)

@@ -279,132 +279,173 @@ class LogNormalModel:
 
     def update_baseline(self):
         node = self.nodes['baseline']
-
-        if self.overdispersion:
-            uu = self.Nframe['unit']
-            od = self.nodes['overdispersion'].expected_x()
-            F = self.F_prod(flat=True)
-            G = self.G_prod(flat=True)
-            allprod = od * F * G
-            eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
-        else:
-            F = self.F_prod() 
-            G = self.G_prod()
-            allprod = F * G
-            eff_rate = np.sum(allprod, axis=0)
-
-        node.post_shape = (node.prior_shape.expected_x() + 
-            np.sum(self.N, axis=0).data)
-        node.post_rate = node.prior_rate.expected_x() + eff_rate
-
-    def update_fr_latents(self, idx):
-        lam = self.nodes['fr_latents']
-        xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
-        Nz = xi.dot(self.N)
-
-        if self.overdispersion:
-            uu = self.Nframe['unit']
-            tt = self.Nframe['time']
-            od = self.nodes['overdispersion'].expected_x()
-            bl = self.nodes['baseline'].expected_x()[uu]
-            Fz = self.F_prod(idx, flat=True) * xi[tt]
-            G = self.G_prod(flat=True)
-            allprod = bl * od * Fz * G
-            eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
-        else:
-            bl = self.nodes['baseline'].expected_x()
-            Fz = self.F_prod(idx) * xi[:, np.newaxis] 
-            G = self.G_prod()
-            allprod = bl * Fz * G
-            eff_rate = np.sum(allprod, axis=0)
-
-        lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
-        lam.post_rate[..., idx] = lam.prior_rate.expected_x()[..., idx] + eff_rate
-        self.F_prod(idx, update=True)
-
-    def update_fr_regressors(self):
-        lam = self.nodes['fr_regressors']
-        nn = self.Nframe['count']
+        mu = node.expected_x()
+        var = node.expected_var_x()
+        tau = node.prior_prec.expected_x()
+        mm = node.prior_mean.expected_x()
         uu = self.Nframe['unit']
-        NX = nn[:, np.newaxis] * self.Xframe
+        nn = self.Nframe['count']
 
-        lam.post_shape = (lam.prior_shape.expected_x().reshape(-1, self.R) + 
-            NX.groupby(uu).sum().values)
+        # make an adjusted F that does not include our pars of interest
+        F_adj = self.F() / node.expected_exp_x()[uu]
 
-        # now to find the rates, we have to optimize
-        Lstart = self.L()
-        starts = lam.post_rate
-        lam.post_rate = self.optimize_regressor_rates(starts)
-        self.G_prod(update=True)
+        # parameter of vectors to optimize over
+        starts = np.concatenate((mu, np.log(var)))
 
-    def optimize_regressor_rates(self, starts):
-        """
-        Solve for log(prior_rate) via black-box optimization. 
-        Use log(b) since this is the natural parameter.
-        Updater is the name of a factory function that returns a function
-        to be minimized based on current parameter values.
-        """
-        aa = self.nodes['fr_regressors'].post_shape
-        minfun = self._make_exact_minfun()
+        def minfun(x):
+            jac = np.empty_like(x)
+            mu = x[:self.U]
+            kap = x[self.U:]
+            var = np.exp(kap)
+            bar_exp_eta = np.exp(mu + 0.5 * var)[uu] * F_adj
 
-        eps_starts = np.log(aa / starts)
-        res = minimize(minfun, eps_starts, jac=True)
+            elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
+            elbo += 0.5 * np.sum(np.log(var))
+            elbo += np.sum(nn * mu[uu])
+            elbo += -np.sum(bar_exp_eta)
+
+            jac[:self.U] = -tau * (mu - mm) 
+            jac[:self.U] += pd.DataFrame(nn - bar_exp_eta).groupby(uu).sum().values.squeeze()
+            jac[self.U:] = -0.5 * tau * var + 0.5 
+            jac[self.U:] += -0.5 * pd.DataFrame(var[uu] * bar_exp_eta).groupby(uu).sum().values.squeeze()
+
+            return np.log(-elbo), jac / elbo
+
+        res = minimize(minfun, starts, jac=True)
         if not res.success:
             print "Warning: optimization terminated without success."
             print res.message
-        eps = res.x.reshape(self.U, self.R)
-        bb = aa * np.exp(-eps)
-        return bb
 
-    def _make_exact_minfun(self):
-        """
-        Factory function that returns a function to be minimized.
-        This version uses an exact minimization objective.
-        """
+        node.post_mean = res.x[:self.U]
+        node.post_prec = np.exp(-res.x[self.U:])
+
+    def update_fr_latents(self, idx):
+        node = self.nodes['fr_latents']
+        mu = node.expected_x()[..., idx]
+        var = node.expected_var_x()[..., idx]
+        tau = node.prior_prec.expected_x()[..., idx]
+        mm = node.prior_mean.expected_x()[..., idx]
         uu = self.Nframe['unit']
-        if self.overdispersion:
-            od = self.nodes['overdispersion'].expected_x()
-        else:
-            od = 1
-        F = self.F_prod(flat=True)
-        bl = self.nodes['baseline'].expected_x()[uu]
+        nn = self.Nframe['count']
+        tt = self.Nframe['time']
 
-        aa = self.nodes['fr_regressors'].post_shape
-        ww = self.nodes['fr_regressors'].prior_rate.expected_x().reshape(-1, self.R)
+        # make an adjusted F that does not include our pars of interest
+        F_adj = self.F(idx)
+        xi = self.nodes['HMM'].nodes['z'].z[1, tt, idx]
 
-        def minfun(epsilon): 
-            """
-            This is the portion of the evidence lower bound that depends on 
-            the b parameter. eps = log(a/b)
-            """
-            eps = epsilon.reshape(self.U, self.R)
-            sum_log_G = np.sum(eps[uu] * self.Xframe.values, axis=1)
-            G = np.exp(sum_log_G)
+        # parameter of vectors to optimize over
+        starts = np.concatenate((mu, var))
 
-            elbo = np.sum(aa * eps)
-            elbo += -np.sum(ww * np.exp(eps))
-            FthG = (bl * od * F * G).view(np.ndarray)
-            elbo += -np.sum(FthG)
+        def minfun(x):
+            jac = np.empty_like(x)
+            mu = x[:self.U]
+            var = x[self.U:]
+            bar_exp_eta = (1 - xi + xi * np.exp(mu + 0.5 * var)[uu]) * F_adj
+            F_tilde = np.exp(mu + 0.5 * var)[uu] * F_adj
 
-            # grad = grad(elbo)
-            grad = aa - ww * np.exp(eps)
-            grad -= (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values
+            elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
+            elbo += 0.5 * np.sum(np.log(var))
+            elbo += np.sum(nn * mu[uu] * xi)
+            elbo += -np.sum(bar_exp_eta)
 
-            # minimization objective is log(-elbo)
-            return np.log(-elbo), grad.ravel() / elbo
+            jac[:self.U] = -tau * (mu - mm) 
+            jac[:self.U] += pd.DataFrame((nn - F_tilde) * xi).groupby(uu).sum().values.squeeze()
+            jac[self.U:] = -0.5 * tau + (0.5 / var)
+            jac[self.U:] += -0.5 * pd.DataFrame(xi * F_tilde).groupby(uu).sum().values.squeeze()
 
-        return minfun
+            return -elbo, -jac
+
+        res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
+        if not res.success:
+            print "Warning: optimization terminated without success."
+            print res.message
+
+        node.post_mean = res.x[:self.U]
+        node.post_prec = 1. / res.x[self.U:]
+
+    def update_fr_regressors(self, idx):
+        node = self.nodes['fr_regressors']
+        mu = node.expected_x()[..., idx]
+        var = node.expected_var_x()[..., idx]
+        tau = node.prior_prec.expected_x()[..., idx]
+        mm = node.prior_mean.expected_x()[..., idx]
+        uu = self.Nframe['unit']
+        nn = self.Nframe['count']
+
+        # make an adjusted F that does not include our pars of interest
+        F_adj = self.F() / node.expected_exp_x()[uu, idx]
+        xx = self.Xframe.values[..., idx]
+
+        # parameter of vectors to optimize over
+        starts = np.concatenate((mu, var))
+
+        def minfun(x):
+            jac = np.empty_like(x)
+            mu = x[:self.U]
+            var = x[self.U:]
+            bar_exp_eta = np.exp(mu + 0.5 * var)[uu] * F_adj
+
+            elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
+            elbo += 0.5 * np.sum(np.log(var))
+            elbo += np.sum(nn * mu[uu] * xx)
+            elbo += -np.sum(bar_exp_eta * xx)
+
+            jac[:self.U] = -tau * (mu - mm) 
+            jac[:self.U] += pd.DataFrame((nn - F_adj) * xx).groupby(uu).sum().values.squeeze()
+            jac[self.U:] = -0.5 * tau + (0.5 / var)
+            jac[self.U:] += -0.5 * pd.DataFrame(bar_exp_eta * xx).groupby(uu).sum().values.squeeze()
+
+            return -elbo, -jac
+
+        res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
+        if not res.success:
+            print "Warning: optimization terminated without success."
+            print res.message
+
+        node.post_mean = res.x[:self.U]
+        node.post_prec = 1. / res.x[self.U:]
 
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
-        nn = self.Nframe['count']
+        mu = node.expected_x()
+        var = node.expected_var_x()
+        tau = node.prior_prec.expected_x()
+        mm = node.prior_mean.expected_x()
         uu = self.Nframe['unit']
-        bl = self.nodes['baseline'].expected_x()[uu]
-        F = self.F_prod(flat=True)
-        G = self.G_prod(flat=True)
+        nn = self.Nframe['count']
 
-        node.post_shape = node.prior_shape + nn
-        node.post_rate = node.prior_rate + bl * F * G
+        # make an adjusted F that does not include our pars of interest
+        F_adj = self.F() / node.expected_exp_x()
+
+        # parameter of vectors to optimize over
+        starts = np.concatenate((mu, var))
+
+        def minfun(x):
+            jac = np.empty_like(x)
+            mu = x[:self.M]
+            var = x[self.M:]
+            bar_exp_eta = np.exp(mu + 0.5 * var) * F_adj
+
+            elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
+            elbo += 0.5 * np.sum(np.log(var))
+            elbo += np.sum(nn * mu)
+            elbo += -np.sum(bar_exp_eta)
+
+            jac[:self.M] = -tau * (mu - mm) 
+            jac[:self.M] += (nn - F_adj)
+            jac[self.M:] = -0.5 * tau + (0.5 / var)
+            jac[self.M:] += -0.5 * bar_exp_eta
+
+            return -elbo, -jac
+
+        res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
+        if not res.success:
+            print "Warning: optimization terminated without success."
+            print res.message
+
+        node.post_mean = res.x[:self.U]
+        node.post_prec = 1. / res.x[self.U:]
+
 
     def finalize(self):
         """
