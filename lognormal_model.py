@@ -150,23 +150,21 @@ class LogNormalModel:
         """
         uu = self.Nframe['unit']
         nn = self.Nframe['count']
+        tt = self.Nframe['time']
 
         Elogp = 0
         eta = 0
-        exp_eta = 0
 
         if self.baseline:
             node = self.nodes['baseline']
             eta += node.expected_x()[uu]
-            exp_eta *= node.expected_exp_x()[uu]
 
         if self.latents:
             node = self.nodes['fr_latents']
             mu = node.expected_x()[uu]
-            xi = self.nodes['HMM'].nodes['z'].z[1]
+            xi = self.nodes['HMM'].nodes['z'].z[1, tt]
 
             eta += np.sum(xi * mu, axis=1)
-            exp_eta *= (1 - xi + xi * node.expected_exp_x()[uu])
 
             # pieces for A and pi
             Elogp += self.nodes['HMM'].expected_log_state_sequence()
@@ -177,16 +175,38 @@ class LogNormalModel:
             xx = self.Xframe.values
 
             eta += np.sum(xx * mu, axis=1)
-            exp_eta *= node.expected_exp_x()[uu]
 
         if self.overdispersion:
             node = self.nodes['overdispersion']
 
-            exp_eta *= node.expected_exp_x()
-
-        Elogp += np.sum(nn * eta - exp_eta)
+        Elogp += np.sum(nn * eta - self.F())
         
         return Elogp
+
+    def calc_log_evidence(self, idx):
+        """
+        Calculate p(N|z, rest) for use in updating HMM. Need only be
+        correct up to an overall constant.
+        """ 
+        logpsi = np.empty((self.T, 2))
+
+        # indices
+        N = self.Nframe
+        nn = N['count']
+        uu = N['unit']
+
+        # expectations
+        bb = self.nodes['fr_latents']
+        mu = bb.expected_x()[uu, idx]
+        exp_bb = bb.expected_exp_x()[uu, idx]
+        Fk = self.F(idx)
+
+        N['logpsi0'] = -Fk
+        N['logpsi1'] = nn * mu - exp_bb * Fk
+
+        logpsi = N.groupby('time').sum()[['logpsi0', 'logpsi1']].values
+
+        return logpsi - np.mean(logpsi)
 
     def F(self, k=None, update=False):
         """
@@ -301,44 +321,6 @@ class LogNormalModel:
         lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
         lam.post_rate[..., idx] = lam.prior_rate.expected_x()[..., idx] + eff_rate
         self.F_prod(idx, update=True)
-
-    def calc_log_evidence(self, idx):
-        """
-        Calculate p(N|z, rest) for use in updating HMM. Need only be
-        correct up to an overall constant.
-        """ 
-        logpsi = np.empty((self.T, 2))
-
-        lam = self.nodes['fr_latents']
-        if self.overdispersion:
-            N = self.Nframe
-            nn = N['count']
-            uu = N['unit']
-            od = self.nodes['overdispersion'].expected_x()
-            bl = self.nodes['baseline'].expected_x()[uu]
-            Fk = self.F_prod(idx, flat=True)
-            G = self.G_prod(flat=True)
-            allprod = bl * od * Fk * G 
-            bar_log_lam = lam.expected_log_x()[uu, idx]
-            bar_lam = lam.expected_x()[uu, idx]
-
-            N['lam0'] = -allprod
-            N['lam1'] = -(allprod * bar_lam) + (nn *  bar_log_lam)
-
-            logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
-
-        else:
-            bl = self.nodes['baseline'].expected_x()
-            Fk = self.F_prod(idx)
-            G = self.G_prod()
-            allprod = np.sum(bl * Fk * G, axis=1)
-            bar_log_lam = lam.expected_log_x()[..., idx]
-            bar_lam = lam.expected_x()[..., idx]
-
-            logpsi[:, 0] = -allprod
-            logpsi[:, 1] = -allprod * bar_lam + np.sum(self.N * bar_log_lam, axis=1)
-
-        return logpsi - np.mean(logpsi)
 
     def update_fr_regressors(self):
         lam = self.nodes['fr_regressors']
@@ -457,117 +439,6 @@ class LogNormalModel:
 
         self.F(update=True)
         return self
-
-    def F_prod(self, k=None, update=False, flat=False):
-        """
-        Accessor method to return the value of the F product.
-        If k is specified, return F_{tku} (product over all but k), 
-        else return F_{tu} (product over all k). If update=True, 
-        recalculate F before returning the result and cache the new 
-        matrix. If flat=True, return the one-row-per-observation 
-        version of F_{tu}.
-        """
-        if not self.latents:
-            return 1
-
-        if update:
-            uu = self.Nframe['unit']
-            tt = self.Nframe['time']
-
-            xi = self.nodes['HMM'].nodes['z'].z[1]
-            lam = self.nodes['fr_latents'].expected_x()
-            if k is not None:
-                zz = xi[tt, k]
-                w = lam[uu, k]
-                vv = ne.evaluate("1 - zz + zz * w")
-                self._Fpre[:, k] = vv
-            else:
-                zz = xi[tt]
-                w = lam[uu]
-                vv = ne.evaluate("1 - zz + zz * w")
-                self._Fpre = vv
-
-            # work in log space to avoid over/underflow
-            Fpre = self._Fpre
-            dd = ne.evaluate("sum(log(Fpre), axis=1)")
-            self._Ftu_flat = ne.evaluate("exp(dd)")
-            ddd = dd[:, np.newaxis]
-            self._Ftuk_flat = ne.evaluate("exp(ddd - log(Fpre))")
-
-            # make non-flat versions
-            Ftu = pd.DataFrame(self._Ftu_flat).groupby([tt, uu]).sum()
-            self._Ftu = Ftu.values.reshape(self.T, self.U)
-            Ftuk = pd.DataFrame(self._Ftuk_flat).groupby([tt, uu]).sum()
-            self._Ftuk = Ftuk.values.reshape(self.T, self.U, -1)
-
-        if k is not None:
-            if flat:
-                return self._Ftuk_flat[..., k]
-            else:
-                return self._Ftuk[..., k]
-        else:
-            if flat:
-                return self._Ftu_flat
-            else:
-                return self._Ftu
-
-    def G_prod(self, k=None, update=False, flat=False):
-        """
-        Return the value of the G product.
-        If k is specified, return G_{tku} (product over all but k),
-        else return G_{tu} (product over all k). If update=True,
-        recalculate G before returning the result and cache the new 
-        matrix.
-        
-        NOTE: Because the regressors may vary by *presentation* and not 
-        simply by movie time, the regressors are in a "melted" dataframe
-        with each (unit, presentation) pair in a row by itself. As a 
-        result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
-        """
-        if not self.regressors:
-            return 1
-
-        if update:
-            uu = self.Nframe['unit']
-            tt = self.Nframe['time']
-
-            lam = self.nodes['fr_regressors'].expected_x()
-            if k is not None:
-                zz = lam[uu][k]
-                # get x values for kth regressor
-                xx = self.Xframe.values[:, k]
-                vv = ne.evaluate("zz ** xx")
-                self._Gpre[:, k] = vv
-            else:
-                zz = lam[uu]
-                # get x values for kth regressor; col 0 = time
-                xx = self.Xframe.values
-                vv = ne.evaluate("zz ** xx")
-                self._Gpre = vv
-
-            # work in log space to avoid over/underflow
-            Gpre = self._Gpre
-            dd = ne.evaluate("sum(log(Gpre), axis=1)")
-            self._Gtu_flat = ne.evaluate("exp(dd)")
-            ddd = dd[:, np.newaxis]
-            self._Gtuk_flat = ne.evaluate("exp(ddd - log(Gpre))")
-
-            # make non-flat versions
-            Gtu = pd.DataFrame(self._Gtu_flat).groupby([tt, uu]).sum()
-            self._Gtu = Gtu.values.reshape(self.T, self.U)
-            Gtuk = pd.DataFrame(self._Gtuk_flat).groupby([tt, uu]).sum()
-            self._Gtuk = Gtuk.values.reshape(self.T, self.U, -1)
-
-        if k is not None:
-            if flat:
-                return self._Gtuk_flat[..., k]
-            else:
-                return self._Gtuk[..., k]
-        else:
-            if flat:
-                return self._Gtu_flat
-            else:
-                return self._Gtu
 
     def L(self, keeplog=False, print_pieces=False):
         """

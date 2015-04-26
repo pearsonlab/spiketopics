@@ -417,27 +417,27 @@ class Test_LogNormal_Model:
     #     fr_regressors = lnm.nodes['fr_regressors']
     #     fr_regressors.update()
 
-    # def test_calc_log_evidence(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
+    def test_calc_log_evidence(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
 
-    #     lolnsi = lnm.calc_log_evidence(2)
-    #     assert_equals(lolnsi.shape, (self.T, 2))
+        lolnsi = lnm.calc_log_evidence(2)
+        assert_equals(lolnsi.shape, (self.T, 2))
 
-    # def test_expected_log_evidence(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
+    def test_expected_log_evidence(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
 
-    #     Eloln = lnm.expected_log_evidence()
-    #     assert_is_instance(Eloln, np.float64)
+        Eloln = lnm.expected_log_evidence()
+        assert_is_instance(Eloln, np.float64)
 
     # def test_L(self):
     #     lnm = ln.LogNormalModel(self.N, self.K)
