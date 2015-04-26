@@ -142,12 +142,12 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
 
     return (HMMNode(z, A, pi),)
 
-def initialize_gaussian(name, node_shape, **kwargs):
+def initialize_gaussian(name, node_shape, prior_shape, **kwargs):
     """
     Initialize a gaussian variable.
     """
     pars = {k: np.array(v) for k, v in kwargs.iteritems()}
-    par_shapes = ({'prior_mean': node_shape, 'prior_prec': node_shape,
+    par_shapes = ({'prior_mean': prior_shape, 'prior_prec': prior_shape,
         'post_mean': node_shape, 'post_prec': node_shape })
 
     check_shapes(par_shapes, pars)

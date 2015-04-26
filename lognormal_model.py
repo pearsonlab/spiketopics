@@ -93,7 +93,8 @@ class LogNormalModel:
             nodes = nd.initialize_guassian_hierarchy(name, node_shape,
                 parent_shape, grandparent_shape, **kwargs)
         else:
-            nodes = nd.initialize_gaussian(name, node_shape, **kwargs)
+            nodes = nd.initialize_gaussian(name, node_shape, 
+                parent_shape, **kwargs)
 
         for n in nodes:
             self.nodes.update({n.name: n})
@@ -142,6 +143,50 @@ class LogNormalModel:
         self.nodes.update({n.name: n for n in nodes})
 
         return self
+
+    def expected_log_evidence(self):
+        """
+        Calculate E[log p(N, z|rest).
+        """
+        uu = self.Nframe['unit']
+        nn = self.Nframe['count']
+
+        Elogp = 0
+        eta = 0
+        exp_eta = 0
+
+        if self.baseline:
+            node = self.nodes['baseline']
+            eta += node.expected_x()[uu]
+            exp_eta *= node.expected_exp_x()[uu]
+
+        if self.latents:
+            node = self.nodes['fr_latents']
+            mu = node.expected_x()[uu]
+            xi = self.nodes['HMM'].nodes['z'].z[1]
+
+            eta += np.sum(xi * mu, axis=1)
+            exp_eta *= (1 - xi + xi * node.expected_exp_x()[uu])
+
+            # pieces for A and pi
+            Elogp += self.nodes['HMM'].expected_log_state_sequence()
+
+        if self.regressors:
+            node = self.nodes['fr_regressors']
+            mu = node.expected_x()[uu]
+            xx = self.Xframe.values
+
+            eta += np.sum(xx * mu, axis=1)
+            exp_eta *= node.expected_exp_x()[uu]
+
+        if self.overdispersion:
+            node = self.nodes['overdispersion']
+
+            exp_eta *= node.expected_exp_x()
+
+        Elogp += np.sum(nn * eta - exp_eta)
+        
+        return Elogp
 
     def update_baseline(self):
         node = self.nodes['baseline']
@@ -225,56 +270,6 @@ class LogNormalModel:
             logpsi[:, 1] = -allprod * bar_lam + np.sum(self.N * bar_log_lam, axis=1)
 
         return logpsi - np.mean(logpsi)
-
-    def expected_log_evidence(self):
-        """
-        Calculate E[log p(N, z|rest).
-        """
-        uu = self.Nframe['unit']
-        nn = self.Nframe['count']
-
-        Elogp = 0
-        eff_rate = 1
-
-        if self.baseline:
-            node = self.nodes['baseline']
-            bar_log_lam = node.expected_log_x()
-            bar_lam = node.expected_x()
-
-            Elogp += np.sum(self.N * bar_log_lam[np.newaxis, :])
-            eff_rate *= bar_lam[uu]
-
-        if self.latents:
-            node = self.nodes['fr_latents']
-            bar_log_lam = node.expected_log_x()
-            xi = self.nodes['HMM'].nodes['z'].z[1]
-
-            Elogp += np.sum(self.N[..., np.newaxis] * xi[..., np.newaxis, :] *
-                bar_log_lam[np.newaxis, ...])
-            eff_rate *= self.F_prod(flat=True)
-
-            # pieces for A and pi
-            Elogp += self.nodes['HMM'].expected_log_state_sequence()
-
-        if self.regressors:
-            node = self.nodes['fr_regressors']
-            bar_log_lam = node.expected_log_x()
-            xx = self.Xframe.values
-
-            Elogp += np.sum(nn[:, np.newaxis] * xx * bar_log_lam[uu])
-            eff_rate *= self.G_prod(flat=True)
-
-        if self.overdispersion:
-            node = self.nodes['overdispersion']
-            bar_log_lam = node.expected_log_x()
-            bar_lam = node.expected_x()
-
-            Elogp += nn.dot(bar_log_lam)
-            eff_rate *= bar_lam
-
-        Elogp += -np.sum(eff_rate)
-        
-        return Elogp
 
     def update_fr_regressors(self):
         lam = self.nodes['fr_regressors']
