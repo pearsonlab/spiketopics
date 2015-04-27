@@ -108,14 +108,14 @@ class HMMNode:
         self.nodes['pi'].update(idx, z0)
 
         ########### update chains
-        # (T, M)
-        psi = log_evidence - np.amax(log_evidence, axis=1, keepdims=True) 
+        psi = log_evidence # (T, M)
+        psi_rel = log_evidence - np.amax(log_evidence, axis=1, keepdims=True) 
 
         # calculate variational parameters in z posterior 
         A_par = self.nodes['A'].expected_log_x()[..., idx]
         pi_par = self.nodes['pi'].expected_log_x()[..., idx]
 
-        xi, logZ, Xi = fb_infer(np.exp(A_par), np.exp(pi_par), np.exp(psi))
+        xi, logZ, Xi = fb_infer(np.exp(A_par), np.exp(pi_par), np.exp(psi_rel))
         xi = xi.T  # now (M, T)
         Xi = Xi.transpose((1, 2, 0))  # now (M, M, T - 1)
         self.nodes['z'].update(idx, xi, Xi, logZ) 
