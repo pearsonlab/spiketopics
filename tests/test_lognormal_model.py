@@ -437,38 +437,38 @@ class Test_LogNormal_Model:
         Eloln = lnm.expected_log_evidence()
         assert_is_instance(Eloln, np.float64)
 
-    # def test_L(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
+    def test_L(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
 
-    #     assert_is_instance(lnm.L(), np.float64)
-    #     initial_log_len = len(lnm.log['L'])
-    #     L_init = lnm.L(keeplog=True)
-    #     assert_equals(len(lnm.log['L']), initial_log_len + 1)
+        assert_is_instance(lnm.L(), np.float64)
+        initial_log_len = len(lnm.log['L'])
+        L_init = lnm.L(keeplog=True)
+        assert_equals(len(lnm.log['L']), initial_log_len + 1)
 
-    # def test_iterate(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_hier_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
+    def test_iterate(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
 
-    #     L_init = lnm.L(keeplog=True)
-    #     lnm.iterate(keeplog=True, verbosity=2)
-    #     assert_true(lnm.L() > L_init)
+        L_init = lnm.L(keeplog=True)
+        lnm.iterate(keeplog=True, verbosity=2)
+        assert_true(lnm.L() > L_init)
 
-    # def test_inference(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_hier_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_dict)
-    #     lnm.finalize()
+    def test_inference(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_dict)
+        lnm.finalize()
 
-    #     lnm.iterate()
-    #     assert_true(~np.isnan(lnm.L()))
+        lnm.iterate()
+        assert_true(~np.isnan(lnm.L()))

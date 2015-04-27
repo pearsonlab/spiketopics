@@ -320,6 +320,7 @@ class LogNormalModel:
 
         node.post_mean = res.x[:self.U]
         node.post_prec = np.exp(-res.x[self.U:])
+        self.F(update=True)
 
     def update_fr_latents(self, idx):
         node = self.nodes['fr_latents']
@@ -365,6 +366,7 @@ class LogNormalModel:
 
         node.post_mean[..., idx] = res.x[:self.U]
         node.post_prec[..., idx] = np.exp(-res.x[self.U:])
+        self.F(idx, update=True)
 
     def update_fr_regressors(self, idx):
         node = self.nodes['fr_regressors']
@@ -408,6 +410,7 @@ class LogNormalModel:
 
         node.post_mean[..., idx] = res.x[:self.U]
         node.post_prec[..., idx] = np.exp(-res.x[self.U:])
+        self.F(update=True)
 
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
@@ -454,8 +457,9 @@ class LogNormalModel:
         alpha = line_search(objfun, gradfun, starts, -start_g, gfk=start_g)
         xnew = starts - alpha[0] * start_g
 
-        node.post_mean = xnew[:self.U]
-        node.post_prec = np.exp(-xnew[self.U:])
+        node.post_mean = xnew[:self.M]
+        node.post_prec = np.exp(-xnew[self.M:])
+        self.F(update=True)
 
 
     def finalize(self):
@@ -473,7 +477,7 @@ class LogNormalModel:
             self.nodes['fr_latents'].update = self.update_fr_latents
 
             self.nodes['HMM'].update_finalizer = (
-                lambda idx: self.F_prod(idx, update=True))
+                lambda idx: self.F(idx, update=True))
         else:
             self.latents = False
 
@@ -541,7 +545,10 @@ class LogNormalModel:
         print_pieces = verbosity > 2
         calc_L = doprint or keeplog
 
-        lastL = self.Lvalues[-1]
+        if len(self.Lvalues) > 0:
+            lastL = self.Lvalues[-1]
+        else:
+            lastL = -np.inf
         
         # M step
         if self.baseline:
@@ -569,15 +576,17 @@ class LogNormalModel:
                         ).format(k, Lval)
 
         if self.regressors:
-            self.nodes['fr_regressors'].update()
-            if self.nodes['fr_regressors'].has_parents:
-                self.nodes['fr_regressors'].update_parents()
-            if calc_L:
-                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-                assert(Lval >= lastL)
-                lastL = Lval
-            if doprint:
-                print "         updated regressor effects: L = {}".format(Lval)
+            for k in xrange(self.R):
+                self.nodes['fr_regressors'].update(k)
+                if self.nodes['fr_regressors'].has_parents:
+                    self.nodes['fr_regressors'].update_parents(k)
+                if calc_L:
+                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                    assert(Lval >= lastL)
+                    lastL = Lval
+                if doprint:
+                    print ("regressor {}: updated firing rate effects: L = {}"
+                        ).format(k, Lval)
 
         if self.overdispersion:
             self.nodes['overdispersion'].update()
