@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+from scipy.optimize import minimize, line_search
 import numexpr as ne
 import spiketopics.nodes as nd
 
@@ -420,11 +420,7 @@ class LogNormalModel:
         # make an adjusted F that does not include our pars of interest
         F_adj = self.F() / node.expected_exp_x()
 
-        # parameter of vectors to optimize over
-        starts = np.concatenate((mu, np.log(var)))
-
-        def minfun(x):
-            jac = np.empty_like(x)
+        def objfun(x):
             mu = x[:self.M]
             kap = x[self.M:]
             var = np.exp(kap)
@@ -435,20 +431,31 @@ class LogNormalModel:
             elbo += np.sum(nn * mu)
             elbo += -np.sum(bar_exp_eta)
 
+            return -elbo
+
+        def gradfun(x):
+            jac = np.empty_like(x)
+            mu = x[:self.M]
+            kap = x[self.M:]
+            var = np.exp(kap)
+            bar_exp_eta = np.exp(mu + 0.5 * var) * F_adj
+
             jac[:self.M] = -tau * (mu - mm) 
             jac[:self.M] += (nn - F_adj)
             jac[self.M:] = -0.5 * tau * var + 0.5 
             jac[self.M:] += -0.5 * var * bar_exp_eta
 
-            return np.log(-elbo), jac / elbo
+            return -jac
 
-        res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
-        # if not res.success:
-        #     print "Warning: optimization terminated without success."
-        #     print res.message
+        # parameter of vectors to optimize over
+        starts = np.concatenate((mu, np.log(var)))
+        start_g = gradfun(starts)
 
-        node.post_mean = res.x[:self.U]
-        node.post_prec = np.exp(-res.x[self.U:])
+        alpha = line_search(objfun, gradfun, starts, -start_g, gfk=start_g)
+        xnew = starts - alpha[0] * start_g
+
+        node.post_mean = xnew[:self.U]
+        node.post_prec = np.exp(-xnew[self.U:])
 
 
     def finalize(self):

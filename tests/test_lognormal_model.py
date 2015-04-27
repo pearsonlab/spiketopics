@@ -390,10 +390,10 @@ class Test_LogNormal_Model:
         fr_regressors.update(1)
 
         # add overdispersion
-        # lnm.initialize_overdispersion(**self.overdisp_dict)
-        # lnm.finalize()
-        # od = lnm.nodes['overdispersion']
-        # od.update()
+        lnm.initialize_overdispersion(**self.overdisp_dict)
+        lnm.finalize()
+        od = lnm.nodes['overdispersion']
+        od.update()
 
     def test_hier_updates(self):
         lnm = ln.LogNormalModel(self.N, self.K)
