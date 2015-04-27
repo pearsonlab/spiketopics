@@ -194,9 +194,9 @@ Finally, we would like to calculate the piece of the evidence lower bound arisin
     N_{m} \mathbb{E}_q [\eta_m]
     - \mathbb{E}_q[e^{\eta_m}] \right]
     + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right] \\
-    - \sum_{kt} \left[ \xi_{tk}^T \eta_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
+    - \sum_{kt} \left[ \xi_{tk}^T \nu_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
 \end{multline}
-with $\xi$ and $\Xi$ defined as the expected value of $z$ and the two-slice marginals, as above, and $(\eta, \tilde{\pi}, \tilde{A})$ the variational parameters in the posterior $q(z)$. Roughly, the three terms above correspond to $\log p(N|z, \theta)$, $\log p(z|A, \pi)$, and $\log q(z)$.
+with $\xi$ and $\Xi$ defined as the expected value of $z$ and the two-slice marginals, as above, and $(\nu, \tilde{\pi}, \tilde{A})$ the variational parameters in the posterior $q(z)$. Roughly, the three terms above correspond to $\log p(N|z, \theta)$, $\log p(z|A, \pi)$, and $\log q(z)$.
 
 The first two terms involving expectations of $\lambda_{mu}$ can be calculated from (\ref{loglambda}) above and the variational ansatz:
 \begin{align}
