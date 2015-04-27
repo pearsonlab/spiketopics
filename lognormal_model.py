@@ -180,6 +180,8 @@ class LogNormalModel:
         if self.overdispersion:
             node = self.nodes['overdispersion']
 
+            eta += node.expected_x()
+
         Elogp += np.sum(nn * eta - self.F())
         
         return Elogp
@@ -187,8 +189,7 @@ class LogNormalModel:
     def calc_log_evidence(self, idx):
         """
         Calculate p(N|z, rest) for use in updating HMM. Need only be
-        correct up to an overall constant at each time (i.e., only
-        relative probabilities at each time matter).
+        correct up to an overall constant. 
         """ 
         logpsi = np.empty((self.T, 2))
 
