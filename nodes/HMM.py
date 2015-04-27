@@ -108,7 +108,8 @@ class HMMNode:
         self.nodes['pi'].update(idx, z0)
 
         ########### update chains
-        psi = log_evidence  # (T, M)
+        # (T, M)
+        psi = log_evidence - np.amax(log_evidence, axis=1, keepdims=True) 
 
         # calculate variational parameters in z posterior 
         A_par = self.nodes['A'].expected_log_x()[..., idx]

@@ -222,7 +222,7 @@ class GammaModel:
             logpsi[:, 0] = -allprod
             logpsi[:, 1] = -allprod * bar_lam + np.sum(self.N * bar_log_lam, axis=1)
 
-        return logpsi - np.amax(logpsi, axis=1, keepdims=True)
+        return logpsi 
 
     def expected_log_evidence(self):
         """

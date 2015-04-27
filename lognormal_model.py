@@ -208,7 +208,7 @@ class LogNormalModel:
 
         logpsi = N.groupby('time').sum()[['logpsi0', 'logpsi1']].values
 
-        return logpsi - np.amax(logpsi, axis=1, keepdims=True)
+        return logpsi 
 
     def F(self, k=None, update=False):
         """
