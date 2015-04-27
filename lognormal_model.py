@@ -314,9 +314,6 @@ class LogNormalModel:
 
         res = minimize(minfun, starts, jac=True, 
             options={'maxiter': self.maxiter})
-        # if not res.success:
-        #     print "Warning: optimization terminated without success."
-        #     print res.message
 
         node.post_mean = res.x[:self.U]
         node.post_prec = np.exp(-res.x[self.U:])
@@ -359,10 +356,8 @@ class LogNormalModel:
 
             return np.log(-elbo), jac / elbo
 
-        res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
-        # if not res.success:
-        #     print "Warning: optimization terminated without success."
-        #     print res.message
+        res = minimize(minfun, starts, jac=True, 
+            options={'maxiter': self.maxiter})
 
         node.post_mean[..., idx] = res.x[:self.U]
         node.post_prec[..., idx] = np.exp(-res.x[self.U:])
@@ -403,10 +398,8 @@ class LogNormalModel:
 
             return np.log(-elbo), jac / elbo
 
-        res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
-        # if not res.success:
-        #     print "Warning: optimization terminated without success."
-        #     print res.message
+        res = minimize(minfun, starts, jac=True, 
+            options={'maxiter': self.maxiter})
 
         node.post_mean[..., idx] = res.x[:self.U]
         node.post_prec[..., idx] = np.exp(-res.x[self.U:])
