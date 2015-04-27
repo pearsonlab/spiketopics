@@ -187,7 +187,8 @@ class LogNormalModel:
     def calc_log_evidence(self, idx):
         """
         Calculate p(N|z, rest) for use in updating HMM. Need only be
-        correct up to an overall constant.
+        correct up to an overall constant at each time (i.e., only
+        relative probabilities at each time matter).
         """ 
         logpsi = np.empty((self.T, 2))
 
@@ -207,7 +208,7 @@ class LogNormalModel:
 
         logpsi = N.groupby('time').sum()[['logpsi0', 'logpsi1']].values
 
-        return logpsi - np.mean(logpsi)
+        return logpsi - np.amax(logpsi, axis=1, keepdims=True)
 
     def F(self, k=None, update=False):
         """
