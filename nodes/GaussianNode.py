@@ -50,7 +50,7 @@ class GaussianNode:
         tau = self.prior_prec.expected_x()
         log_tau = self.prior_prec.expected_log_x()
         elp = -0.5 * tau * self.expected_var_x() 
-        elp += -0.5 * (self.expected_x() - mu) ** 2 
+        elp += -0.5 * tau * (self.expected_x() - mu) ** 2 
         elp += -0.5 * np.log(2 * np.pi) + 0.5 * log_tau
         elp = elp.view(np.ndarray)
 
@@ -65,11 +65,11 @@ class GaussianNode:
 
         return np.sum(H)
 
-    def update(self, ess_shape, ess_rate):
+    def update(self, ess_mean, ess_prec):
         """
         Update posterior given expected sufficient statistics.
         """
-        self.post_shape = self.prior_shape + ess_shape
-        self.post_rate = self.prior_rate + ess_rate
+        self.post_mean = self.prior_mean + ess_mean
+        self.post_prec = self.prior_prec + ess_prec
 
         return self

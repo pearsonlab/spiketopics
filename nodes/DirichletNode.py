@@ -46,7 +46,7 @@ class DirichletNode:
         Calculate expected value of log prior under the posterior distribution.
         """
         alpha = self.prior
-        elp = np.sum((alpha - 1) * self.expected_x(), axis=0)
+        elp = np.sum((alpha - 1) * self.expected_log_x(), axis=0)
         elp += -self.logB(alpha)
         elp = elp.view(np.ndarray)
 
