@@ -205,7 +205,7 @@ The first two terms involving expectations of $\lambda_{mu}$ can be calculated f
     \mathbb{E}_q [e^{\eta_m}] &= \overline{e^{\eta_m}} = \exp \left( 
     \overline{\eta_{m \setminus b}}
     + \frac{1}{2} \left[ \sigma^2_{0u(m)} 
-    + \sum_j x^2_{m r} \sigma^2_{\beta ru(m)} + \sigma^2_{\epsilon u(m)}
+    + \sum_r x^2_{m r} \sigma^2_{\beta ru(m)} + \sigma^2_{\epsilon u(m)}
     \right]
     \right) \\ \nonumber
     &\times \left[
@@ -286,7 +286,7 @@ The case of variation with respect to $\sigma^2$ is similar:
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} &= 
     - \frac{1}{2} \overline{\tau_{bk}} + \frac{1}{2\sigma^2_{bku}} - \frac{1}{2}\sum_{u(m) = u} \xi_{t(m)k} e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk}  \\
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{\beta ru}} &= 
-    - \frac{1}{2} \overline{\tau_{\beta r}} + \frac{1}{2\sigma^2_{\beta ru}} - \frac{1}{2} \sum_{u(m) = u} x_{mr} \overline{e^{\eta_m}} \\
+    - \frac{1}{2} \overline{\tau_{\beta r}} + \frac{1}{2\sigma^2_{\beta ru}} - \frac{1}{2} \sum_{u(m) = u} x^2_{mr} \overline{e^{\eta_m}} \\
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon m}} &= 
     -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} + \frac{1}{2\sigma^2_{\epsilon m}} - \frac{1}{2} \overline{e^{\eta_m}}
 \end{align}
@@ -300,7 +300,7 @@ Note, however, that for unconstrained minimization, we need to shift parameteriz
     - \frac{1}{2} \overline{\tau_{bk}} e^{\kappa_{bku}} + \frac{1}{2} - \frac{1}{2}\sum_{u(m) = u} \xi_{t(m)k} e^{\mu_{bku(m)} + \frac{1}{2} e^{\kappa_{bku}} + \kappa_{bku}} F_{mk}  \\
     \frac{\partial\mathcal{L}}{\partial \kappa_{\beta ru}} &= 
     - \frac{1}{2} \overline{\tau_{\beta r}} e^{\kappa_{\beta bru}} + 
-    \frac{1}{2} - \frac{1}{2} \sum_{u(m) = u} x_{mr} e^{\kappa_{\beta ru}} \overline{e^{\eta_m}} \\
+    \frac{1}{2} - \frac{1}{2} \sum_{u(m) = u} x^2_{mr} e^{\kappa_{\beta ru}} \overline{e^{\eta_m}} \\
     \frac{\partial\mathcal{L}}{\partial \kappa_{\epsilon m}} &= 
     -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} e^{\kappa_{\epsilon m}} + \frac{1}{2} - \frac{1}{2} e^{\kappa_{\epsilon m}} \overline{e^{\eta_m}}
 \end{align}

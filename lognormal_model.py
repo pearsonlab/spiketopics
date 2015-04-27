@@ -45,7 +45,7 @@ class LogNormalModel:
         self.U = U
 
         self.nodes = {}  # dict for variable nodes in graphical model
-        self.maxiter = 2  # number of BFGS iterations per variable update
+        self.maxiter = 3  # number of BFGS iterations per variable update
 
         self.log = {'L': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective each iter
@@ -373,8 +373,9 @@ class LogNormalModel:
         nn = self.Nframe['count']
 
         # make an adjusted F that does not include our pars of interest
-        F_adj = self.F() / node.expected_exp_x()[uu, idx]
         xx = self.Xframe.values[..., idx]
+        xx2 = xx ** 2
+        F_adj = self.F() / np.exp(mu[uu] * xx + 0.5 * var[uu] * xx2)
 
         # parameter of vectors to optimize over
         starts = np.concatenate((mu, np.log(var)))
@@ -384,17 +385,17 @@ class LogNormalModel:
             mu = x[:self.U]
             kap = x[self.U:]
             var = np.exp(kap)
-            bar_exp_eta = np.exp(mu + 0.5 * var)[uu] * F_adj
+            bar_exp_eta = np.exp(mu[uu] * xx + 0.5 * var[uu] * xx2) * F_adj
 
             elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
             elbo += 0.5 * np.sum(np.log(var))
             elbo += np.sum(nn * mu[uu] * xx)
-            elbo += -np.sum(bar_exp_eta * xx)
+            elbo += -np.sum(bar_exp_eta)
 
             jac[:self.U] = -tau * (mu - mm) 
-            jac[:self.U] += pd.DataFrame((nn - F_adj) * xx).groupby(uu).sum().values.squeeze()
+            jac[:self.U] += pd.DataFrame((nn - bar_exp_eta) * xx).groupby(uu).sum().values.squeeze()
             jac[self.U:] = -0.5 * tau * var + 0.5
-            jac[self.U:] += -0.5 * pd.DataFrame(var[uu] * bar_exp_eta * xx).groupby(uu).sum().values.squeeze()
+            jac[self.U:] += -0.5 * pd.DataFrame(var[uu] * bar_exp_eta * xx2).groupby(uu).sum().values.squeeze()
 
             return np.log(-elbo), jac / elbo
 
@@ -437,7 +438,7 @@ class LogNormalModel:
             bar_exp_eta = np.exp(mu + 0.5 * var) * F_adj
 
             jac[:self.M] = -tau * (mu - mm) 
-            jac[:self.M] += (nn - F_adj)
+            jac[:self.M] += (nn - bar_exp_eta)
             jac[self.M:] = -0.5 * tau * var + 0.5 
             jac[self.M:] += -0.5 * var * bar_exp_eta
 
@@ -448,11 +449,12 @@ class LogNormalModel:
         start_g = gradfun(starts)
 
         alpha = line_search(objfun, gradfun, starts, -start_g, gfk=start_g)
-        xnew = starts - alpha[0] * start_g
+        if alpha[0] is not None:
+            xnew = starts - alpha[0] * start_g
 
-        node.post_mean = xnew[:self.M]
-        node.post_prec = np.exp(-xnew[self.M:])
-        self.F(update=True)
+            node.post_mean = xnew[:self.M]
+            node.post_prec = np.exp(-xnew[self.M:])
+            self.F(update=True)
 
 
     def finalize(self):
