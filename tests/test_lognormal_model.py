@@ -372,7 +372,7 @@ class Test_LogNormal_Model:
     def test_updates(self):
         lnm = ln.LogNormalModel(self.N, self.K)
         lnm.initialize_baseline(**self.baseline_dict)
-        lnm.initialize_fr_latents(**self.fr_latent_hier_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_dict)
         lnm.initialize_latents(**self.latent_dict)
         lnm.initialize_fr_regressors(**self.fr_regressors_dict)
         lnm.finalize()
@@ -380,7 +380,6 @@ class Test_LogNormal_Model:
         assert_true(lnm.latents)
         assert_true(lnm.regressors)
 
-        set_trace()
         baseline = lnm.nodes['baseline']
         baseline.update()
 
@@ -391,30 +390,30 @@ class Test_LogNormal_Model:
         fr_regressors.update(1)
 
         # add overdispersion
-        lnm.initialize_overdispersion(**self.overdisp_dict)
+        # lnm.initialize_overdispersion(**self.overdisp_dict)
+        # lnm.finalize()
+        # od = lnm.nodes['overdispersion']
+        # od.update()
+
+    def test_hier_updates(self):
+        lnm = ln.LogNormalModel(self.N, self.K)
+        lnm.initialize_baseline(**self.baseline_dict)
+        lnm.initialize_fr_latents(**self.fr_latent_hier_dict)
+        lnm.initialize_latents(**self.latent_dict)
+        lnm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
         lnm.finalize()
-        od = lnm.nodes['overdispersion']
-        od.update()
+        assert_true(lnm.baseline)
+        assert_true(lnm.latents)
+        assert_true(lnm.regressors)
 
-    # def test_hier_updates(self):
-    #     lnm = ln.LogNormalModel(self.N, self.K)
-    #     lnm.initialize_baseline(**self.baseline_hier_dict)
-    #     lnm.initialize_fr_latents(**self.fr_latent_hier_dict)
-    #     lnm.initialize_latents(**self.latent_dict)
-    #     lnm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
-    #     lnm.finalize()
-    #     assert_true(lnm.baseline)
-    #     assert_true(lnm.latents)
-    #     assert_true(lnm.regressors)
+        baseline = lnm.nodes['baseline']
+        baseline.update()
 
-    #     baseline = lnm.nodes['baseline']
-    #     baseline.update()
+        fr_latents = lnm.nodes['fr_latents']
+        fr_latents.update(1)
 
-    #     fr_latents = lnm.nodes['fr_latents']
-    #     fr_latents.update(1)
-
-    #     fr_regressors = lnm.nodes['fr_regressors']
-    #     fr_regressors.update()
+        fr_regressors = lnm.nodes['fr_regressors']
+        fr_regressors.update(1)
 
     def test_calc_log_evidence(self):
         lnm = ln.LogNormalModel(self.N, self.K)

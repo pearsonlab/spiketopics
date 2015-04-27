@@ -45,6 +45,7 @@ class LogNormalModel:
         self.U = U
 
         self.nodes = {}  # dict for variable nodes in graphical model
+        self.maxiter = 2  # number of BFGS iterations per variable update
 
         self.log = {'L': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective each iter
@@ -311,10 +312,11 @@ class LogNormalModel:
 
             return np.log(-elbo), jac / elbo
 
-        res = minimize(minfun, starts, jac=True)
-        if not res.success:
-            print "Warning: optimization terminated without success."
-            print res.message
+        res = minimize(minfun, starts, jac=True, 
+            options={'maxiter': self.maxiter})
+        # if not res.success:
+        #     print "Warning: optimization terminated without success."
+        #     print res.message
 
         node.post_mean = res.x[:self.U]
         node.post_prec = np.exp(-res.x[self.U:])
@@ -334,12 +336,13 @@ class LogNormalModel:
         xi = self.nodes['HMM'].nodes['z'].z[1, tt, idx]
 
         # parameter of vectors to optimize over
-        starts = np.concatenate((mu, var))
+        starts = np.concatenate((mu, np.log(var)))
 
         def minfun(x):
             jac = np.empty_like(x)
             mu = x[:self.U]
-            var = x[self.U:]
+            kap = x[self.U:]
+            var = np.exp(kap)
             bar_exp_eta = (1 - xi + xi * np.exp(mu + 0.5 * var)[uu]) * F_adj
             F_tilde = np.exp(mu + 0.5 * var)[uu] * F_adj
 
@@ -350,18 +353,18 @@ class LogNormalModel:
 
             jac[:self.U] = -tau * (mu - mm) 
             jac[:self.U] += pd.DataFrame((nn - F_tilde) * xi).groupby(uu).sum().values.squeeze()
-            jac[self.U:] = -0.5 * tau + (0.5 / var)
-            jac[self.U:] += -0.5 * pd.DataFrame(xi * F_tilde).groupby(uu).sum().values.squeeze()
+            jac[self.U:] = -0.5 * tau * var + 0.5 
+            jac[self.U:] += -0.5 * pd.DataFrame(xi * var[uu] * F_tilde).groupby(uu).sum().values.squeeze()
 
-            return -elbo, -jac
+            return np.log(-elbo), jac / elbo
 
         res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
-        if not res.success:
-            print "Warning: optimization terminated without success."
-            print res.message
+        # if not res.success:
+        #     print "Warning: optimization terminated without success."
+        #     print res.message
 
-        node.post_mean = res.x[:self.U]
-        node.post_prec = 1. / res.x[self.U:]
+        node.post_mean[..., idx] = res.x[:self.U]
+        node.post_prec[..., idx] = np.exp(-res.x[self.U:])
 
     def update_fr_regressors(self, idx):
         node = self.nodes['fr_regressors']
@@ -377,12 +380,13 @@ class LogNormalModel:
         xx = self.Xframe.values[..., idx]
 
         # parameter of vectors to optimize over
-        starts = np.concatenate((mu, var))
+        starts = np.concatenate((mu, np.log(var)))
 
         def minfun(x):
             jac = np.empty_like(x)
             mu = x[:self.U]
-            var = x[self.U:]
+            kap = x[self.U:]
+            var = np.exp(kap)
             bar_exp_eta = np.exp(mu + 0.5 * var)[uu] * F_adj
 
             elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
@@ -392,18 +396,18 @@ class LogNormalModel:
 
             jac[:self.U] = -tau * (mu - mm) 
             jac[:self.U] += pd.DataFrame((nn - F_adj) * xx).groupby(uu).sum().values.squeeze()
-            jac[self.U:] = -0.5 * tau + (0.5 / var)
-            jac[self.U:] += -0.5 * pd.DataFrame(bar_exp_eta * xx).groupby(uu).sum().values.squeeze()
+            jac[self.U:] = -0.5 * tau * var + 0.5
+            jac[self.U:] += -0.5 * pd.DataFrame(var[uu] * bar_exp_eta * xx).groupby(uu).sum().values.squeeze()
 
-            return -elbo, -jac
+            return np.log(-elbo), jac / elbo
 
         res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
-        if not res.success:
-            print "Warning: optimization terminated without success."
-            print res.message
+        # if not res.success:
+        #     print "Warning: optimization terminated without success."
+        #     print res.message
 
-        node.post_mean = res.x[:self.U]
-        node.post_prec = 1. / res.x[self.U:]
+        node.post_mean[..., idx] = res.x[:self.U]
+        node.post_prec[..., idx] = np.exp(-res.x[self.U:])
 
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
@@ -411,19 +415,19 @@ class LogNormalModel:
         var = node.expected_var_x()
         tau = node.prior_prec.expected_x()
         mm = node.prior_mean.expected_x()
-        uu = self.Nframe['unit']
         nn = self.Nframe['count']
 
         # make an adjusted F that does not include our pars of interest
         F_adj = self.F() / node.expected_exp_x()
 
         # parameter of vectors to optimize over
-        starts = np.concatenate((mu, var))
+        starts = np.concatenate((mu, np.log(var)))
 
         def minfun(x):
             jac = np.empty_like(x)
             mu = x[:self.M]
-            var = x[self.M:]
+            kap = x[self.M:]
+            var = np.exp(kap)
             bar_exp_eta = np.exp(mu + 0.5 * var) * F_adj
 
             elbo = -0.5 * np.sum(tau * (var + (mu - mm) ** 2))
@@ -433,18 +437,18 @@ class LogNormalModel:
 
             jac[:self.M] = -tau * (mu - mm) 
             jac[:self.M] += (nn - F_adj)
-            jac[self.M:] = -0.5 * tau + (0.5 / var)
-            jac[self.M:] += -0.5 * bar_exp_eta
+            jac[self.M:] = -0.5 * tau * var + 0.5 
+            jac[self.M:] += -0.5 * var * bar_exp_eta
 
-            return -elbo, -jac
+            return np.log(-elbo), jac / elbo
 
         res = minimize(minfun, starts, jac=True, options={'maxiter': 2})
-        if not res.success:
-            print "Warning: optimization terminated without success."
-            print res.message
+        # if not res.success:
+        #     print "Warning: optimization terminated without success."
+        #     print res.message
 
         node.post_mean = res.x[:self.U]
-        node.post_prec = 1. / res.x[self.U:]
+        node.post_prec = np.exp(-res.x[self.U:])
 
 
     def finalize(self):
