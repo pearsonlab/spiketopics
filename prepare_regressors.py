@@ -7,37 +7,68 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 from helpers import frames_to_times
+import argparse
 
-# load up data
-datfile = './sql/spike_presentations.csv'
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Prepare regressors for running VB model')
+    parser.add_argument('collection', help='collection of regressors to use', nargs='?', choices=['mean', 'full'], default='mean')
 
-print "Reading data..."
-df = pd.read_csv(datfile)
+    args = parser.parse_args()
+    print 'Preparing {} collection of regressors'.format(args.collection)
 
-print "Processing data..."
-df = df.drop(['trialId'], axis=1)
-df = df.sort(['movieId', 'frameNumber', 'unitId'])
-df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame', 
-    'movieId': 'movie', 'frameClipNumber': 'frame_in_clip'})
-M = df.shape[0]
+    # load up data
+    datfile = './sql/spike_presentations.csv'
 
-print "Converting (movie, frame) pairs to unique times..."
-df = frames_to_times(df)
+    print 'Reading data...'
+    df = pd.read_csv(datfile)
 
-# set up regressors
-# make binary regressor for frame in clip
-print "Pivoting to form X..."
-X = sp.coo_matrix((np.ones(M), (xrange(M), df['frame_in_clip'])))
+    print 'Processing data...'
+    df = df.drop(['trialId'], axis=1)
+    df = df.sort(['movieId', 'frameNumber', 'unitId'])
+    df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame', 
+        'movieId': 'movie', 'frameClipNumber': 'frame_in_clip'})
+    M = df.shape[0]
 
-print "Merging df and X..."
-R = X.shape[1]
-colnames = ['X' + str(r) for r in xrange(R)]
-Xf = pd.DataFrame(X.toarray(), columns=colnames)
+    # and renumber units consecutively (starting at 0)
+    df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 
-print "Dropping columns..."
-allframe = pd.concat([df, Xf], axis=1)
-allframe = allframe.drop('frame_in_clip', axis=1)
+    print 'Converting (movie, frame) pairs to unique times...'
+    df = frames_to_times(df)
 
-print "Saving data..."
-outfile = 'data/spikes_plus_regressors.csv'
-allframe.to_csv(outfile, index=False)
+    if args.collection == 'mean':
+        umean = df.groupby(['unit', 'frame_in_clip']).mean().reset_index()
+        Xmean = pd.pivot_table(umean, index='frame_in_clip', 
+            columns='unit', values='count')
+        X1 = Xmean.diff().fillna(0)
+        X2 = X1.diff().fillna(0)
+
+        # append to data frame
+        uu = df['unit']
+        fic = df['frame_in_clip'] 
+        df['X0'] = Xmean.values[fic, uu]
+        df['X1'] = X1.values[fic, uu]
+        df['X2'] = X2.values[fic, uu]
+
+        R = 3
+        allframe = df
+        outfile = 'data/spikes_plus_minimal_regressors.csv'
+
+    elif args.collection == 'full':
+        # set up regressors
+        # make binary regressor for frame in clip
+        print 'Pivoting to form X...'
+        X = sp.coo_matrix((np.ones(M), (xrange(M), df['frame_in_clip'])))
+
+        outfile = 'data/spikes_plus_regressors.csv'
+
+        print 'Merging df and X...'
+        R = X.shape[1]
+        colnames = ['X' + str(r) for r in xrange(R)]
+        Xf = pd.DataFrame(X.toarray(), columns=colnames)
+        allframe = pd.concat([df, Xf], axis=1)
+
+    print 'Dropping columns...'
+    allframe = allframe.drop('frame_in_clip', axis=1)
+
+    print 'Saving data...'
+    allframe.to_csv(outfile, index=False)
