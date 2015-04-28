@@ -4,7 +4,8 @@ Fit Gamma-Poisson topic model to movie/ethogram dataset.
 from __future__ import division
 import numpy as np
 import pandas as pd
-import gamma_poisson as gp
+import gamma_model as gp
+from helpers import *
 
 np.random.seed(12345)
 
@@ -15,90 +16,148 @@ print "Reading data..."
 df = pd.read_csv(datfile)
 
 print "Processing data..."
-df = df.drop(['trialId', 'frameClipNumber'], axis=1)
+df = df.drop(['trialId'], axis=1)
 df = df.sort(['movieId', 'frameNumber', 'unitId'])
 df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame', 
-    'movieId': 'movie'})
+    'movieId': 'movie', 'frameClipNumber': 'frame_in_clip'})
+
+# set up regressors
+# make binary regressor for frame in clip
+fic = pd.DataFrame(df['frame_in_clip']).reset_index(drop=True).reset_index()
+fic['vals'] = 1
+X = pd.pivot_table(fic, index='index', columns='frame_in_clip', values=vals)
+X = X.fillna(0)
 
 ######## for testing only ################
-# df = df.query('movie <= 50')
-# # and renumber units consecutively
-# df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
+df = df.query('movie <= 50')
+# and renumber units consecutively
+df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 ######## for testing only ################
 
 # set up params 
 print "Calculating parameters..."
-dt = 1 / 30  # duration of movie frame
+dt = 1. / 30  # duration of movie frame
 M = df.shape[0]
 T = df[['movie', 'frame']].drop_duplicates().shape[0]
 U = df['unit'].drop_duplicates().shape[0]
 K = 5
 
+
+
+
 # set up model object
 print "Initializing model..."
-gpm = gp.GPModel(df, K, dt)
+gpm = gp.GammaModel(df, K)
 
 #################### priors and initial values
 
 print "Setting priors and inits..."
-# multipliers shouldn't be much bigger than ~4
-cmat = 2 * np.ones((K, U))
-dmat = 2 * np.ones((K, U))
 
-# baselines can be a lot bigger
-cmat[0, :] = 3
-dmat[0, :] = 1/6 / dt  # only baseline needs to compensate for dt
+############ baseline ####################
+bl_mean_shape = 2.
+bl_mean_rate = 40 * dt  # actual parameter should be per-bin rate
+bl_shape_shape = 30.
+bl_shape_rate = 30.
 
-# overdispersion: prior
-smat = 10 * np.ones((U,))
-rmat = 10 * np.ones((U,))
 
-# overdispersion: inits
-omega_mat = 5 * np.ones((M,))
-zeta_mat = 5 * np.ones((M,))
+baseline_dict = ({
+            'prior_shape_shape': bl_shape_shape, 
+            'prior_shape_rate': bl_shape_rate, 
+            'prior_mean_shape': bl_mean_shape, 
+            'prior_mean_rate': bl_mean_rate,
+            'post_shape_shape': bl_shape_shape, 
+            'post_shape_rate': bl_shape_rate, 
+            'post_mean_shape': bl_mean_shape, 
+            'post_mean_rate': bl_mean_rate,
+            'post_child_shape': np.ones((U,)), 
+            'post_child_rate': np.ones((U,)) 
+            })
 
-nu1_mat = np.r_[np.ones((1, K)), 10 * np.ones((1, K))]
-nu2_mat = np.r_[10 * np.ones((1, K)), np.ones((1, K))]
+############ firing rate latents ####################
+fr_shape_shape = 2. * np.ones((K,))
+fr_shape_rate = 1e-3 * np.ones((K,))
+fr_mean_shape = 0.4 * T * np.ones((K,))
+fr_mean_rate = 0.4 * T * np.ones((K,))
 
-rho1_mat = np.ones((K,))
-rho2_mat = np.ones((K,))
+fr_latent_dict = ({
+            'prior_shape_shape': fr_shape_shape, 
+            'prior_shape_rate': fr_shape_rate, 
+            'prior_mean_shape': fr_mean_shape, 
+            'prior_mean_rate': fr_mean_rate,
+            'post_shape_shape': fr_shape_shape, 
+            'post_shape_rate': fr_shape_rate, 
+            'post_mean_shape': fr_mean_shape, 
+            'post_mean_rate': fr_mean_rate,
+            'post_child_shape': np.ones((U, K)), 
+            'post_child_rate': np.ones((U, K))
+            })
 
-alpha_mat = (np.sum(gpm.N, axis = 0) + 1 + cmat).data
+############ latent states ####################
+###### A ###############
+A_off = 10.
+A_on = 1.
+Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
+A_prior = np.tile(Avec, (1, 2, K))
 
-# start by assuming beta very large
-beta_mat = dmat + 100000
+###### pi ###############
+pi_off = 15.
+pi_on = 1.
+pi_prior = np.tile(np.r_[pi_off, pi_on].reshape(2, 1), (1, K))
 
-# for an initial guess for A's posterior params, just take the the prior
-gamma1_mat = nu1_mat
-gamma2_mat = nu2_mat
+# E[z]
+# initialize pretty much at random (10% 1's)
+rand_frac = 0.1
+xi_mat = (rand_frac >= np.random.rand(T, K))
+xi_mat = xi_mat.astype('float')
+z_prior = np.dstack([1 - xi_mat, xi_mat]).transpose((2, 0, 1))
 
-# again, just take the prior
-delta1_mat = rho1_mat
-delta2_mat = rho2_mat
+# E[zz]
+Xi_mat = rand_frac >= np.random.rand(2, 2, T - 1, K)
+Xi_mat = Xi_mat.astype('float')
 
-#xi_mat = np.round(0.1 * np.random.rand(T, K))
-xi_mat = np.zeros((T, K))
-xi_mat[:, 0] = 1  # baseline
+latent_dict = ({'A_prior': A_prior, 'pi_prior': pi_prior,
+                'A_post': A_prior, 'pi_post': pi_prior, 
+                'z_init': z_prior, 'zz_init': Xi_mat, 
+                'logZ_init': np.zeros((K,))
+                })
 
-Xi = np.random.rand(T - 1, K, 2, 2)
+############ regression coefficients ####################
+ups_shape = 11.
+ups_rate = 10.
+reg_shape = ups_shape * np.ones((U, R))  # shape
+reg_rate = ups_rate * np.ones((U, R))  # rate
 
-# and two-slice marginal for baseline
-Xi[:, 0] = 0
-Xi[:, 0, 1, 1] = 1
-priors = {'cc': cmat, 'dd': dmat, 'nu1': nu1_mat, 'nu2': nu2_mat,
-          'rho1': rho1_mat, 'rho2': rho2_mat, 'ss': smat, 'rr': rmat}
+# since we know exact update for a_mat, use that
+nn = df['count']
+uu = df['unit']
+NX = nn[:, np.newaxis] * df.iloc[:, -R:]
+a_mat = NX.groupby(uu).sum().values
+b_mat = a_mat.copy()
 
-inits = {'alpha': alpha_mat, 'beta': beta_mat, 
-         'gamma1': gamma1_mat, 'gamma2': gamma2_mat,
-         'delta1': delta1_mat, 'delta2': delta2_mat,
-         'omega': omega_mat, 'zeta': zeta_mat,
-         'xi': xi_mat, 'Xi': Xi}
+reg_dict = ({'prior_shape': reg_shape, 'prior_rate': reg_rate,
+            'post_shape': a_mat, 'post_rate': b_mat
+             })
 
-gpm.set_priors(**priors).set_inits(**inits)
+############ overdispersion ####################
+od_shape = 6.
+od_rate = 5.
+od_dict = ({'prior_shape': od_shape * np.ones((M,)), 
+            'prior_rate': od_rate * np.ones((M,)), 
+            'post_shape': np.ones((M,)), 
+            'post_rate': np.ones((M,))
+            })
+
+############ initialize model ####################
+gpm.initialize_baseline(**baseline_dict)
+gpm.initialize_fr_latents(**fr_latent_dict)
+gpm.initialize_latents(**latent_dict)
+gpm.initialize_fr_regressors(**reg_dict)
+gpm.initialize_overdispersion(**od_dict)
+gpm.finalize()
 
 ############## fit model
 print "Fitting model..."
-gpm.do_inference(verbosity=1, tol=5e-3)
+gpm.do_inference(tol=1e-4, verbosity=2)
 
 print "Writing to disk..."
 ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
