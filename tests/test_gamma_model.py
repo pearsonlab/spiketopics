@@ -411,14 +411,12 @@ class Test_Gamma_Model:
         gpm.G_prod(update=True)
 
         # test shapes
-        assert_equals(gpm.G_prod(1).shape, (self.T, self.U))
-        assert_equals(gpm.G_prod().shape, (self.T, self.U))
-        assert_equals(gpm.G_prod(flat=True).shape, (self.M,))
+        assert_equals(gpm.G_prod(1).shape, (self.M,))
+        assert_equals(gpm.G_prod().shape, (self.M,))
 
         # test caching
-        npt.assert_allclose(gpm.G_prod(1), gpm._Gtuk[..., 1])
-        npt.assert_allclose(gpm.G_prod(), gpm._Gtu)
-        npt.assert_allclose(gpm.G_prod(flat=True), gpm._Gtu_flat)
+        npt.assert_allclose(gpm.G_prod(1), gpm._Gk[..., 1])
+        npt.assert_allclose(gpm.G_prod(), gpm._G)
 
     def test_updates(self):
         gpm = gp.GammaModel(self.N, self.K)

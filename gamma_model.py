@@ -150,7 +150,7 @@ class GammaModel:
         else:
             od = 1
         F = self.F_prod()
-        G = self.G_prod(flat=True)
+        G = self.G_prod()
         allprod = od * F * G
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
@@ -172,7 +172,7 @@ class GammaModel:
 
         bl = self.nodes['baseline'].expected_x()[uu]
         Fz = self.F_prod(idx) * xi[tt]
-        G = self.G_prod(flat=True)
+        G = self.G_prod()
         allprod = bl * od * Fz * G
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
@@ -197,7 +197,7 @@ class GammaModel:
             od = 1
         bl = self.nodes['baseline'].expected_x()[uu]
         Fk = self.F_prod(idx)
-        G = self.G_prod(flat=True)
+        G = self.G_prod()
         allprod = bl * od * Fk * G 
         bar_log_lam = lam.expected_log_x()[uu, idx]
         bar_lam = lam.expected_x()[uu, idx]
@@ -245,7 +245,7 @@ class GammaModel:
             xx = self.Xframe.values
 
             Elogp += np.sum(nn[:, np.newaxis] * xx * bar_log_lam[uu])
-            eff_rate *= self.G_prod(flat=True)
+            eff_rate *= self.G_prod()
 
         if self.overdispersion:
             node = self.nodes['overdispersion']
@@ -338,7 +338,7 @@ class GammaModel:
         uu = self.Nframe['unit']
         bl = self.nodes['baseline'].expected_x()[uu]
         F = self.F_prod()
-        G = self.G_prod(flat=True)
+        G = self.G_prod()
 
         node.post_shape = node.prior_shape + nn
         node.post_rate = node.prior_rate + bl * F * G
@@ -416,11 +416,11 @@ class GammaModel:
         else:
             return self._F
 
-    def G_prod(self, k=None, update=False, flat=False):
+    def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
-        If k is specified, return G_{tku} (product over all but k),
-        else return G_{tu} (product over all k). If update=True,
+        If k is specified, return G_{mk} (product over all but k),
+        else return G_{m} (product over all k). If update=True,
         recalculate G before returning the result and cache the new 
         matrix.
         
@@ -453,26 +453,14 @@ class GammaModel:
             # work in log space to avoid over/underflow
             Gpre = self._Gpre
             dd = ne.evaluate("sum(log(Gpre), axis=1)")
-            self._Gtu_flat = ne.evaluate("exp(dd)")
+            self._G = ne.evaluate("exp(dd)")
             ddd = dd[:, np.newaxis]
-            self._Gtuk_flat = ne.evaluate("exp(ddd - log(Gpre))")
-
-            # make non-flat versions
-            Gtu = pd.DataFrame(self._Gtu_flat).groupby([tt, uu]).sum()
-            self._Gtu = Gtu.values.reshape(self.T, self.U)
-            Gtuk = pd.DataFrame(self._Gtuk_flat).groupby([tt, uu]).sum()
-            self._Gtuk = Gtuk.values.reshape(self.T, self.U, -1)
+            self._Gk = ne.evaluate("exp(ddd - log(Gpre))")
 
         if k is not None:
-            if flat:
-                return self._Gtuk_flat[..., k]
-            else:
-                return self._Gtuk[..., k]
+            return self._Gk[..., k]
         else:
-            if flat:
-                return self._Gtu_flat
-            else:
-                return self._Gtu
+            return self._G
 
     def L(self, keeplog=False, print_pieces=False):
         """
