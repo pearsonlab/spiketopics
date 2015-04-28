@@ -5,31 +5,18 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import gamma_model as gp
-from helpers import *
 
 np.random.seed(12345)
 
 # load up data
-datfile = './sql/spike_presentations.csv'
+datfile = './data/spikes_plus_regressors.csv'
 
 print "Reading data..."
 df = pd.read_csv(datfile)
 
-print "Processing data..."
-df = df.drop(['trialId'], axis=1)
-df = df.sort(['movieId', 'frameNumber', 'unitId'])
-df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame', 
-    'movieId': 'movie', 'frameClipNumber': 'frame_in_clip'})
-
-# set up regressors
-# make binary regressor for frame in clip
-fic = pd.DataFrame(df['frame_in_clip']).reset_index(drop=True).reset_index()
-fic['vals'] = 1
-X = pd.pivot_table(fic, index='index', columns='frame_in_clip', values=vals)
-X = X.fillna(0)
-
 ######## for testing only ################
-df = df.query('movie <= 50')
+print "Subsetting for testing..."
+df = df.query('time <= 1e5')
 # and renumber units consecutively
 df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 ######## for testing only ################
@@ -38,12 +25,10 @@ df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 print "Calculating parameters..."
 dt = 1. / 30  # duration of movie frame
 M = df.shape[0]
-T = df[['movie', 'frame']].drop_duplicates().shape[0]
+T = df['time'].drop_duplicates().shape[0]
 U = df['unit'].drop_duplicates().shape[0]
+R = df.shape[1] - len(['time', 'unit', 'count'])
 K = 5
-
-
-
 
 # set up model object
 print "Initializing model..."
