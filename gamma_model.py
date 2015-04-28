@@ -144,18 +144,15 @@ class GammaModel:
     def update_baseline(self):
         node = self.nodes['baseline']
 
+        uu = self.Nframe['unit']
         if self.overdispersion:
-            uu = self.Nframe['unit']
             od = self.nodes['overdispersion'].expected_x()
-            F = self.F_prod(flat=True)
-            G = self.G_prod(flat=True)
-            allprod = od * F * G
-            eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
         else:
-            F = self.F_prod() 
-            G = self.G_prod()
-            allprod = F * G
-            eff_rate = np.sum(allprod, axis=0)
+            od = 1
+        F = self.F_prod()
+        G = self.G_prod(flat=True)
+        allprod = od * F * G
+        eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
         node.post_shape = (node.prior_shape.expected_x() + 
             np.sum(self.N, axis=0).data)
@@ -166,21 +163,18 @@ class GammaModel:
         xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
         Nz = xi.dot(self.N)
 
+        uu = self.Nframe['unit']
+        tt = self.Nframe['time']
         if self.overdispersion:
-            uu = self.Nframe['unit']
-            tt = self.Nframe['time']
             od = self.nodes['overdispersion'].expected_x()
-            bl = self.nodes['baseline'].expected_x()[uu]
-            Fz = self.F_prod(idx, flat=True) * xi[tt]
-            G = self.G_prod(flat=True)
-            allprod = bl * od * Fz * G
-            eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
         else:
-            bl = self.nodes['baseline'].expected_x()
-            Fz = self.F_prod(idx) * xi[:, np.newaxis] 
-            G = self.G_prod()
-            allprod = bl * Fz * G
-            eff_rate = np.sum(allprod, axis=0)
+            od = 1
+
+        bl = self.nodes['baseline'].expected_x()[uu]
+        Fz = self.F_prod(idx) * xi[tt]
+        G = self.G_prod(flat=True)
+        allprod = bl * od * Fz * G
+        eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
         lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
         lam.post_rate[..., idx] = lam.prior_rate.expected_x()[..., idx] + eff_rate
@@ -194,33 +188,24 @@ class GammaModel:
         logpsi = np.empty((self.T, 2))
 
         lam = self.nodes['fr_latents']
+        N = self.Nframe
+        nn = N['count']
+        uu = N['unit']
         if self.overdispersion:
-            N = self.Nframe
-            nn = N['count']
-            uu = N['unit']
             od = self.nodes['overdispersion'].expected_x()
-            bl = self.nodes['baseline'].expected_x()[uu]
-            Fk = self.F_prod(idx, flat=True)
-            G = self.G_prod(flat=True)
-            allprod = bl * od * Fk * G 
-            bar_log_lam = lam.expected_log_x()[uu, idx]
-            bar_lam = lam.expected_x()[uu, idx]
-
-            N['lam0'] = -allprod
-            N['lam1'] = -(allprod * bar_lam) + (nn *  bar_log_lam)
-
-            logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
-
         else:
-            bl = self.nodes['baseline'].expected_x()
-            Fk = self.F_prod(idx)
-            G = self.G_prod()
-            allprod = np.sum(bl * Fk * G, axis=1)
-            bar_log_lam = lam.expected_log_x()[..., idx]
-            bar_lam = lam.expected_x()[..., idx]
+            od = 1
+        bl = self.nodes['baseline'].expected_x()[uu]
+        Fk = self.F_prod(idx)
+        G = self.G_prod(flat=True)
+        allprod = bl * od * Fk * G 
+        bar_log_lam = lam.expected_log_x()[uu, idx]
+        bar_lam = lam.expected_x()[uu, idx]
 
-            logpsi[:, 0] = -allprod
-            logpsi[:, 1] = -allprod * bar_lam + np.sum(self.N * bar_log_lam, axis=1)
+        N['lam0'] = -allprod
+        N['lam1'] = -(allprod * bar_lam) + (nn *  bar_log_lam)
+
+        logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
         return logpsi 
 
@@ -249,7 +234,7 @@ class GammaModel:
 
             Elogp += np.sum(self.N[..., np.newaxis] * xi[..., np.newaxis, :] *
                 bar_log_lam[np.newaxis, ...])
-            eff_rate *= self.F_prod(flat=True)
+            eff_rate *= self.F_prod()
 
             # pieces for A and pi
             Elogp += self.nodes['HMM'].expected_log_state_sequence()
@@ -318,7 +303,7 @@ class GammaModel:
             od = self.nodes['overdispersion'].expected_x()
         else:
             od = 1
-        F = self.F_prod(flat=True)
+        F = self.F_prod()
         bl = self.nodes['baseline'].expected_x()[uu]
 
         aa = self.nodes['fr_regressors'].post_shape
@@ -352,7 +337,7 @@ class GammaModel:
         nn = self.Nframe['count']
         uu = self.Nframe['unit']
         bl = self.nodes['baseline'].expected_x()[uu]
-        F = self.F_prod(flat=True)
+        F = self.F_prod()
         G = self.G_prod(flat=True)
 
         node.post_shape = node.prior_shape + nn
@@ -391,14 +376,13 @@ class GammaModel:
 
         return self
 
-    def F_prod(self, k=None, update=False, flat=False):
+    def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
-        If k is specified, return F_{tku} (product over all but k), 
-        else return F_{tu} (product over all k). If update=True, 
+        If k is specified, return F_{mk} (product over all but k), 
+        else return F_{m} (product over all k). If update=True, 
         recalculate F before returning the result and cache the new 
-        matrix. If flat=True, return the one-row-per-observation 
-        version of F_{tu}.
+        matrix. Returned array is one row per observation.
         """
         if not self.latents:
             return 1
@@ -423,26 +407,14 @@ class GammaModel:
             # work in log space to avoid over/underflow
             Fpre = self._Fpre
             dd = ne.evaluate("sum(log(Fpre), axis=1)")
-            self._Ftu_flat = ne.evaluate("exp(dd)")
+            self._F = ne.evaluate("exp(dd)")
             ddd = dd[:, np.newaxis]
-            self._Ftuk_flat = ne.evaluate("exp(ddd - log(Fpre))")
-
-            # make non-flat versions
-            Ftu = pd.DataFrame(self._Ftu_flat).groupby([tt, uu]).sum()
-            self._Ftu = Ftu.values.reshape(self.T, self.U)
-            Ftuk = pd.DataFrame(self._Ftuk_flat).groupby([tt, uu]).sum()
-            self._Ftuk = Ftuk.values.reshape(self.T, self.U, -1)
+            self._Fk = ne.evaluate("exp(ddd - log(Fpre))")
 
         if k is not None:
-            if flat:
-                return self._Ftuk_flat[..., k]
-            else:
-                return self._Ftuk[..., k]
+            return self._Fk[..., k]
         else:
-            if flat:
-                return self._Ftu_flat
-            else:
-                return self._Ftu
+            return self._F
 
     def G_prod(self, k=None, update=False, flat=False):
         """
@@ -551,7 +523,10 @@ class GammaModel:
         print_pieces = verbosity > 2
         calc_L = doprint or keeplog
 
-        lastL = self.Lvalues[-1]
+        if len(self.Lvalues) > 0:
+            lastL = self.Lvalues[-1]
+        else:
+            lastL = -np.inf
         
         # M step
         if self.baseline:
