@@ -161,7 +161,7 @@ class GammaModel:
     def update_fr_latents(self, idx):
         lam = self.nodes['fr_latents']
         xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
-        Nz = xi.dot(self.N)
+        Nz = np.sum(xi[:, np.newaxis] * self.N, axis=0)
 
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
@@ -269,7 +269,6 @@ class GammaModel:
             NX.groupby(uu).sum().values)
 
         # now to find the rates, we have to optimize
-        Lstart = self.L()
         starts = lam.post_rate
         lam.post_rate = self.optimize_regressor_rates(starts)
         self.G_prod(update=True)

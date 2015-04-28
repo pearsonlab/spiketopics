@@ -104,7 +104,7 @@ if __name__ == '__main__':
     z_prior = np.dstack([1 - xi_mat, xi_mat]).transpose((2, 0, 1))
 
     # E[zz]
-    Xi_mat = rand_frac >= np.random.rand(2, 2, T - 1, K)
+    Xi_mat = np.random.rand(2, 2, T - 1, K)
     Xi_mat = Xi_mat.astype('float')
 
     latent_dict = ({'A_prior': A_prior, 'pi_prior': pi_prior,
@@ -123,7 +123,8 @@ if __name__ == '__main__':
     nn = df['count']
     uu = df['unit']
     NX = nn[:, np.newaxis] * df.iloc[:, -R:]
-    a_mat = NX.groupby(uu).sum().values
+    NX *= 0.5  # don't start off too big
+    a_mat = NX.groupby(uu).sum().values + reg_rate
     b_mat = a_mat.copy()
 
     reg_dict = ({'prior_shape': reg_shape, 'prior_rate': reg_rate,
@@ -149,8 +150,8 @@ if __name__ == '__main__':
 
     ############## fit model
     print "Fitting model..."
-    gpm.do_inference(tol=1e-4, verbosity=2)
+    gpm.do_inference(tol=1e-3, verbosity=2)
 
-    print "Writing to disk..."
-    ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
-    ethoframe.to_csv('inferred_etho.csv', index=False)
+    # print "Writing to disk..."
+    # ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
+    # ethoframe.to_csv('inferred_etho.csv', index=False)

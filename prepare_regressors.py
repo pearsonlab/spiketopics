@@ -40,7 +40,9 @@ if __name__ == '__main__':
         Xmean = pd.pivot_table(umean, index='frame_in_clip', 
             columns='unit', values='count')
         X1 = Xmean.diff().fillna(0)
+        X1 -= X1.min()  # make sure regressor positive for each unit
         X2 = X1.diff().fillna(0)
+        X2 -= X2.min()  # make sure regressor positive for each unit
 
         # append to data frame
         uu = df['unit']
