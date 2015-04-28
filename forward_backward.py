@@ -52,7 +52,7 @@ def fb_infer(A, pi, psi):
     gamma = gamma / np.sum(gamma, axis=1, keepdims=True)
     
     # calculate 2-slice marginal
-    Xi = ((beta[1:] * psi[1:])[..., np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis, ...]
+    Xi = ((beta[1:] * psi[1:])[:, np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis]
 
     #normalize
     Xi = Xi / np.sum(Xi, axis=(1, 2), keepdims=True)
