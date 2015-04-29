@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
     ############## fit model
     print "Fitting model..."
-    gpm.do_inference(tol=1e-3, verbosity=2)
+    gpm.do_inference(tol=1e-4, verbosity=2)
 
     print "Cleaning up..."
     # need to get rid of externally defined functions for pickling

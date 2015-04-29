@@ -426,12 +426,9 @@ class GammaModel:
 
             # work in log space to avoid over/underflow
             Fpre = self._Fpre
-            # dd = ne.evaluate("sum(log(Fpre), axis=1)")
             dd = np.sum(np.log(Fpre), axis=1)
-            # self._F = ne.evaluate("exp(dd)")
             self._F = np.exp(dd)
             ddd = dd[:, np.newaxis]
-            # self._Fk = ne.evaluate("exp(ddd - log(Fpre))")
             self._Fk = np.exp(ddd - np.log(Fpre))
 
         if k is not None:
