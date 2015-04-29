@@ -6,7 +6,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-from helpers import frames_to_times
+from helpers import frames_to_times, regularize_zeros
 import argparse
 
 if __name__ == '__main__':
@@ -39,15 +39,24 @@ if __name__ == '__main__':
         umean = df.groupby(['unit', 'frame_in_clip']).mean().reset_index()
         Xmean = pd.pivot_table(umean, index='frame_in_clip', 
             columns='unit', values='count')
-        X1 = Xmean.diff().fillna(0)
-        X1 -= X1.min()  # make sure regressor positive for each unit
-        X2 = X1.diff().fillna(0)
-        X2 -= X2.min()  # make sure regressor positive for each unit
+
+        # put Xmean on log scale 
+        Xm = regularize_zeros(Xmean)
+        X0 = np.log(Xm)
+        X0 -= X0.min()
+
+        # now take derivatives
+        # X1 = d(log Xmean)/dt
+        X1 = Xmean.diff() / Xm
+        X1 -= X1.min()
+        X1 = regularize_zeros(X1)
+        X2 = regularize_zeros(X1.diff())
+        X2 -= X2.min()
 
         # append to data frame
         uu = df['unit']
         fic = df['frame_in_clip'] 
-        df['X0'] = Xmean.values[fic, uu]
+        df['X0'] = X0.values[fic, uu]
         df['X1'] = X1.values[fic, uu]
         df['X2'] = X2.values[fic, uu]
 

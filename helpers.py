@@ -27,6 +27,18 @@ def frames_to_times(df):
 
     return allframe
 
+def regularize_zeros(df):
+    """
+    Given a DataFrame with 0s and NAs, regularize it so that it can be 
+    put on a log scale.
+    """
+    new_df = df.copy()
+    new_df[new_df == 0.0] = np.nan
+    new_mins = new_df.min()
+    new_df = new_df.fillna(new_mins)
+
+    return new_df
+
 def gamma_from_hypers(mean_hyps, var_hyps, N=1e4):
     """
     Given a pair of hyperparameters for the mean and a pair for the variance parameter,

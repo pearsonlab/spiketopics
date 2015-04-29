@@ -66,6 +66,8 @@ class GammaModel:
         cols = ['unit', 'time', 'count']
         self.Nframe = data[cols].copy()
         self.Xframe = data.drop(cols, axis=1).copy()
+        if np.min(self.Xframe.values) < 0.0:
+            raise ValueError('User-specified regressors must be non-negative')
 
         # make sure units are indexed from 0
         self.Nframe['unit'] = self.Nframe['unit'] - np.min(self.Nframe['unit'])

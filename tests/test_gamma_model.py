@@ -292,6 +292,11 @@ class Test_Gamma_Model:
 
         assert_is_instance(gpm.nodes, dict)
 
+    def test_negative_X_raises_error(self):
+        Nmod = self.N.copy()
+        Nmod.loc[0, 'X0'] = -1
+        assert_raises(ValueError, gp.GammaModel, Nmod, self.K)
+
     def test_can_initialize_baseline(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
