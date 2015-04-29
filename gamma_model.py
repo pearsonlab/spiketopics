@@ -641,7 +641,7 @@ class GammaModel:
                 maxiter=maxiter, delayed_iters=[])
 
 
-
+@autojit
 def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = Fblod.shape[0]
@@ -650,8 +650,37 @@ def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
 
     G = np.zeros(M)
 
-    elbo = _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X)
-    assert(np.isfinite(np.log(-elbo)))
+    # elbo = _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X)
+    # assert(np.isfinite(np.log(-elbo)))
+
+    Uw = ww.shape[0]
+    elbo = 0.0
+
+    # calculate G
+    for m in xrange(M):
+        log_G = 0.0
+        for r in xrange(R):
+            log_G += eps[uu[m], r] * X[m, r]
+        G[m] = np.exp(log_G)
+
+    # calculate (U, R) piece of elbo and grad
+    for u in xrange(U):
+        for r in xrange(R):
+            if Uw == 1:
+                w_exp_eps = ww[0, r] * np.exp(eps[u, r])
+            else:
+                w_exp_eps = ww[u, r] * np.exp(eps[u, r])
+
+            elbo += aa[u, r] * eps[u, r]
+            elbo -= w_exp_eps
+            grad[u, r] = aa[u, r] - w_exp_eps
+
+    # calculate flat piece of elbo and grad
+    for m in xrange(M):
+        FblodG = Fblod[m] * G[m]
+        elbo -= FblodG
+        for r in xrange(R):
+            grad[uu[m], r] -= FblodG * X[m, r]
 
     return np.log(-elbo), grad.ravel() / elbo
 
