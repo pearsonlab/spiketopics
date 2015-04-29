@@ -94,7 +94,7 @@ def calc_post(alpha, beta, gamma):
     for t in xrange(T):
         gamsum = 0.0
         for m in xrange(M):
-            gamma[t, m] = alpha[t, m] / beta[t, m]
+            gamma[t, m] = alpha[t, m] * beta[t, m]
             gamsum += gamma[t, m]
 
         for m in xrange(M):
