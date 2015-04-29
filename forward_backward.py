@@ -4,6 +4,7 @@ Hidden Markov Models.
 """
 from __future__ import division
 import numpy as np
+from numba import jit, autojit
 
 def fb_infer(A, pi, psi):
     """
@@ -28,6 +29,7 @@ def fb_infer(A, pi, psi):
     beta = np.empty((T, M))  # p(y_{t+1:T}|z_t) (unnormalized)
     gamma = np.empty((T, M))  # p(z_t|y_{1:T}) (posterior)
     logZ = np.empty(T)  # log partition function
+    Xi = np.empty((T - 1, M, M))
 
     # initialize
     a = psi[0] * pi
@@ -36,29 +38,87 @@ def fb_infer(A, pi, psi):
     beta[-1, :] = 1
     beta[-1, :] = beta[-1, :] / np.sum(beta[-1, :])
     
-    # forwards
-    for t in xrange(1, T):
-        a = psi[t] * (A.dot(alpha[t - 1]))
-        alpha[t] = a / np.sum(a)
-        logZ[t] = np.log(np.sum(a))
+    forward(psi, A, alpha, logZ, a)
         
-    # backwards
-    for t in xrange(T - 1, 0, -1):
-        b = A.T.dot(beta[t] * psi[t])
-        beta[t - 1] = b / np.sum(b)
-        
+    backward(psi, A, beta, a)
+
     # posterior
-    gamma = alpha * beta
-    gamma = gamma / np.sum(gamma, axis=1, keepdims=True)
+    calc_post(alpha, beta, gamma)
     
     # calculate 2-slice marginal
-    Xi = ((beta[1:] * psi[1:])[:, np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis]
-
-    #normalize
-    Xi = Xi / np.sum(Xi, axis=(1, 2), keepdims=True)
+    two_slice(alpha, beta, psi, A, Xi)
 
     if np.any(np.isnan(gamma)):
         raise ValueError('NaNs appear in posterior')
 
     return gamma, np.sum(logZ), Xi
+
+@autojit(nopython=True)
+def forward(psi, A, alpha, logZ, a):
+    T = psi.shape[0]
+    M = A.shape[0]
+
+    for t in xrange(1, T):
+        asum = 0.0
+        for i in xrange(M):
+            a[i] = 0.0
+            for j in xrange(M):
+                a[i] += psi[t, i] * A[i, j] * alpha[t - 1, j]
+            asum += a[i]
+
+        for i in xrange(M):
+            alpha[t, i] = a[i] / asum
+
+        logZ[t] = np.log(asum)
+
+@autojit(nopython=True)
+def backward(psi, A, beta, a):
+    T = psi.shape[0]
+    M = A.shape[0]
+
+    for t in xrange(T - 1, 0, -1):
+        asum = 0.0
+        for i in xrange(M):
+            a[i] = 0.0
+            for j in xrange(M):
+                a[i] += A[i, j] * beta[t, j] * psi[t, j]
+            asum += a[i]
+
+        for i in xrange(M):
+            beta[t - 1, i] = a[i] / asum
+
+@autojit(nopython=True)
+def calc_post(alpha, beta, gamma):
+    T, M = alpha.shape
+
+    for t in xrange(T):
+        gamsum = 0.0
+        for m in xrange(M):
+            gamma[t, m] = alpha[t, m] / beta[t, m]
+            gamsum += gamma[t, m]
+
+        for m in xrange(M):
+            gamma[t, m] /= gamsum
+
+@autojit(nopython=True)
+def two_slice(alpha, beta, psi, A, Xi):
+    T, M = alpha.shape
+
+    for t in xrange(T - 1):
+        xsum = 0.0
+        for i in xrange(M):
+            for j in xrange(M):
+                Xi[t, i, j] = beta[t + 1, i] * psi[t + 1, i] 
+                Xi[t, i, j] *= alpha[t, j] * A[i, j] 
+                xsum += Xi[t, i, j]
+
+        # normalize
+        for i in xrange(M):
+            for j in xrange(M):
+                Xi[t, i, j] /= xsum
+
+
+
+
+
 
