@@ -3,7 +3,10 @@ Nodes related to Hidden Markov Models
 """
 from __future__ import division
 import numpy as np
-from ..forward_backward import fb_infer
+try:
+    from ..forward_backward import fb_infer
+except ImportError:
+    from ..fbi import fb_infer
 
 class MarkovChainNode:
     """
