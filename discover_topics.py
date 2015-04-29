@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import gamma_model as gp
 import argparse
+import cPickle as pickle
 
 np.random.seed(12345)
 
@@ -152,6 +153,15 @@ if __name__ == '__main__':
     print "Fitting model..."
     gpm.do_inference(tol=1e-3, verbosity=2)
 
-    # print "Writing to disk..."
-    # ethoframe = pd.concat([gpm.t_index, pd.DataFrame(gpm.xi)], axis=1)
-    # ethoframe.to_csv('inferred_etho.csv', index=False)
+    print "Cleaning up..."
+    # need to get rid of externally defined functions for pickling
+    # also has the effect of "neutering" object from futher update
+    for name, node in gpm.nodes.iteritems():
+        attrs = node.__dict__.keys()
+        to_delete = [a for a in attrs if 'update' in a]
+        for a in to_delete:
+            delattr(node, a)
+
+    print "Writing to disk..."
+    outfile = 'data/fitted_model_object.pkl'
+    pickle.dump(gpm, open(outfile, 'wb'))
