@@ -432,8 +432,10 @@ class Test_Gamma_Model:
 
         baseline = gpm.nodes['baseline']
         baseline.update()
+        uu = gpm.Nframe['unit']
+        nn = gpm.Nframe['count']
         npt.assert_allclose(baseline.post_shape, 
-            baseline.prior_shape + np.sum(gpm.N, axis=0))
+            baseline.prior_shape + nn.groupby(uu).sum())
 
         fr_latents = gpm.nodes['fr_latents']
         fr_latents.update(1)
@@ -500,7 +502,7 @@ class Test_Gamma_Model:
 
         assert_is_instance(gpm.L(), np.float64)
         initial_log_len = len(gpm.log['L'])
-        L_init = gpm.L(keeplog=True)
+        gpm.L(keeplog=True)
         assert_equals(len(gpm.log['L']), initial_log_len + 1)
 
     def test_iterate(self):

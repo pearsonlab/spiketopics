@@ -70,16 +70,6 @@ class GammaModel:
         # make sure units are indexed from 0
         self.Nframe['unit'] = self.Nframe['unit'] - np.min(self.Nframe['unit'])
 
-        # make arrays:
-        # array of counts for each time, unit
-        countframe = self.Nframe.groupby(['time', 'unit']).sum().unstack(level=1)
-        countarr = countframe.values
-        self.N = np.ma.masked_where(np.isnan(countarr), countarr).astype('int')
-
-        # array of observations at each time, unit
-        Nobs =  self.Nframe.groupby(['time', 'unit']).count().unstack()
-        self.Nobs = np.ma.masked_where(np.isnan(Nobs), Nobs).astype('int')
-
         return self
 
     def _initialize_gamma_nodes(self, name, node_shape, parent_shape, 
@@ -149,6 +139,8 @@ class GammaModel:
         node = self.nodes['baseline']
 
         uu = self.Nframe['unit']
+        nn = self.Nframe['count']
+
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
         else:
@@ -159,16 +151,18 @@ class GammaModel:
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
         node.post_shape = (node.prior_shape.expected_x() + 
-            np.sum(self.N, axis=0).data)
+            nn.groupby(uu).sum().values)
         node.post_rate = node.prior_rate.expected_x() + eff_rate
 
     def update_fr_latents(self, idx):
-        lam = self.nodes['fr_latents']
-        xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
-        Nz = np.sum(xi[:, np.newaxis] * self.N, axis=0)
-
         uu = self.Nframe['unit']
         tt = self.Nframe['time']
+        nn = self.Nframe['count']
+
+        lam = self.nodes['fr_latents']
+        xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
+        Nz = (xi[tt] * nn).groupby(uu).sum().values
+
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
         else:
@@ -220,6 +214,7 @@ class GammaModel:
         """
         uu = self.Nframe['unit']
         nn = self.Nframe['count']
+        tt = self.Nframe['time']
 
         Elogp = 0
         eff_rate = 1
@@ -229,7 +224,7 @@ class GammaModel:
             bar_log_lam = node.expected_log_x()
             bar_lam = node.expected_x()
 
-            Elogp += np.sum(self.N * bar_log_lam[np.newaxis, :])
+            Elogp += np.sum(nn * bar_log_lam[uu])
             eff_rate *= bar_lam[uu]
 
         if self.latents:
@@ -237,8 +232,7 @@ class GammaModel:
             bar_log_lam = node.expected_log_x()
             xi = self.nodes['HMM'].nodes['z'].z[1]
 
-            Elogp += np.sum(self.N[..., np.newaxis] * xi[..., np.newaxis, :] *
-                bar_log_lam[np.newaxis, ...])
+            Elogp += np.sum(nn[:, np.newaxis] * xi[tt] * bar_log_lam[uu])
             eff_rate *= self.F_prod()
 
             # pieces for A and pi
