@@ -285,29 +285,24 @@ class GammaModel:
         Updater is the name of a factory function that returns a function
         to be minimized based on current parameter values.
         """
+        uu = self.Nframe['unit'].values.astype('int64')
         aa = self.nodes['fr_regressors'].post_shape
-
-        # ww = self.nodes['fr_regressors'].prior_rate.expected_x().reshape(-1, self.R)
         ww = self.nodes['fr_regressors'].prior_rate.expected_x()
         ww = ww.view(np.ndarray).reshape(-1, self.R)
 
-        uu = self.Nframe['unit'].values.astype('int64')
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
         else:
             od = 1
         F = self.F_prod()
         bl = self.nodes['baseline'].expected_x()[uu]
-        Fblod = (F * bl * od).view(np.ndarray)
+        Fblod = np.array(F * bl * od)
 
         # minfun = self._make_exact_minfun()
         minfun = exact_minfun
 
         eps_starts = np.log(aa / starts)
 
-        # res = minimize(minfun, eps_starts, jac=True, 
-        #     options={'maxiter': self.maxiter})
-        
         res = minimize(minfun, eps_starts, 
             args = (aa, ww, uu, Fblod, self.Xframe.values),
             jac=True, options={'maxiter': self.maxiter})
@@ -366,8 +361,8 @@ class GammaModel:
         F = self.F_prod()
         G = self.G_prod()
 
-        node.post_shape = node.prior_shape + nn
-        node.post_rate = node.prior_rate + bl * F * G
+        node.post_shape = node.prior_shape + np.array(nn)
+        node.post_rate = node.prior_rate + np.array(bl * F * G)
 
     def finalize(self):
         """
@@ -644,50 +639,21 @@ class GammaModel:
 @autojit
 def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     U, R = aa.shape
-    M = Fblod.shape[0]
+    M = X.shape[0]
     eps = epsilon.reshape(U, R)
     grad = np.empty((U, R))
 
     G = np.zeros(M)
 
-    # elbo = _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X)
-    # assert(np.isfinite(np.log(-elbo)))
-
-    Uw = ww.shape[0]
-    elbo = 0.0
-
-    # calculate G
-    for m in xrange(M):
-        log_G = 0.0
-        for r in xrange(R):
-            log_G += eps[uu[m], r] * X[m, r]
-        G[m] = np.exp(log_G)
-
-    # calculate (U, R) piece of elbo and grad
-    for u in xrange(U):
-        for r in xrange(R):
-            if Uw == 1:
-                w_exp_eps = ww[0, r] * np.exp(eps[u, r])
-            else:
-                w_exp_eps = ww[u, r] * np.exp(eps[u, r])
-
-            elbo += aa[u, r] * eps[u, r]
-            elbo -= w_exp_eps
-            grad[u, r] = aa[u, r] - w_exp_eps
-
-    # calculate flat piece of elbo and grad
-    for m in xrange(M):
-        FblodG = Fblod[m] * G[m]
-        elbo -= FblodG
-        for r in xrange(R):
-            grad[uu[m], r] -= FblodG * X[m, r]
+    elbo = _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X)
+    assert(np.isfinite(np.log(-elbo)))
 
     return np.log(-elbo), grad.ravel() / elbo
 
-@autojit(nopython=True)
+@autojit(nopython=True, nogil=True)
 def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
     U, R = aa.shape
-    M = Fblod.shape[0]
+    M = X.shape[0]
     Uw = ww.shape[0]
     elbo = 0.0
 
