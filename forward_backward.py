@@ -81,7 +81,7 @@ def backward(psi, A, beta, a):
         for i in xrange(M):
             a[i] = 0.0
             for j in xrange(M):
-                a[i] += A[i, j] * beta[t, j] * psi[t, j]
+                a[i] += beta[t, j] * psi[t, j] * A[j, i]  
             asum += a[i]
 
         for i in xrange(M):
