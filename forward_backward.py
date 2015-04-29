@@ -76,7 +76,7 @@ def backward(psi, A, beta, a):
     T = psi.shape[0]
     M = A.shape[0]
 
-    for t in xrange(T - 1, 0, -1):
+    for t in xrange(T, 1, -1):
         asum = 0.0
         for i in xrange(M):
             a[i] = 0.0
