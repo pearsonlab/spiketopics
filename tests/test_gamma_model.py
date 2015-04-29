@@ -425,6 +425,7 @@ class Test_Gamma_Model:
         gpm.initialize_latents(**self.latent_dict)
         gpm.initialize_fr_regressors(**self.fr_regressors_dict)
         gpm.finalize()
+        gpm.maxiter = 2
         assert_true(gpm.baseline)
         assert_true(gpm.latents)
         assert_true(gpm.regressors)
@@ -453,6 +454,7 @@ class Test_Gamma_Model:
         gpm.initialize_latents(**self.latent_dict)
         gpm.initialize_fr_regressors(**self.fr_regressors_hier_dict)
         gpm.finalize()
+
         assert_true(gpm.baseline)
         assert_true(gpm.latents)
         assert_true(gpm.regressors)
@@ -520,6 +522,7 @@ class Test_Gamma_Model:
         gpm.initialize_latents(**self.latent_dict)
         gpm.initialize_fr_regressors(**self.fr_regressors_dict)
         gpm.finalize()
+        gpm.maxiter = 2
 
         gpm.iterate()
         assert_true(~np.isnan(gpm.L()))

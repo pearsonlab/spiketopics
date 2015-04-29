@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.optimize import minimize
 import numexpr as ne
 import spiketopics.nodes as nd
+from numba import autojit, jit
 
 class GammaModel:
     """
@@ -45,6 +46,9 @@ class GammaModel:
         self.U = U
 
         self.nodes = {}  # dict for variable nodes in graphical model
+
+        # maximum number of iterations for regressor optimization step
+        self.maxiter = 1000  
 
         self.log = {'L': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective each iter
@@ -209,6 +213,7 @@ class GammaModel:
 
         return logpsi 
 
+    @autojit
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
@@ -284,7 +289,8 @@ class GammaModel:
         minfun = self._make_exact_minfun()
 
         eps_starts = np.log(aa / starts)
-        res = minimize(minfun, eps_starts, jac=True)
+        res = minimize(minfun, eps_starts, jac=True, 
+            options={'maxiter': self.maxiter})
         if not res.success:
             print "Warning: optimization terminated without success."
             print res.message
@@ -375,6 +381,7 @@ class GammaModel:
 
         return self
 
+    @autojit
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
@@ -394,21 +401,26 @@ class GammaModel:
             lam = self.nodes['fr_latents'].expected_x()
             if k is not None:
                 zz = xi[tt, k]
-                w = lam[uu, k]
-                vv = ne.evaluate("1 - zz + zz * w")
+                ww = lam[uu, k]
+                # vv = ne.evaluate("1 - zz + zz * w")
+                vv = 1 - zz + zz * ww
                 self._Fpre[:, k] = vv
             else:
                 zz = xi[tt]
-                w = lam[uu]
-                vv = ne.evaluate("1 - zz + zz * w")
+                ww = lam[uu]
+                # vv = ne.evaluate("1 - zz + zz * w")
+                vv = 1 - zz + zz * ww
                 self._Fpre = vv
 
             # work in log space to avoid over/underflow
             Fpre = self._Fpre
-            dd = ne.evaluate("sum(log(Fpre), axis=1)")
-            self._F = ne.evaluate("exp(dd)")
+            # dd = ne.evaluate("sum(log(Fpre), axis=1)")
+            dd = np.sum(np.log(Fpre), axis=1)
+            # self._F = ne.evaluate("exp(dd)")
+            self._F = np.exp(dd)
             ddd = dd[:, np.newaxis]
-            self._Fk = ne.evaluate("exp(ddd - log(Fpre))")
+            # self._Fk = ne.evaluate("exp(ddd - log(Fpre))")
+            self._Fk = np.exp(ddd - np.log(Fpre))
 
         if k is not None:
             return self._Fk[..., k]
@@ -541,6 +553,8 @@ class GammaModel:
                         ).format(k, Lval)
 
         if self.regressors:
+            if hasattr(self, 'monkeypatch'):
+                assert(False)
             self.nodes['fr_regressors'].update()
             if self.nodes['fr_regressors'].has_parents:
                 self.nodes['fr_regressors'].update_parents()
