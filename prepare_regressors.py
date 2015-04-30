@@ -45,22 +45,22 @@ if __name__ == '__main__':
         X0 = np.log(Xm)
         X0 -= X0.min()
 
-        # now take derivatives
-        # X1 = d(log Xmean)/dt
-        X1 = Xmean.diff() / Xm
-        X1 -= X1.min()
-        X1 = regularize_zeros(X1)
-        X2 = regularize_zeros(X1.diff())
-        X2 -= X2.min()
+        # # now take derivatives
+        # # X1 = d(log Xmean)/dt
+        # X1 = Xmean.diff() / Xm
+        # X1 -= X1.min()
+        # X1 = regularize_zeros(X1)
+        # X2 = regularize_zeros(X1.diff())
+        # X2 -= X2.min()
 
         # append to data frame
         uu = df['unit']
         fic = df['frame_in_clip'] 
         df['X0'] = X0.values[fic, uu]
-        df['X1'] = X1.values[fic, uu]
-        df['X2'] = X2.values[fic, uu]
+        # df['X1'] = X1.values[fic, uu]
+        # df['X2'] = X2.values[fic, uu]
 
-        R = 3
+        R = 1
         allframe = df
         outfile = 'data/spikes_plus_minimal_regressors.csv'
 
