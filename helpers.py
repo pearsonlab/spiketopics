@@ -8,7 +8,8 @@ import copy
 
 def matshow(X, **kwargs):
     with sns.axes_style("white"):
-        plt.matshow(X, aspect='auto', cmap='gray', **kwargs);
+        ax = plt.matshow(X, aspect='auto', cmap='gray', **kwargs);
+    return ax
 
 def frames_to_times(df):
     """
