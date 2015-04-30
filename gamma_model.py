@@ -187,10 +187,10 @@ class GammaModel:
         """ 
         logpsi = np.empty((self.T, 2))
 
-        lam = self.nodes['fr_latents']
         N = self.Nframe
         nn = N['count']
         uu = N['unit']
+
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
         else:
@@ -199,6 +199,8 @@ class GammaModel:
         Fk = self.F_prod(idx)
         G = self.G_prod()
         allprod = bl * od * Fk * G 
+
+        lam = self.nodes['fr_latents']
         bar_log_lam = lam.expected_log_x()[uu, idx]
         bar_lam = lam.expected_x()[uu, idx]
 
@@ -253,7 +255,7 @@ class GammaModel:
             bar_log_lam = node.expected_log_x()
             bar_lam = node.expected_x()
 
-            Elogp += nn.dot(bar_log_lam)
+            Elogp += np.sum(nn * bar_log_lam)
             eff_rate *= bar_lam
 
         Elogp += -np.sum(eff_rate)
@@ -294,7 +296,6 @@ class GammaModel:
         bl = self.nodes['baseline'].expected_x()[uu]
         Fblod = np.array(F * bl * od)
 
-        # minfun = self._make_exact_minfun()
         minfun = exact_minfun
 
         eps_starts = np.log(aa / starts)
@@ -309,45 +310,6 @@ class GammaModel:
         eps = res.x.reshape(self.U, self.R)
         bb = aa * np.exp(-eps)
         return bb
-
-    def _make_exact_minfun(self):
-        """
-        Factory function that returns a function to be minimized.
-        This version uses an exact minimization objective.
-        """
-        uu = self.Nframe['unit']
-        if self.overdispersion:
-            od = self.nodes['overdispersion'].expected_x()
-        else:
-            od = 1
-        F = self.F_prod()
-        bl = self.nodes['baseline'].expected_x()[uu]
-
-        aa = self.nodes['fr_regressors'].post_shape
-        ww = self.nodes['fr_regressors'].prior_rate.expected_x().reshape(-1, self.R)
-
-        def minfun(epsilon): 
-            """
-            This is the portion of the evidence lower bound that depends on 
-            the b parameter. eps = log(a/b)
-            """
-            eps = epsilon.reshape(self.U, self.R)
-            sum_log_G = np.sum(eps[uu] * self.Xframe.values, axis=1)
-            G = np.exp(sum_log_G)
-
-            elbo = np.sum(aa * eps)
-            elbo += -np.sum(ww * np.exp(eps))
-            FthG = (bl * od * F * G).view(np.ndarray)
-            elbo += -np.sum(FthG)
-
-            # grad = grad(elbo)
-            grad = aa - ww * np.exp(eps)
-            grad -= (FthG[:, np.newaxis] * self.Xframe).groupby(uu).sum().values
-
-            # minimization objective is log(-elbo)
-            return np.log(-elbo), grad.ravel() / elbo
-
-        return minfun
 
     def update_overdispersion(self):
         node = self.nodes['overdispersion']
