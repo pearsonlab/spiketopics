@@ -398,6 +398,7 @@ class GammaModel:
         else:
             return self._F
 
+    @autojit
     def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
@@ -416,28 +417,32 @@ class GammaModel:
 
         if update:
             uu = self.Nframe['unit']
-            tt = self.Nframe['time']
 
             lam = self.nodes['fr_regressors'].expected_x()
             if k is not None:
                 zz = lam[uu][k]
                 # get x values for kth regressor
                 xx = self.Xframe.values[:, k]
-                vv = ne.evaluate("zz ** xx")
+                # vv = ne.evaluate("zz ** xx")
+                vv = zz ** xx
                 self._Gpre[:, k] = vv
             else:
                 zz = lam[uu]
                 # get x values for kth regressor; col 0 = time
                 xx = self.Xframe.values
-                vv = ne.evaluate("zz ** xx")
+                # vv = ne.evaluate("zz ** xx")
+                vv = zz ** xx
                 self._Gpre = vv
 
             # work in log space to avoid over/underflow
             Gpre = self._Gpre
-            dd = ne.evaluate("sum(log(Gpre), axis=1)")
-            self._G = ne.evaluate("exp(dd)")
+            # dd = ne.evaluate("sum(log(Gpre), axis=1)")
+            dd = np.sum(np.log(Gpre), axis=1)
+            # self._G = ne.evaluate("exp(dd)")
+            self._G = np.exp(dd)
             ddd = dd[:, np.newaxis]
-            self._Gk = ne.evaluate("exp(ddd - log(Gpre))")
+            # self._Gk = ne.evaluate("exp(ddd - log(Gpre))")
+            self._Gk = np.exp(ddd - np.log(Gpre))
 
         if k is not None:
             return self._Gk[..., k]
