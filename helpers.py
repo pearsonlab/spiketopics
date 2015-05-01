@@ -11,6 +11,20 @@ def matshow(X, **kwargs):
         ax = plt.matshow(X, aspect='auto', cmap='gray', **kwargs);
     return ax
 
+def rle(x):
+    """
+    Perform run length encoding on the numpy array x. Returns a tuple
+    of start indices, run lengths, and values for each run.
+    """
+    # add infinity to beginning to x[0] always starts a run
+    dx = np.diff(np.insert(x.astype('float').flatten(), 0, np.inf))
+    starts = np.flatnonzero(dx)
+    # make sure stops always include last element
+    stops = np.append(starts[1:], np.size(x))
+    runlens = stops - starts
+    values = x[starts]
+    return starts, runlens, values
+
 def frames_to_times(df):
     """
     Convert a dataframe with movie and frame columns to one with a single
