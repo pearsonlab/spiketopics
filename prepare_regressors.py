@@ -39,10 +39,12 @@ if __name__ == '__main__':
         umean = df.groupby(['unit', 'frame_in_clip']).mean().reset_index()
         Xmean = pd.pivot_table(umean, index='frame_in_clip', 
             columns='unit', values='count')
+        Xsm = Xmean.apply(pd.rolling_window, window=10, win_type='gaussian', 
+            std=3, center=True)
 
         # put Xmean on log scale 
-        Xm = regularize_zeros(Xmean)
-        X0 = np.log(Xm)
+        Xreg = regularize_zeros(Xsm)
+        X0 = np.log(Xreg)
         X0 -= X0.min()
 
         # # now take derivatives
