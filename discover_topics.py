@@ -5,17 +5,21 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import gamma_model as gp
+from helpers import jitter_inits
 import argparse
 import cPickle as pickle
-
-np.random.seed(12345)
 
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description="Run latent topic discovery using a Gamma-Poisson model")
     parser.add_argument("input", help="name of input file")
+    parser.add_argument("-s", "--seed", help="random number seed",
+        default=12345)
 
     args = parser.parse_args()
+
+    # set random seed
+    np.random.seed(args.seed)
 
     # load up data
     datfile = args.input
@@ -142,11 +146,11 @@ if __name__ == '__main__':
                 })
 
     ############ initialize model ####################
-    gpm.initialize_baseline(**baseline_dict)
-    gpm.initialize_fr_latents(**fr_latent_dict)
-    gpm.initialize_latents(**latent_dict)
-    gpm.initialize_fr_regressors(**reg_dict)
-    gpm.initialize_overdispersion(**od_dict)
+    gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
+    gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
+    gpm.initialize_latents(**jitter_inits(latent_dict, 0.05))
+    gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.05))
+    gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))   
     gpm.finalize()
 
     ############## fit model
