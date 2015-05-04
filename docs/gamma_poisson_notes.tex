@@ -499,5 +499,57 @@ The posterior distributions are
     + \sum_u \left[ \theta \lambda_u - \log \lambda_u \right]\right) 
 \end{align}
 
+\section{Semi-Markov Models}
+This section follows the technical report by Murphy (2002), as well as papers by Mithcell and Jamieson (1993) and Mitchell, Harper, and Jamieson (1995).
+
+We again begin with the parameters defining the Hidden Markov Model (HMM): $A_{ji} = p({i \rightarrow j})$ is the transition matrix between states, with the columns of $A$ summing to 1 (again, the opposite of the usual convention, such that time evolution is equivalent to $A$ acting to the right on a state vector). Likewise, the initial probability of state $i$ is $\pi_i = p(z_0 = i)$. Finally, we will write $\psi_{tj} = p(y_t|z_t = j)$ for the local evidence for the observation $y_t$. (Note that, for the forward-backward algorithm, $\psi$ does not have to be normalized along its second index. In fact, we have the freedom to rescale $\psi$ by an overall constant \emph{at each $t$}.)
+
+Now, for the semi-Markov case, we assume that states $\tau$ persist for (integer) durations $d_\tau$ governed by a probability mass function $p(d_\tau)$ such that $\sum_{\tau} d_{\tau} = T$. We can then write the marginal probability of the observation sequence over all time $T$ (divided into $n_\tau$ segments) as
+\begin{align}
+    p(y_{0:T}) &= \sum_{n_\tau} p(n_\tau)\sum_z \prod_{\tau = 0}^{n_\tau} p(z_{\tau+1}|z_\tau) p(d_{\tau}|z_{\tau})
+    \prod_{i = t_{i(\tau)}}^{t_{f(\tau)}} p(y_i|z_\tau) \\
+    &= \sum_{n_\tau} p(n_\tau) \sum_z \pi(z_0) \prod_{\tau = 1}^{n_\tau} A_{z_{\tau+1}, z_{\tau}} p(d_{\tau}|z_{\tau})\prod_{i = t_{i(\tau)}}^{t_{f(\tau)}} \psi_{iz_{\tau}}
+\end{align}
+with $t_{i(\tau)}$ and $t_{f(\tau)}$ the start and end points of the given state and we have made the strong conditional independence assumptions that state durations depend only on the current state, state transitions are independent of duration, and observations within each state are iid.
+
+\subsection{Forward-Backward Algorithm for HSMM}
+If the durations $d_\tau$ were known, the normal FB algorithm could be implemented as usual, paying attention only to the state transitions and aggregating over observations within each state. However, for the case of unknown state durations, we write:
+
+\subsubsection{Backward}
+As usual define
+\begin{align}
+    \beta_t(i) & = p(\text{future evidence}|\text{just finished \emph{i}}) \\
+    &= \sum_j A(j, i) \sum_d p(d|j) \beta_{t + d}(j) \psi_{(t+1):(t+d)}(j)
+\end{align} 
+In addition, we will also make use of
+\begin{align}
+    \beta^*_t(i) & = p(\text{future evidence}|\text{start \emph{i} at \;} t + 1) \\
+    &= \sum_d p(d|i) \beta_{t + d}(i) \psi_{(t+1):(t+d)}(i) \\
+    \Rightarrow \quad
+    \beta_t (i) &= \sum_j A(j, i) \beta_t^*(j)
+\end{align} 
+Our initial condition will be $\beta_T(i) = 1$.
+
+\subsubsection{Forward}
+Here, we define
+\begin{align}
+    \alpha_t (i) & = p(\text{just finished \emph{i}}, \text{past evidence}) \\
+    &= \sum_d \psi_{(t-d+1):t}(i) p(d|i) \sum_j A(i, j) \alpha_{t - d}(j) \\
+    & = \sum_d \psi_{(t-d+1):t}(i) p(d|i) \alpha^*_{t - d}(i) \\
+    \alpha^*_t(i) &= \sum_j A(i, j) \alpha_t (j)
+\end{align} 
+where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$
+
+\subsubsection{Two-slice Marginals}
+For updating $A$ and $\pi$, we need to calculate the ML estimates of each (to be combined with priors, if doing Bayesian inference). Again, following Murphy, we have
+\begin{equation}
+    \hat{A}_{ji} \propto \sum_t \beta^*_t(j) A(j, i) \alpha_t(i) 
+\end{equation}
+where the constant of proportionality is determined by the requirement that $\sum_j \hat{A}_{ji} = 1$ for all $i$.
+Equivalently, we might want to calculate the two-slice marginals:
+\begin{equation}
+    \Xi_{t+1, t}(j, i) \propto \beta^*_t(j) A(j, i) \alpha_t(i)
+\end{equation}
+where the normalization restriction in this case is that $\sum_{i, j} \Xi_{t + 1, t} (j, i) = 1$. 
 
 \end{document}
