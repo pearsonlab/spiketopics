@@ -540,6 +540,34 @@ Here, we define
 \end{align} 
 where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$
 
+\subsubsection{Posterior Marginals and Normalization}
+We would like to calculate $\xi_t(i) \equiv p(z_t = i|y_{1:T})$ as in the standard FB algorithm, this is given (up to normalization) by
+\begin{equation}
+    \xi_t(i) = \frac{\alpha_t(i) \beta_t(i)}{Z_t}
+\end{equation}
+However, as Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and
+\begin{equation}
+    \mathrm{lse}_i(x_i) \equiv \log \left( 
+    \sum_i e^{x_i}
+    \right)
+\end{equation}
+we can take logs and rewrite the forward equation as
+\begin{align}
+    \tilde{\alpha}_{t, i} &= \mathrm{lse}_d(\tilde{B}_{tid} + \tilde{D}_{id} + \tilde{\alpha}^*_{t - d, i}) \\
+    \tilde{\alpha}^*_{t, i} &= \mathrm{lse}_j(\tilde{A}_{i, j} + \tilde{\alpha}_{t, j})
+\end{align}
+with 
+\begin{align}
+    B_{tid} &\equiv \psi_{(t-d+1):t}(i) \\
+    D_{id} &\equiv p(d|i)
+\end{align}
+Similarly, the backward steps can be rewritten
+\begin{align}
+    \tilde{\beta}_{t, i} &= \mathrm{lse}_j (\tilde{\beta^*_{t, j}} + \tilde{A}_{j, i}) \\
+    \tilde{\beta}^*_{t, i} &= \mathrm{lse}_d (\tilde{\beta}_{t + d, i} + 
+    \tilde{B}_{t + d, i, d} + \tilde{D}_{id})
+\end{align}
+
 \subsubsection{Two-slice Marginals}
 For updating $A$ and $\pi$, we need to calculate the ML estimates of each (to be combined with priors, if doing Bayesian inference). Again, following Murphy, we have
 \begin{equation}
@@ -550,6 +578,11 @@ Equivalently, we might want to calculate the two-slice marginals:
 \begin{equation}
     \Xi_{t+1, t}(j, i) \propto \beta^*_t(j) A(j, i) \alpha_t(i)
 \end{equation}
-where the normalization restriction in this case is that $\sum_{i, j} \Xi_{t + 1, t} (j, i) = 1$. 
+where the normalization restriction in this case is that $\sum_{i, j} \Xi_{t + 1, t} (j, i) = 1$. Likewise the maximum likelihood estimate for the initial state is
+\begin{equation}
+    \hat{\pi}_i \propto \pi_i \beta^*_0(i)
+\end{equation}
+
+\subsubsection{Estimating $p(d)$}
 
 \end{document}
