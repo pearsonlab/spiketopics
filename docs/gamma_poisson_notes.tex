@@ -528,6 +528,10 @@ In addition, we will also make use of
     \Rightarrow \quad
     \beta_t (i) &= \sum_j A(j, i) \beta_t^*(j)
 \end{align} 
+with 
+\begin{equation}
+    \psi_{(t + 1):(t + d)}(j) \equiv \prod_{t' = t + 1}^{t + d} \psi_{t'}(j)
+\end{equation}
 Our initial condition will be $\beta_T(i) = 1$.
 
 \subsubsection{Forward}
@@ -545,7 +549,18 @@ We would like to calculate $\xi_t(i) \equiv p(z_t = i|y_{1:T})$ as in the standa
 \begin{equation}
     \xi_t(i) = \frac{\alpha_t(i) \beta_t(i)}{Z_t}
 \end{equation}
-However, as Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and
+However, in the case of HSMM, this is the probability $p(z_t=i, F=1|y_{1:T})$, that is, conditioned on the state just having ended. As Murphy shows, the the correct posterior, marginalizing over $F$, is given by 
+\begin{equation}
+    \xi_t(i) = \sum_{s < t} [\gamma_s^*(i) - \gamma_s(i)] \\
+\end{equation}
+with 
+\begin{align}
+    \gamma_t(i) = p(z_t = i, F=1|y_{1:T}) &\propto \alpha_t(i) \beta_t(i) \\
+    \gamma^*_t(i) = p(z_{t + 1} = i, F=1|y_{1:T}) &\propto \alpha^*_t(i) \beta^*_t(i)
+\end{align}
+
+\subsubsection{Log formulation}
+As Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and
 \begin{equation}
     \mathrm{lse}_i(x_i) \equiv \log \left( 
     \sum_i e^{x_i}
@@ -558,7 +573,7 @@ we can take logs and rewrite the forward equation as
 \end{align}
 with 
 \begin{align}
-    B_{tid} &\equiv \psi_{(t-d+1):t}(i) \\
+    B_{tid} &\equiv \psi_{(t-d+1):t}(i) = \prod_{t' = t - d + 1}^{t} \psi_{t'}(i)\\
     D_{id} &\equiv p(d|i)
 \end{align}
 Similarly, the backward steps can be rewritten
@@ -584,5 +599,19 @@ where the normalization restriction in this case is that $\sum_{i, j} \Xi_{t + 1
 \end{equation}
 
 \subsubsection{Estimating $p(d)$}
+From Ferguson (1980), and recapitulated in other references above, for non-parametric estimation of $p(d|i)$, we have
+\begin{equation}
+    \hat{p}(d|i) \propto C_{id} \equiv \sum_t p(z_t = i, d, F=1|y_{1:T}) =
+    \sum_t \alpha^*_{t - d}(i) p(d|i) B_{tid} \beta_t(i)
+\end{equation}
+leading to
+\begin{equation}
+    \hat{p}(d|i)= \frac{C_{id}}{\sum_d C_{id}}
+\end{equation}
+Then Michell and Jamieson showed that the parameters of an exponential family model with natural parameters $\eta_k$ and sufficient statistics $T_k(d)$, the maximum likelihood natural parameters are given by the solution of the equations
+\begin{equation}
+    \mathbb{E}_{\eta}[T_k(d)] = \mathbb{E}_{\hat{p}}[T_k(d)]
+\end{equation}
+that is, by matching moments of the non-parametric distribution. Clearly, this process must be repeated for each $\hat{p}(d|i)$, but if $D$, the number of distinct values taken by $d$, is small, then this is a low-dimensional optimization problem.
 
 \end{document}
