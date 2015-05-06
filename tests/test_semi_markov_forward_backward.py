@@ -2,7 +2,7 @@
 Tests for Forwards-Backwards inference for semi-Markov model.
 """
 from __future__ import division
-from nose.tools import assert_equals, assert_true, set_trace
+from nose.tools import assert_equals, assert_true, set_trace, assert_raises
 import numpy as np
 import scipy.stats as stats
 import numpy.testing as npt
@@ -10,7 +10,7 @@ import hsmm_forward_backward as fb
 
 class Test_Forwards_Backwards:
     @classmethod
-    def setup_hsmm(self):
+    def setup_class(self):
         np.random.rand(12345)
 
         self._setup_constants()
@@ -121,6 +121,45 @@ class Test_Forwards_Backwards:
 
         self.dvec = dvec
         self.logpd = logpdf
+
+    def test_invalid_probs_raise_error(self):
+        bad_log_A = np.log(self.A)
+        bad_log_A[0] = np.abs(bad_log_A[0])  # means entry in A > 1
+        bad_log_pi = np.log(self.pi)
+        bad_log_pi[0] = np.abs(bad_log_pi[0])  # means entry in A > 1
+        assert_raises(ValueError, fb.fb_infer, 
+            bad_log_A, np.log(self.pi), self.log_evidence,
+            self.dvec, self.logpd)
+        assert_raises(ValueError, fb.fb_infer, 
+            np.log(self.A), bad_log_pi, self.log_evidence,
+            self.dvec, self.logpd)
+
+    def test_calc_B(self):
+        B = np.empty((self.T, self.K, self.D))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+        # first, check cum_log_psi
+        npt.assert_allclose(cum_log_psi[3], 
+            np.cumsum(self.log_evidence, axis=0)[3])
+
+        # check a few entries in B
+        didx = 2
+        this_d = self.dvec[didx]
+        this_t = 5
+        start = max(0, this_t - this_d + 1)
+        npt.assert_allclose(B[this_t, :, didx], 
+            cum_log_psi[this_t] - cum_log_psi[start - 1])
+
+        this_t = this_d
+        start = max(0, this_t - this_d + 1)
+        npt.assert_allclose(B[this_t, :, didx], 
+            cum_log_psi[this_t] - cum_log_psi[start - 1])
+
+        this_t = this_d - 1
+        start = max(0, this_t - this_d + 1)
+        npt.assert_allclose(B[this_t, :, didx], 
+            cum_log_psi[this_t])
 
 if __name__ == '__main__':
     np.random.rand(12345)
