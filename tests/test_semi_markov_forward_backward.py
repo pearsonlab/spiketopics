@@ -8,120 +8,122 @@ import scipy.stats as stats
 import numpy.testing as npt
 import hsmm_forward_backward as fb
 
-def setup_hsmm():
-    np.random.rand(12345)
+class Test_Forwards_Backwards:
+    @classmethod
+    def setup_hsmm(self):
+        np.random.rand(12345)
 
-    T, K, D = _setup_constants()
+        self._setup_constants()
 
-    A, pi = _make_transition_probs(T, K)
+        self._make_transition_probs()
 
-    chain, dur_mean, dur_std = _make_chain(A, pi, T, K)
+        self._make_chain()
 
-    y, mu, sig = _make_fb_data(chain)
+        self._make_fb_data()
 
-    logpsi = _calc_emission_probs(y, mu, sig)
+        self._calc_emission_probs()
 
-    dvec, logpd = _make_duration_dist(dur_mean, dur_std, D)
+        self._make_duration_dist()
 
-def _setup_constants():
-    """
-    These variables determine problem size.
-    """
-    T = 500  # times
-    K = 4  # levels of hidden state
-    D = 50
-
-    return T, K, D
-
-def _make_transition_probs(T, K):
+    @classmethod
+    def _setup_constants(self):
         """
-        Make a Markov transition matrix and initial state vector.
-        Columns of A sum to 1, so A acts to the right.
-        """ 
-        lo, hi = 1, 20
-        rows = []
-        for _ in xrange(K):
-            alpha = stats.randint.rvs(lo, hi, size=K)
-            row = stats.dirichlet.rvs(alpha)
-            rows.append(row)
-        A = np.vstack(rows).T
+        These variables determine problem size.
+        """
+        self.T = 500  # times
+        self.K = 4  # levels of hidden state
+        self.D = 50
 
-        alpha = stats.randint.rvs(lo, hi, size=K)
-        pi = stats.dirichlet.rvs(alpha).squeeze()
+    @classmethod
+    def _make_transition_probs(self):
+            """
+            Make a Markov transition matrix and initial state vector.
+            Columns of A sum to 1, so A acts to the right.
+            """ 
+            lo, hi = 1, 20
+            rows = []
+            for _ in xrange(self.K):
+                alpha = stats.randint.rvs(lo, hi, size=self.K)
+                row = stats.dirichlet.rvs(alpha)
+                rows.append(row)
+            self.A = np.vstack(rows).T
 
-        return A, pi
+            alpha = stats.randint.rvs(lo, hi, size=self.K)
+            self.pi = stats.dirichlet.rvs(alpha).squeeze()
 
-def _make_chain(A, pi, T, K):
-    """
-    Make a Markov chain by using the transition probabilities.
-    """
+    @classmethod
+    def _make_chain(self):
+        """
+        Make a Markov chain by using the transition probabilities.
+        """
 
-    # make the chain by evolving each category through time
-    chain = np.empty((K, T), dtype='int')
+        # make the chain by evolving each category through time
+        chain = np.empty((self.K, self.T), dtype='int')
 
-    # pick pars for duration distribution
-    mm = 10 * np.random.rand(K) # mean
-    ss = 3 * np.random.rand(K) # standard deviation
+        # pick pars for duration distribution
+        mm = 10 * np.random.rand(self.K) # mean
+        ss = 3 * np.random.rand(self.K) # standard deviation
 
-    # initialize
-    t = 0
-    while t < T:
-        if t == 0:
-            pp = pi
-        else:
-            pp = A.dot(chain[:, t - 1])
+        # initialize
+        t = 0
+        while t < self.T:
+            if t == 0:
+                pp = self.pi
+            else:
+                pp = self.A.dot(chain[:, t - 1])
 
-        # pick a new state
-        newstate = np.random.multinomial(1, pp)[:, np.newaxis]
-        k = np.argmax(newstate)
+            # pick a new state
+            newstate = np.random.multinomial(1, pp)[:, np.newaxis]
+            k = np.argmax(newstate)
 
-        # pick a duration
-        d = np.rint(stats.norm.rvs(loc=mm[k], scale=ss[k])).astype('int')
-        d = np.min([d, T - d])
+            # pick a duration
+            d = np.rint(stats.norm.rvs(loc=mm[k], scale=ss[k])).astype('int')
+            d = np.min([d, self.T - d])
 
-        # fill in the next d steps of the chain
-        chain[:, t:(t+d)] = newstate
-        t += d
-        
-    return chain, mm, ss
+            # fill in the next d steps of the chain
+            chain[:, t:(t+d)] = newstate
+            t += d
+            
+        self.chain = chain
+        self.dur_mean = mm
+        self.dur_std = ss
 
-def _make_fb_data(chain):
-    K, T = chain.shape
-    mu = 10 * np.random.rand(K)
-    sig = 2 * np.random.rand(K)
+    @classmethod
+    def _make_fb_data(self):
+        mu = 10 * np.random.rand(self.K)
+        sig = 2 * np.random.rand(self.K)
 
-    y = stats.norm.rvs(loc=mu.dot(chain), scale=sig.dot(chain), 
-        size=T)
+        y = stats.norm.rvs(loc=mu.dot(self.chain), 
+            scale=sig.dot(self.chain), 
+            size=self.T)
 
-    return y, mu, sig
+        self.y = y
+        self.obs_mean = mu
+        self.obs_std = sig
 
-def _calc_emission_probs(y, mu, sig):
-    logpsi = stats.norm.logpdf(y[:, np.newaxis], loc=mu[np.newaxis, :], 
-        scale=sig[np.newaxis, :])
+    @classmethod
+    def _calc_emission_probs(self):
+        logpsi = stats.norm.logpdf(self.y[:, np.newaxis], 
+            loc=self.obs_mean[np.newaxis, :], 
+            scale=self.obs_std[np.newaxis, :])
 
-    return logpsi
+        self.log_evidence = logpsi
 
-def _make_duration_dist(mu, sig, D):
-    dvec = np.arange(D)
-    logpdf = stats.norm.logpdf(dvec[np.newaxis, :], loc=mu[:, np.newaxis],
-        scale=sig[:, np.newaxis])
+    @classmethod
+    def _make_duration_dist(self):
+        dvec = np.arange(self.D)
+        logpdf = stats.norm.logpdf(dvec[np.newaxis, :], 
+            loc=self.obs_mean[:, np.newaxis],
+            scale=self.obs_std[:, np.newaxis])
 
-    # normalize
-    logpdf -= np.log(np.sum(np.exp(logpdf), axis=1, keepdims=True))
+        # normalize
+        logpdf -= np.log(np.sum(np.exp(logpdf), axis=1, keepdims=True))
 
-    return dvec, logpdf
+        self.dvec = dvec
+        self.logpd = logpdf
 
 if __name__ == '__main__':
     np.random.rand(12345)
 
-    T, K, D = _setup_constants()
-
-    A, pi = _make_transition_probs(T, K)
-
-    chain, dur_mean, dur_std = _make_chain(A, pi, T, K)
-
-    y, mu, sig = _make_fb_data(chain)
-
-    logpsi = _calc_emission_probs(y, mu, sig)
-
-    dvec, logpd = _make_duration_dist(dur_mean, dur_std, D)
+    TFB = Test_Forwards_Backwards()
+    TFB.setup_hsmm()
