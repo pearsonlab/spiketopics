@@ -39,7 +39,10 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     _calc_B(dvec, logpsi, B, cum_log_psi)
     del cum_log_psi  # free some memory
 
-@autojit(nopython=True)
+    # 
+    _forward(alpha, alpha_star, logA, logpi, B, dvec, logpd)
+
+@jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])")
 def _calc_B(dvec, logpsi, B, cum_log_psi):
     """
     Calculate the logged version of B. If logpsi (T x M) is the log 
@@ -64,6 +67,34 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
                     B[t, m, i] = cum_log_psi[t, m] - cum_log_psi[start - 1, m]
                 else:
                     B[t, m, i] = cum_log_psi[t, m] 
+
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
+def _forward(a, astar, A, pi, B, dvec, D):
+    """
+    Implement foward part of forward algorithm in log space.
+    All inputs are logged, including A and pi.
+    """
+    T, M = a.shape
+
+    for t in xrange(T):
+        for m in xrange(M):
+            # calculate a^*[t, m]
+            if t == 0:
+                astar[t, m] = pi[m]
+            else:
+                astar[t, m] = -np.inf
+                for j in xrange(M):
+                    astar[t, m] = np.logaddexp(A[m, j] + a[t, j], astar[t, m])
+
+            # calculate a[t, m]
+            a[t, m] = -np.inf
+            for didx, d in enumerate(dvec):
+                if d <= t:
+                    a[t, m] = np.logaddexp(B[t, m, didx] + D[m, didx] + 
+                        astar[t - d, m], a[t, m])
+
+
+
 
 
 

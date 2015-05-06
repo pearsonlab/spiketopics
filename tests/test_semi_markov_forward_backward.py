@@ -111,7 +111,7 @@ class Test_Forwards_Backwards:
 
     @classmethod
     def _make_duration_dist(self):
-        dvec = np.arange(self.D)
+        dvec = np.arange(1, self.D)
         logpdf = stats.norm.logpdf(dvec[np.newaxis, :], 
             loc=self.obs_mean[:, np.newaxis],
             scale=self.obs_std[:, np.newaxis])
@@ -160,6 +160,21 @@ class Test_Forwards_Backwards:
         start = max(0, this_t - this_d + 1)
         npt.assert_allclose(B[this_t, :, didx], 
             cum_log_psi[this_t])
+
+    def test_forward(self):
+        B = np.empty((self.T, self.K, self.D))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+        alpha = np.empty((self.T, self.K))
+        alpha_star = np.empty((self.T, self.K))
+        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
+            B, self.dvec, self.logpd)
+        assert(np.all(np.isinf(alpha[0])))
+        npt.assert_allclose(alpha_star[0], np.log(self.pi))
+        assert(np.all(np.isfinite(alpha[-1])))
+        assert(np.all(np.isfinite(alpha_star[-1])))
+
 
 if __name__ == '__main__':
     np.random.rand(12345)
