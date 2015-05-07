@@ -71,7 +71,7 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
                 else:
                     B[t, m, ix] = cum_log_psi[t, m] 
 
-# @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
 def _forward(a, astar, A, pi, B, dvec, D):
     """
     Implement foward pass of forward-backward algorithm in log space.
@@ -86,13 +86,15 @@ def _forward(a, astar, A, pi, B, dvec, D):
 
     for t in xrange(1, T):
         for m in xrange(M):
+
             # calculate a[t, m]
             a[t, m] = -np.inf
-            for didx, d in enumerate(dvec):
+            for ix, d in enumerate(dvec):
                 if d <= t:
-                    a[t, m] = np.logaddexp(B[t, m, didx] + D[m, didx] + 
+                    a[t, m] = np.logaddexp(B[t, m, ix] + D[m, ix] + 
                         astar[t - d, m], a[t, m])
 
+        for m in xrange(M):
             # calculate a^*[t, m]
             astar[t, m] = -np.inf
             for j in xrange(M):
@@ -107,23 +109,27 @@ def _backward(b, bstar, A, B, dvec, D):
     """
     T, M = b.shape
 
-    for t in xrange(T - 1, -1, -1):
-        for m in xrange(M):
-            # calculate b[t, m]
-            if t == T - 1:
-                b[t, m] = 1
-            else:
-                b[t, m] = -np.inf
-                for j in xrange(M):
-                    b[t, m] = np.logaddexp(bstar[t, j] + A[j, m], b[t, m])
+    # initialize
+    for m in xrange(M):
+        b[T - 1, m] = 1
+        bstar[T - 1, m] = np.inf
 
+    for t in xrange(T - 2, -1, -1):
+        for m in xrange(M):
             # calculate b^*[t, m]
             bstar[t, m] = -np.inf
             for didx, d in enumerate(dvec):
-                if d + t < T:
+                if t + d < T:
                     bstar[t, m] = np.logaddexp(b[t + d, m] + 
                         B[t + d, m, didx] + D[m, didx], bstar[t, m])
 
+        for m in xrange(M):
+            # calculate b[t, m]
+            b[t, m] = -np.inf
+            for j in xrange(M):
+                b[t, m] = np.logaddexp(bstar[t, j] + A[j, m], b[t, m])
+
+@jit("float64(float64[:, :])", nopython=True)
 def _calc_logZ(alpha):
     """
     Calculate the log of the partition function, given by summing

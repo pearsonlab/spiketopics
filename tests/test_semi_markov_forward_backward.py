@@ -11,7 +11,7 @@ import hsmm_forward_backward as fb
 class Test_Forwards_Backwards:
     @classmethod
     def setup_class(self):
-        np.random.rand(12345)
+        np.random.seed(12345)
 
         self._setup_constants()
 
@@ -141,6 +141,7 @@ class Test_Forwards_Backwards:
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # first, check cum_log_psi
+        npt.assert_allclose(cum_log_psi[0], self.log_evidence[0])
         npt.assert_allclose(cum_log_psi[3], 
             np.cumsum(self.log_evidence, axis=0)[3])
         assert_true(np.all(np.isfinite(cum_log_psi)))
@@ -149,6 +150,8 @@ class Test_Forwards_Backwards:
         assert_true(np.all(np.isfinite(B)))
 
         # check a few entries in B
+        npt.assert_allclose(B[0, 2], cum_log_psi[0, 2])
+
         didx = 2
         this_d = self.dvec[didx]
         this_t = 5
@@ -203,17 +206,17 @@ class Test_Forwards_Backwards:
         assert(np.all(np.isfinite(beta[0])))
         assert(np.all(np.isfinite(beta_star[0])))
 
-    # def test_logZ(self):
-    #     B = np.empty((self.T, self.K, self.Ddim))
-    #     cum_log_psi = np.empty((self.T, self.K))
-    #     fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+    def test_logZ(self):
+        B = np.empty((self.T, self.K, self.Ddim))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
-    #     alpha = np.empty((self.T, self.K))
-    #     alpha_star = np.empty((self.T, self.K))
-    #     fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
-    #         B, self.dvec, self.logpd)
-    #     logZ = fb._calc_logZ(alpha)
-    #     assert(np.isfinite(logZ))
+        alpha = np.empty((self.T, self.K))
+        alpha_star = np.empty((self.T, self.K))
+        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
+            B, self.dvec, self.logpd)
+        logZ = fb._calc_logZ(alpha)
+        assert(np.isfinite(logZ))
 
 if __name__ == '__main__':
     np.random.rand(12345)
