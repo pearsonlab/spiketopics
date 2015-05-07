@@ -175,6 +175,19 @@ class Test_Forwards_Backwards:
         assert(np.all(np.isfinite(alpha[-1])))
         assert(np.all(np.isfinite(alpha_star[-1])))
 
+    def test_backward(self):
+        B = np.empty((self.T, self.K, self.D))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+        beta = np.empty((self.T, self.K))
+        beta_star = np.empty((self.T, self.K))
+        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+
+        assert(np.all(np.isinf(beta_star[-1])))
+        npt.assert_allclose(beta[-1], 1)
+        assert(np.all(np.isfinite(beta[0])))
+        assert(np.all(np.isfinite(beta_star[0])))
 
 if __name__ == '__main__':
     np.random.rand(12345)

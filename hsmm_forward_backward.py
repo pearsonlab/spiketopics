@@ -39,8 +39,11 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     _calc_B(dvec, logpsi, B, cum_log_psi)
     del cum_log_psi  # free some memory
 
-    # 
+    # forward pass
     _forward(alpha, alpha_star, logA, logpi, B, dvec, logpd)
+
+    # backward pass
+    _backward(beta, beta_star, logA, B, dvec, logpd) 
 
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])")
 def _calc_B(dvec, logpsi, B, cum_log_psi):
@@ -71,7 +74,7 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
 @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
 def _forward(a, astar, A, pi, B, dvec, D):
     """
-    Implement foward part of forward algorithm in log space.
+    Implement foward pass of forward-backward algorithm in log space.
     All inputs are logged, including A and pi.
     """
     T, M = a.shape
@@ -92,6 +95,34 @@ def _forward(a, astar, A, pi, B, dvec, D):
                 if d <= t:
                     a[t, m] = np.logaddexp(B[t, m, didx] + D[m, didx] + 
                         astar[t - d, m], a[t, m])
+
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
+def _backward(b, bstar, A, B, dvec, D):
+    """
+    Implement backward pass of forward-backward algorithm in log space.
+    All inputs are logged, including A.
+    """
+    T, M = b.shape
+
+    for t in xrange(T - 1, -1, -1):
+        for m in xrange(M):
+            # calculate b[t, m]
+            if t == T - 1:
+                b[t, m] = 1
+            else:
+                b[t, m] = -np.inf
+                for j in xrange(M):
+                    b[t, m] = np.logaddexp(bstar[t, j] + A[j, m], b[t, m])
+
+            # calculate b^*[t, m]
+            bstar[t, m] = -np.inf
+            for didx, d in enumerate(dvec):
+                if d + t < T:
+                    bstar[t, m] = np.logaddexp(b[t + d, m] + 
+                        B[t + d, m, didx] + D[m, didx], bstar[t, m])
+
+
+
 
 
 
