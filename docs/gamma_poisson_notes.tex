@@ -537,7 +537,7 @@ Our initial condition will be $\beta_T(i) = 1$.
 \subsubsection{Forward}
 Here, we define
 \begin{align}
-    \alpha_t (i) & = p(\text{just finished \emph{i}}, \text{past evidence}) \\
+    \alpha_t (i) & = p(\text{just finished \emph{i}}, \text{observed evidence}) \\
     &= \sum_d \psi_{(t-d+1):t}(i) p(d|i) \sum_j A(i, j) \alpha_{t - d}(j) \\
     & = \sum_d \psi_{(t-d+1):t}(i) p(d|i) \alpha^*_{t - d}(i) \\
     \alpha^*_t(i) &= \sum_j A(i, j) \alpha_t (j)
@@ -558,6 +558,13 @@ with
     \gamma_t(i) = p(z_t = i, F=1|y_{1:T}) &\propto \alpha_t(i) \beta_t(i) \\
     \gamma^*_t(i) = p(z_{t + 1} = i, F=1|y_{1:T}) &\propto \alpha^*_t(i) \beta^*_t(i)
 \end{align}
+
+It is similarly simple to calculate the log of the partition function, given the result of the forward algorithm:
+\begin{equation}
+    Z = \sum_i \alpha_{T - 1}(i) = \sum_i \alpha^*_{T - 1}(i) \propto 
+    p(y_{0:(T - 1)})
+\end{equation}
+since $\alpha_{T - 1}(i) \propto p(z_{T - 1} = i, y_{0:(T - 1)})$.
 
 \subsubsection{Log formulation}
 As Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and

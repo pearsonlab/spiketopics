@@ -119,6 +119,7 @@ class Test_Forwards_Backwards:
         # normalize
         logpdf -= np.log(np.sum(np.exp(logpdf), axis=1, keepdims=True))
 
+        self.Ddim = len(dvec)
         self.dvec = dvec
         self.logpd = logpdf
 
@@ -135,13 +136,17 @@ class Test_Forwards_Backwards:
             self.dvec, self.logpd)
 
     def test_calc_B(self):
-        B = np.empty((self.T, self.K, self.D))
+        B = np.empty((self.T, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # first, check cum_log_psi
         npt.assert_allclose(cum_log_psi[3], 
             np.cumsum(self.log_evidence, axis=0)[3])
+        assert_true(np.all(np.isfinite(cum_log_psi)))
+
+        # check B in general
+        assert_true(np.all(np.isfinite(B)))
 
         # check a few entries in B
         didx = 2
@@ -162,7 +167,7 @@ class Test_Forwards_Backwards:
             cum_log_psi[this_t])
 
     def test_forward(self):
-        B = np.empty((self.T, self.K, self.D))
+        B = np.empty((self.T, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -175,8 +180,17 @@ class Test_Forwards_Backwards:
         assert(np.all(np.isfinite(alpha[-1])))
         assert(np.all(np.isfinite(alpha_star[-1])))
 
+        # sum over all final states should give the same p(evidence), whether
+        # or not we use alpha or alpha_star
+        fin = -np.inf
+        fin_star = -np.inf
+        for j in xrange(self.K):
+            fin = np.logaddexp(fin, alpha[-1, j])
+            fin_star = np.logaddexp(fin_star, alpha_star[-1, j])
+        assert_equals(fin, fin_star)
+
     def test_backward(self):
-        B = np.empty((self.T, self.K, self.D))
+        B = np.empty((self.T, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -188,6 +202,18 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(beta[-1], 1)
         assert(np.all(np.isfinite(beta[0])))
         assert(np.all(np.isfinite(beta_star[0])))
+
+    # def test_logZ(self):
+    #     B = np.empty((self.T, self.K, self.Ddim))
+    #     cum_log_psi = np.empty((self.T, self.K))
+    #     fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+    #     alpha = np.empty((self.T, self.K))
+    #     alpha_star = np.empty((self.T, self.K))
+    #     fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
+    #         B, self.dvec, self.logpd)
+    #     logZ = fb._calc_logZ(alpha)
+    #     assert(np.isfinite(logZ))
 
 if __name__ == '__main__':
     np.random.rand(12345)

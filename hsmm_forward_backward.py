@@ -27,7 +27,7 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
 
     # get shapes, preallocate arrays
     T = logpsi.shape[0]
-    M, D = dvec.shape
+    M, D = logpd.shape
 
     alpha = np.empty((T, M))
     alpha_star = np.empty((T, M))
@@ -53,7 +53,7 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
 
     B_{tid} = \sum_{t' = t - d + 1}^{t} logpsi_{t'}(i)
     """
-    T, M, D = B.shape
+    T, M, _ = B.shape
 
     # calculate cumulative sum of evidence
     for m in xrange(M):
@@ -64,14 +64,14 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
     # calculate B
     for t in xrange(T):
         for m in xrange(M):
-            for i, d in enumerate(dvec):
+            for ix, d in enumerate(dvec):
                 start = max(0, t - d + 1)
                 if start > 0:
-                    B[t, m, i] = cum_log_psi[t, m] - cum_log_psi[start - 1, m]
+                    B[t, m, ix] = cum_log_psi[t, m] - cum_log_psi[start - 1, m]
                 else:
-                    B[t, m, i] = cum_log_psi[t, m] 
+                    B[t, m, ix] = cum_log_psi[t, m] 
 
-@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
+# @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
 def _forward(a, astar, A, pi, B, dvec, D):
     """
     Implement foward pass of forward-backward algorithm in log space.
@@ -79,22 +79,25 @@ def _forward(a, astar, A, pi, B, dvec, D):
     """
     T, M = a.shape
 
-    for t in xrange(T):
-        for m in xrange(M):
-            # calculate a^*[t, m]
-            if t == 0:
-                astar[t, m] = pi[m]
-            else:
-                astar[t, m] = -np.inf
-                for j in xrange(M):
-                    astar[t, m] = np.logaddexp(A[m, j] + a[t, j], astar[t, m])
+    # initialize
+    for m in xrange(M):
+        a[0, m] = -np.inf
+        astar[0, m] = pi[m]
 
+    for t in xrange(1, T):
+        for m in xrange(M):
             # calculate a[t, m]
             a[t, m] = -np.inf
             for didx, d in enumerate(dvec):
                 if d <= t:
                     a[t, m] = np.logaddexp(B[t, m, didx] + D[m, didx] + 
                         astar[t - d, m], a[t, m])
+
+            # calculate a^*[t, m]
+            astar[t, m] = -np.inf
+            for j in xrange(M):
+                astar[t, m] = np.logaddexp(A[m, j] + a[t, j], astar[t, m])
+
 
 @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
 def _backward(b, bstar, A, B, dvec, D):
@@ -121,7 +124,18 @@ def _backward(b, bstar, A, B, dvec, D):
                     bstar[t, m] = np.logaddexp(b[t + d, m] + 
                         B[t + d, m, didx] + D[m, didx], bstar[t, m])
 
+def _calc_logZ(alpha):
+    """
+    Calculate the log of the partition function, given by summing
+    p(z_{T - 1}, y_{0:T-1}) over all z_{T - 1}
+    """
+    T, M = alpha.shape
+    logZ = -np.inf
 
+    for m in xrange(M):
+        logZ = np.logaddexp(alpha[T - 1, m], logZ)
+
+    return logZ
 
 
 
