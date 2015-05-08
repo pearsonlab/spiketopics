@@ -101,14 +101,11 @@ def _forward(a, astar, A, pi, B, dvec, D):
     for t in xrange(1, T):
         for m in xrange(M):
             # calculate a[t, m]
-            a[t + 1, m] = -np.inf
+            a[t, m] = -np.inf
             for ix, d in enumerate(dvec):
-                if t - d > -1:
-                    a[t + 1, m] = np.logaddexp(B[t, m, ix] + D[m, ix] + 
-                        astar[t - d + 1, m], a[t, m])
-                elif t - d == -1:
+                if t >= d:
                     a[t, m] = np.logaddexp(B[t, m, ix] + D[m, ix] + 
-                        pi[m], a[t, m])
+                        astar[t - d, m], a[t, m])
 
         for m in xrange(M):
             # calculate a^*[t, m]
@@ -218,7 +215,6 @@ def _calc_two_slice(alpha, beta_star, A, Xi):
         for i in xrange(M):
             for j in xrange(M):
                 Xi[t, i, j] += -norm
-
 
 
 
