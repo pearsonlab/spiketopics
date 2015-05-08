@@ -502,11 +502,11 @@ The posterior distributions are
 \section{Semi-Markov Models}
 This section follows the technical report by Murphy (2002), as well as papers by Mithcell and Jamieson (1993) and Mitchell, Harper, and Jamieson (1995).
 
-We again begin with the parameters defining the Hidden Markov Model (HMM): $A_{ji} = p({i \rightarrow j})$ is the transition matrix between states, with the columns of $A$ summing to 1 (again, the opposite of the usual convention, such that time evolution is equivalent to $A$ acting to the right on a state vector). Likewise, the initial probability of state $i$ is $\pi_i = p(z_0 = i)$. Finally, we will write $\psi_{tj} = p(y_t|z_t = j)$ for the local evidence for the observation $y_t$. (Note that, for the forward-backward algorithm, $\psi$ does not have to be normalized along its second index. In fact, we have the freedom to rescale $\psi$ by an overall constant \emph{at each $t$}.)
+We again begin with the parameters defining the Hidden Markov Model (HMM): $A_{ji} = p({i \rightarrow j})$ is the transition matrix between states, with the columns of $A$ summing to 1 (again, the opposite of the usual convention, such that time evolution is equivalent to $A$ acting to the right on a state vector). Likewise, the initial probability of state $i$ is $\pi_i = p(z_0 = i)$. Finally, we will write $\psi_{tj} = p(y_t|z_t = j)$ for the local evidence for the observation $y_t$. Here, we will follow Murphy in adopting the convention that observations are indexed from 1 to $T$, with initial conditions indexed by 0. (Note that, for the forward-backward algorithm, $\psi$ does not have to be normalized along its second index. In fact, we have the freedom to rescale $\psi$ by an overall constant \emph{at each $t$}.)
 
 Now, for the semi-Markov case, we assume that states $\tau$ persist for (integer) durations $d_\tau$ governed by a probability mass function $p(d_\tau)$ such that $\sum_{\tau} d_{\tau} = T$. We can then write the marginal probability of the observation sequence over all time $T$ (divided into $n_\tau$ segments) as
 \begin{align}
-    p(y_{0:T}) &= \sum_{n_\tau} p(n_\tau)\sum_z \prod_{\tau = 0}^{n_\tau} p(z_{\tau+1}|z_\tau) p(d_{\tau}|z_{\tau})
+    p(y_{1:T}) &= \sum_{n_\tau} p(n_\tau)\sum_z \prod_{\tau = 0}^{n_\tau} p(z_{\tau+1}|z_\tau) p(d_{\tau}|z_{\tau})
     \prod_{i = t_{i(\tau)}}^{t_{f(\tau)}} p(y_i|z_\tau) \\
     &= \sum_{n_\tau} p(n_\tau) \sum_z \pi(z_0) \prod_{\tau = 1}^{n_\tau} A_{z_{\tau+1}, z_{\tau}} p(d_{\tau}|z_{\tau})\prod_{i = t_{i(\tau)}}^{t_{f(\tau)}} \psi_{iz_{\tau}}
 \end{align}
@@ -532,7 +532,7 @@ with
 \begin{equation}
     \psi_{(t + 1):(t + d)}(j) \equiv \prod_{t' = t + 1}^{t + d} \psi_{t'}(j)
 \end{equation}
-Our initial condition will be $\beta_T(i) = 1$.
+Our initial condition will be $\beta_T(i) = 1$. Further requiring that $\beta_T = \beta^*_T \cdot A$ then also gives $\beta^*_T(i) = 1$. Note also that, given the definition of $\beta^*_t$, $\beta^*_0$ and thus $\beta_0$ are well-defined.
 
 \subsubsection{Forward}
 Here, we define
@@ -542,7 +542,7 @@ Here, we define
     & = \sum_d \psi_{(t-d+1):t}(i) p(d|i) \alpha^*_{t - d}(i) \\
     \alpha^*_t(i) &= \sum_j A(i, j) \alpha_t (j)
 \end{align} 
-where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$
+where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$, and $\alpha_0$ is given by the solution to the equation $A \cdot \alpha_0 = \pi$.
 
 \subsubsection{Posterior Marginals and Normalization}
 We would like to calculate $\xi_t(i) \equiv p(z_t = i|y_{1:T})$ as in the standard FB algorithm, this is given (up to normalization) by
@@ -561,10 +561,10 @@ with
 
 It is similarly simple to calculate the log of the partition function, given the result of the forward algorithm:
 \begin{equation}
-    Z = \sum_i \alpha_{T - 1}(i) = \sum_i \alpha^*_{T - 1}(i) \propto 
-    p(y_{0:(T - 1)})
+    Z = \sum_i \alpha_T(i) = \sum_i \alpha^*_T(i) \propto 
+    p(y_{1:T})
 \end{equation}
-since $\alpha_{T - 1}(i) \propto p(z_{T - 1} = i, y_{0:(T - 1)})$.
+since $\alpha_T(i) \propto p(z_T = i, y_{1:T})$.
 
 \subsubsection{Log formulation}
 As Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and

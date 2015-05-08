@@ -136,21 +136,21 @@ class Test_Forwards_Backwards:
             self.dvec, self.logpd)
 
     def test_calc_B(self):
-        B = np.empty((self.T, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # first, check cum_log_psi
-        npt.assert_allclose(cum_log_psi[0], self.log_evidence[0])
+        npt.assert_allclose(cum_log_psi[1], self.log_evidence[0])
         npt.assert_allclose(cum_log_psi[3], 
-            np.cumsum(self.log_evidence, axis=0)[3])
+            np.cumsum(self.log_evidence, axis=0)[2])
         assert_true(np.all(np.isfinite(cum_log_psi)))
 
         # check B in general
         assert_true(np.all(np.isfinite(B)))
 
         # check a few entries in B
-        npt.assert_allclose(B[0, 2], cum_log_psi[0, 2])
+        npt.assert_allclose(B[1, 2], cum_log_psi[1, 2])
 
         didx = 2
         this_d = self.dvec[didx]
@@ -176,10 +176,10 @@ class Test_Forwards_Backwards:
 
         alpha = np.empty((self.T, self.K))
         alpha_star = np.empty((self.T, self.K))
+
         fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
             B, self.dvec, self.logpd)
-        assert(np.all(np.isinf(alpha[0])))
-        npt.assert_allclose(alpha_star[0], np.log(self.pi))
+
         assert(np.all(np.isfinite(alpha[-1])))
         assert(np.all(np.isfinite(alpha_star[-1])))
 
@@ -190,7 +190,7 @@ class Test_Forwards_Backwards:
         for j in xrange(self.K):
             fin = np.logaddexp(fin, alpha[-1, j])
             fin_star = np.logaddexp(fin_star, alpha_star[-1, j])
-        assert_equals(fin, fin_star)
+        npt.assert_allclose(fin, fin_star)
 
     def test_backward(self):
         B = np.empty((self.T, self.K, self.Ddim))
@@ -201,8 +201,8 @@ class Test_Forwards_Backwards:
         beta_star = np.empty((self.T, self.K))
         fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
 
-        assert(np.all(np.isinf(beta_star[-1])))
         npt.assert_allclose(beta[-1], 1)
+        npt.assert_allclose(beta_star[-1], 1)
         assert(np.all(np.isfinite(beta[0])))
         assert(np.all(np.isfinite(beta_star[0])))
 
@@ -217,6 +217,30 @@ class Test_Forwards_Backwards:
             B, self.dvec, self.logpd)
         logZ = fb._calc_logZ(alpha)
         assert(np.isfinite(logZ))
+
+    def test_posterior(self):
+        B = np.empty((self.T, self.K, self.Ddim))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+        # forward
+        alpha = np.empty((self.T, self.K))
+        alpha_star = np.empty((self.T, self.K))
+        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
+            B, self.dvec, self.logpd)
+
+        # backward
+        beta = np.empty((self.T, self.K))
+        beta_star = np.empty((self.T, self.K))
+        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+
+        # posterior
+        gamma = np.empty((self.T, self.K))
+        gamma_star = np.empty((self.T, self.K))
+        post = np.empty((self.T, self.K))
+        fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
+            gamma, gamma_star, post) 
+        npt.assert_allclose(np.sum(post, 1)[1:], 1.0)
 
 if __name__ == '__main__':
     np.random.rand(12345)

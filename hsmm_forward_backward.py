@@ -29,13 +29,13 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     T = logpsi.shape[0]
     M, D = logpd.shape
 
-    alpha = np.empty((T, M))
-    alpha_star = np.empty((T, M))
-    beta = np.empty((T, M))
-    beta_star = np.empty((T, M))
+    alpha = np.empty((T + 1, M))
+    alpha_star = np.empty((T + 1, M))
+    beta = np.empty((T + 1, M))
+    beta_star = np.empty((T + 1, M))
 
-    B = np.empty((T, M, D))
-    cum_log_psi = np.empty((T, M))
+    B = np.empty((T + 1, M, D))
+    cum_log_psi = np.empty((T + 1, M))
     _calc_B(dvec, logpsi, B, cum_log_psi)
     del cum_log_psi  # free some memory
 
@@ -45,6 +45,17 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     # backward pass
     _backward(beta, beta_star, logA, B, dvec, logpd) 
 
+    # calculate normalization constant
+    logZ = _calc_logZ(alpha)
+
+    # calculate posterior
+    gamma = np.empty((T + 1, M))
+    gamma_star = np.empty((T + 1, M))
+    post = np.empty((T + 1, M))
+    _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
+        gamma_star, post)
+    del gamma, gamma_star
+
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])")
 def _calc_B(dvec, logpsi, B, cum_log_psi):
     """
@@ -52,26 +63,26 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
     probability of observing y_t given state M, then
 
     B_{tid} = \sum_{t' = t - d + 1}^{t} logpsi_{t'}(i)
+
+    Note: B and cum_log_psi have one more time index than logpsi for 
+    easier handling of boundary conditions later on.
     """
     T, M, _ = B.shape
 
     # calculate cumulative sum of evidence
     for m in xrange(M):
-        cum_log_psi[0, m] = logpsi[0, m]
+        cum_log_psi[0, m] = 0
         for t in xrange(1, T):
-            cum_log_psi[t, m] = cum_log_psi[t - 1, m] + logpsi[t, m]
+            cum_log_psi[t, m] = cum_log_psi[t - 1, m] + logpsi[t - 1, m]
 
     # calculate B
     for t in xrange(T):
         for m in xrange(M):
             for ix, d in enumerate(dvec):
-                start = max(0, t - d + 1)
-                if start > 0:
-                    B[t, m, ix] = cum_log_psi[t, m] - cum_log_psi[start - 1, m]
-                else:
-                    B[t, m, ix] = cum_log_psi[t, m] 
+                start = max(1, t - d + 1)
+                B[t, m, ix] = cum_log_psi[t, m] - cum_log_psi[start - 1, m]
 
-@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:],  float64[:, :, :], int64[:], float64[:, :])", nopython=True)
 def _forward(a, astar, A, pi, B, dvec, D):
     """
     Implement foward pass of forward-backward algorithm in log space.
@@ -79,20 +90,21 @@ def _forward(a, astar, A, pi, B, dvec, D):
     """
     T, M = a.shape
 
-    # initialize
     for m in xrange(M):
-        a[0, m] = -np.inf
         astar[0, m] = pi[m]
+        a[0, m] = -np.inf
 
     for t in xrange(1, T):
         for m in xrange(M):
-
             # calculate a[t, m]
-            a[t, m] = -np.inf
+            a[t + 1, m] = -np.inf
             for ix, d in enumerate(dvec):
-                if d <= t:
+                if t - d > -1:
+                    a[t + 1, m] = np.logaddexp(B[t, m, ix] + D[m, ix] + 
+                        astar[t - d + 1, m], a[t, m])
+                elif t - d == -1:
                     a[t, m] = np.logaddexp(B[t, m, ix] + D[m, ix] + 
-                        astar[t - d, m], a[t, m])
+                        pi[m], a[t, m])
 
         for m in xrange(M):
             # calculate a^*[t, m]
@@ -111,8 +123,8 @@ def _backward(b, bstar, A, B, dvec, D):
 
     # initialize
     for m in xrange(M):
-        b[T - 1, m] = 1
-        bstar[T - 1, m] = np.inf
+        b[-1, m] = 1
+        bstar[-1, m] = 1
 
     for t in xrange(T - 2, -1, -1):
         for m in xrange(M):
@@ -139,10 +151,48 @@ def _calc_logZ(alpha):
     logZ = -np.inf
 
     for m in xrange(M):
-        logZ = np.logaddexp(alpha[T - 1, m], logZ)
+        logZ = np.logaddexp(alpha[-1, m], logZ)
 
     return logZ
 
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :])")
+def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
+    gamma_star, post):
+    """
+    Given filtered and smoothed probabilities from the forward and backward
+    passes, calculate the posterior marginal of each state.
+    The arrays passed in are all logs of their respective probabilities.
+    """
+    T, M = alpha.shape
+
+    for t in xrange(T):
+        norm = -np.inf 
+        norm_star = -np.inf
+
+        # gamma = alpha * beta
+        for m in xrange(M):
+            if t == 0:
+                gamma[t, m] = -np.inf
+                norm = 0.0
+            else:
+                gamma[t, m] = alpha[t, m] + beta[t, m]
+                norm = np.logaddexp(norm, gamma[t, m])
+
+            gamma_star[t, m] = alpha_star[t, m] + beta_star[t, m]
+            norm_star = np.logaddexp(norm_star, gamma_star[t, m])
+
+        # normalize
+        for m in xrange(M):
+            gamma[t, m] += -norm
+            gamma_star[t, m] += -norm_star
+
+        # calculate posterior
+        for m in xrange(M):
+            if t == 0:
+                post[t, m] = 0.0
+            else:
+                post[t, m] = post[t - 1, m]
+                post[t, m] += np.exp(gamma_star[t - 1, m]) - np.exp(gamma[t - 1, m])
 
 
 
