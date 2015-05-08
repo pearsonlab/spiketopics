@@ -263,6 +263,27 @@ class Test_Forwards_Backwards:
         fb._calc_two_slice(alpha, beta_star, np.log(self.A), Xi)
         npt.assert_allclose(np.sum(np.exp(Xi), axis=(1, 2)), 1.)
 
+    def test_estimate_duration_dist(self):
+        B = np.empty((self.T, self.K, self.Ddim))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+        # forward
+        alpha = np.empty((self.T + 1, self.K))
+        alpha_star = np.empty((self.T + 1, self.K))
+        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
+            B, self.dvec, self.logpd)
+
+        # backward
+        beta = np.empty((self.T + 1, self.K))
+        beta_star = np.empty((self.T + 1, self.K))
+        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+
+        logpd_hat = np.empty((self.K, self.Ddim))
+        fb._estimate_duration_dist(alpha_star, beta, B, self.dvec, 
+            self.logpd, logpd_hat)
+        npt.assert_allclose(np.sum(np.exp(logpd_hat), 1), 1.0)
+
 if __name__ == '__main__':
     np.random.rand(12345)
 

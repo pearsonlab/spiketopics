@@ -60,6 +60,12 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     Xi = np.empty((T - 1, M, M))
     _calc_two_slice(alpha, beta_star, logA, Xi)
 
+    # calculate log of max-likelihood estimates of p(d|z)
+    logpd_hat = np.empty((M, D))
+    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logpd_hat)
+
+    return post, logZ, Xi, logpd_hat
+
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])")
 def _calc_B(dvec, logpsi, B, cum_log_psi):
     """
@@ -83,8 +89,8 @@ def _calc_B(dvec, logpsi, B, cum_log_psi):
     for t in xrange(T):
         for m in xrange(M):
             for ix, d in enumerate(dvec):
-                start = max(1, t - d + 1)
-                B[t, m, ix] = cum_log_psi[t, m] - cum_log_psi[start - 1, m]
+                prev = max(0, t - d)
+                B[t, m, ix] = cum_log_psi[t, m] - cum_log_psi[prev, m]
 
 @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:],  float64[:, :, :], int64[:], float64[:, :])", nopython=True)
 def _forward(a, astar, A, pi, B, dvec, D):
@@ -131,10 +137,10 @@ def _backward(b, bstar, A, B, dvec, D):
         for m in xrange(M):
             # calculate b^*[t, m]
             bstar[t, m] = -np.inf
-            for didx, d in enumerate(dvec):
+            for ix, d in enumerate(dvec):
                 if t + d < T:
                     bstar[t, m] = np.logaddexp(b[t + d, m] + 
-                        B[t + d, m, didx] + D[m, didx], bstar[t, m])
+                        B[t + d, m, ix] + D[m, ix], bstar[t, m])
 
         for m in xrange(M):
             # calculate b[t, m]
@@ -215,6 +221,32 @@ def _calc_two_slice(alpha, beta_star, A, Xi):
         for i in xrange(M):
             for j in xrange(M):
                 Xi[t, i, j] += -norm
+
+@jit("void(float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :], float64[:, :])", nopython=True)
+def _estimate_duration_dist(a_star, b, B, dvec, D, Dhat):
+    """
+    Calculate sufficient statistics for maximum likelihood estimation
+    of p(d|z).
+    """
+    T, M, _ = B.shape
+
+    for m in xrange(M):
+        for ix, d in enumerate(dvec):
+            Dhat[m, ix] = -np.inf
+            for t in xrange(1, T):
+                if t >= d:
+                    Dhat[m, ix] = np.logaddexp(Dhat[m, ix], a_star[t - d, m] +
+                     D[m, ix] + B[t, m, ix] + b[t, m])
+
+    #normalize            
+    for m in xrange(M):
+        norm = -np.inf 
+        for ix, d in enumerate(dvec):
+            norm = np.logaddexp(norm, Dhat[m, ix])
+
+        for ix, d in enumerate(dvec):
+            Dhat[m, ix] += -norm
+
 
 
 
