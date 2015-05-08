@@ -174,8 +174,8 @@ class Test_Forwards_Backwards:
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
-        alpha = np.empty((self.T, self.K))
-        alpha_star = np.empty((self.T, self.K))
+        alpha = np.empty((self.T + 1, self.K))
+        alpha_star = np.empty((self.T + 1, self.K))
 
         fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
             B, self.dvec, self.logpd)
@@ -197,8 +197,8 @@ class Test_Forwards_Backwards:
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
-        beta = np.empty((self.T, self.K))
-        beta_star = np.empty((self.T, self.K))
+        beta = np.empty((self.T + 1, self.K))
+        beta_star = np.empty((self.T + 1, self.K))
         fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
 
         npt.assert_allclose(beta[-1], 1)
@@ -211,8 +211,8 @@ class Test_Forwards_Backwards:
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
-        alpha = np.empty((self.T, self.K))
-        alpha_star = np.empty((self.T, self.K))
+        alpha = np.empty((self.T + 1, self.K))
+        alpha_star = np.empty((self.T + 1, self.K))
         fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
             B, self.dvec, self.logpd)
         logZ = fb._calc_logZ(alpha)
@@ -224,23 +224,44 @@ class Test_Forwards_Backwards:
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # forward
-        alpha = np.empty((self.T, self.K))
-        alpha_star = np.empty((self.T, self.K))
+        alpha = np.empty((self.T + 1, self.K))
+        alpha_star = np.empty((self.T + 1, self.K))
         fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
             B, self.dvec, self.logpd)
 
         # backward
-        beta = np.empty((self.T, self.K))
-        beta_star = np.empty((self.T, self.K))
+        beta = np.empty((self.T + 1, self.K))
+        beta_star = np.empty((self.T + 1, self.K))
         fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
 
         # posterior
-        gamma = np.empty((self.T, self.K))
-        gamma_star = np.empty((self.T, self.K))
+        gamma = np.empty((self.T + 1, self.K))
+        gamma_star = np.empty((self.T + 1, self.K))
         post = np.empty((self.T, self.K))
         fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
             gamma, gamma_star, post) 
         npt.assert_allclose(np.sum(post, 1)[1:], 1.0)
+
+    def test_two_slice(self):
+        B = np.empty((self.T, self.K, self.Ddim))
+        cum_log_psi = np.empty((self.T, self.K))
+        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+
+        # forward
+        alpha = np.empty((self.T + 1, self.K))
+        alpha_star = np.empty((self.T + 1, self.K))
+        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
+            B, self.dvec, self.logpd)
+
+        # backward
+        beta = np.empty((self.T + 1, self.K))
+        beta_star = np.empty((self.T + 1, self.K))
+        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+
+        # two-slice marginals
+        Xi = np.empty((self.T - 1, self.K, self.K))
+        fb._calc_two_slice(alpha, beta_star, np.log(self.A), Xi)
+        npt.assert_allclose(np.sum(np.exp(Xi), axis=(1, 2)), 1.)
 
 if __name__ == '__main__':
     np.random.rand(12345)

@@ -542,7 +542,7 @@ Here, we define
     & = \sum_d \psi_{(t-d+1):t}(i) p(d|i) \alpha^*_{t - d}(i) \\
     \alpha^*_t(i) &= \sum_j A(i, j) \alpha_t (j)
 \end{align} 
-where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$, and $\alpha_0$ is given by the solution to the equation $A \cdot \alpha_0 = \pi$.
+where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$, and $\alpha_0$ need not be defined.
 
 \subsubsection{Posterior Marginals and Normalization}
 We would like to calculate $\xi_t(i) \equiv p(z_t = i|y_{1:T})$ as in the standard FB algorithm, this is given (up to normalization) by
@@ -602,8 +602,9 @@ Equivalently, we might want to calculate the two-slice marginals:
 \end{equation}
 where the normalization restriction in this case is that $\sum_{i, j} \Xi_{t + 1, t} (j, i) = 1$. Likewise the maximum likelihood estimate for the initial state is
 \begin{equation}
-    \hat{\pi}_i \propto \pi_i \beta^*_0(i)
+    \hat{\pi}(i) \propto \pi(i) \beta^*_0(i)
 \end{equation}
+We can easily see that this is equivalent to the posterior by noting that $\alpha_0^* = \pi$, so $\hat{\pi}(i) = \alpha_0^*(i) \beta^*_0(i) \propto \gamma^*_0(i) = \xi_1(i)$. 
 
 \subsubsection{Estimating $p(d)$}
 From Ferguson (1980), and recapitulated in other references above, for non-parametric estimation of $p(d|i)$, we have

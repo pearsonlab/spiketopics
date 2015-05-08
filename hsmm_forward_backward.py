@@ -56,6 +56,10 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
         gamma_star, post)
     del gamma, gamma_star
 
+    # calculate two-slice marginals
+    Xi = np.empty((T - 1, M, M))
+    _calc_two_slice(alpha, beta_star, logA, Xi)
+
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])")
 def _calc_B(dvec, logpsi, B, cum_log_psi):
     """
@@ -193,8 +197,27 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
             else:
                 post[t, m] = post[t - 1, m]
                 post[t, m] += np.exp(gamma_star[t - 1, m]) - np.exp(gamma[t - 1, m])
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :, :])", nopython=True)
+def _calc_two_slice(alpha, beta_star, A, Xi):
+    """
+    Calculate two-slice smoothed marginals, E[z_{t + 1} z_{t}].
+    As usual, all quantities are logged.
+    """
+    T, M = alpha[1:, :].shape
+    a = alpha[1:, :]
+    bstar = beta_star[1:, :]
 
+    for t in xrange(T - 1):
+        norm = -np.inf
+        for i in xrange(M):
+            for j in xrange(M):
+                Xi[t, i, j] = bstar[t, i] + A[i, j] + a[t, j]
+                norm = np.logaddexp(norm, Xi[t, i, j])
 
+        # normalize joint distribution
+        for i in xrange(M):
+            for j in xrange(M):
+                Xi[t, i, j] += -norm
 
 
 
