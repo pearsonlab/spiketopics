@@ -6,7 +6,7 @@ from __future__ import division
 import numpy as np
 from numba import jit, autojit
 
-def fb_infer(logA, logpi, logpsi, dvec, logpd):
+def fb_infer(logA, logpi, logpsi, durations, logpd):
     """
     Implement the forward-backward inference algorithm.
     logA is a matrix of log transition probabilities that acts to the right:
@@ -17,7 +17,8 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
         will be reflected in logZ, such that the end result using the 
         given psi will be properly normalized when using the returned 
         value of Z
-    dvec is an M x D vector of possible duration values for the hidden states
+    durations is an M x D vector of possible duration values for the 
+        hidden states
     logpd is an M x D vector of log probabilities for these durations
     """
     if np.any(logA > 0):
@@ -28,6 +29,8 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     # get shapes, preallocate arrays
     T = logpsi.shape[0]
     M, D = logpd.shape
+
+    dvec = durations.astype('int64')
 
     alpha = np.empty((T + 1, M))
     alpha_star = np.empty((T + 1, M))
