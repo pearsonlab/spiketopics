@@ -616,7 +616,8 @@ From Ferguson (1980), and recapitulated in other references above, for non-param
 \end{align}
 as we will see below, it is this quantity we will need for inference.
 
-\subsubsection{Contributions to the evidence lower bound}
+\subsection{Contributions to the evidence lower bound}
+\subsubsection{$\mathbb{E}_q[\log p]$}
 We would like to calculate $\mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right]$ for the semi-Markov model above. We begin by noting that the first term inside the expectation can be rewritten $p(N, z) = p(N|z)p(z)$. The first term remains the same as in the sections above, while the probability of the state sequence, $p(z)$, is significantly more complicated than in the Markov case. This is because the $z$ chain (obviously) no longer has the Markov property, and so its log cannot be written as a simple sum over time steps.
 
 However, if we use the expanded state space $Z \otimes D$ with deterministic countdown nodes $D$, we can write the transitions as\footnote{Of course, adding the $D$ nodes adds no new information, provided we know all the $Z$s.}
@@ -644,7 +645,7 @@ leading to
     \log p(z_1, d_1)
     \right]
 \end{equation}
-with the boundary condition $d_T = 0$ Clearly,
+with the boundary condition $d_T = 0$ Thus,
 \begin{equation}
     \log p(z_{t + 1}, d_{t + 1}|z_t, d_t) = 
     \begin{cases}
@@ -658,8 +659,16 @@ Clearly, the first condition is our constraint and the terms in the second condi
     \mathbb{E}_q[\log p(z)] &= \sum_{t = 1}^{T - 1} 
     \mathrm{tr}(\Xi^T_{t+1, t} \cdot \log A) + \xi_1 \cdot \log \pi + \sum_d C(d) \cdot \mathbb{E}_q[\log p(d)]
 \end{align}
-where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log A$ terms, we have marginalized out $d$ to leave us with the two-slice marginals. In the second term, we have marginalized out $z$ to leave us with the sufficient statistics for observations, i.e., the number of times we enter each state $z'$ and draw duration $d$.} Thus we confirm that $C_{id}$ are indeed the correct sufficient statistics to calculate in performing maximum likelihood inference for $p(d|z)$.
+where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log A$ terms, we have marginalized out $d$ to leave us with the two-slice marginals. In the second term, we have marginalized out $z$ to leave us with the sufficient statistics for observations, i.e., the number of times we enter each state $z'$ and draw duration $d$.} Thus we confirm that $C_{id}$ are indeed the correct sufficient statistics to calculate in performing maximum likelihood inference for $p(d|z)$. Moreover, the first and second terms are the same as in the HMM case, while the third is a new addition to be used in updating our estimate of the duration distribution in each state (see below).
 
+\subsubsection{$\mathbb{E}_q[-\log q]$}
+Finally, we can ask about the entropy term in the observation piece, $\mathbb{E}_q[-\log q(z)]$. From free-form variational arguments, $q(z)$ should take the same form as $\mathbb{E}_q[\log p(N, z|\eta, \lambda, A, \pi)]$. However, we need only include terms in the posterior related to $z$ itself. (The normalizer for the posterior $\log Z$ will cancel the terms involving $C$ above, which do not depend on $z$.) Thus the expression in (\ref{KLobs}) is unchanged, save for the addition of a term
+\begin{equation}
+    \sum_{k, i, d} C(k, d, i) \left[ \log p(d|i, k) \right]
+\end{equation}
+with $k$ labeling hidden states and $i$ labeling levels of those states.
+
+\subsubsection{Updates for $p(d)$}
 Now assume the delay distribution is a member of the exponential family with base measure $h$ and natural parameter $\eta$:
 \begin{equation}
     p(d|z=i) = h(d) \exp(\eta_i \cdot T(d) - A(\eta_i))
@@ -674,7 +683,7 @@ where we have assumed a factorized component of the posterior $q(\eta_i)$.\footn
 As a result of all this, we can finally write the observation term in the evidence lower bound as
 \begin{equation}
     \mathbb{E}_q[\log p(N, z|\lambda, A, \pi)] = 
-    \mathbb{E}_q[\log p(N|z) + \log p(z|\eta, \lambda, A, \pi) + log p(\eta)]
+    \mathbb{E}_q[\log p(N|z) + \log p(z|\eta, \lambda, A, \pi) + \log p(\eta)]
 \end{equation}
 Of these, the first term is unchanged from the HMM case, the third is simply the prior on the parameters of the duration distribution, and the second is
 \begin{multline}
@@ -684,14 +693,6 @@ Of these, the first term is unchanged from the HMM case, the third is simply the
     \mathbb{E}_q[A(\eta_i)] ]
 \end{multline}
 Here, the first two terms are identical to the HMM case, while the last will contribute to the posterior over $\eta_i$, the duration distribution parameters in each state.
-
-Finally, we can ask about the entropy term in the observation piece, $\mathbb{E}_q[-\log q(z)]$. From free-form variational arguments, $q(z)$ should take the same form as $\mathbb{E}_q[\log p(N, z|\eta, \lambda, A, \pi)]$. However, we need only include terms in the posterior related to $z$ itself. (The normalizer for the posterior $\log Z$ will cancel the terms involving $C$ above, which do not depend on $z$.) Thus the expression in (\ref{KLobs}) is unchanged, save for the addition of a term
-\begin{equation}
-    \sum_{k, i, d} C(k, d, i) \left[ \log h(d) + 
-    \mathbb{E}_q[\eta_{ki}] \cdot T(d) 
-    - \mathbb{E}_q[A(\eta_{ki})] \right]
-\end{equation}
-with $k$ labeling hidden states, $i$ labeling levels of those states, and $\eta_{ki}$ the relevant parameters for the duration distributions.\footnote{Not to be confused with $\eta_{tk}$, the parameters of $q(z)$ corresponding to emission probabilities.}
 
 
 \end{document}
