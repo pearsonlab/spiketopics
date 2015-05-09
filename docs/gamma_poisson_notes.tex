@@ -694,5 +694,64 @@ Of these, the first term is unchanged from the HMM case, the third is simply the
 \end{multline}
 Here, the first two terms are identical to the HMM case, while the last will contribute to the posterior over $\eta_i$, the duration distribution parameters in each state.
 
+\subsubsection{Log-Normal durations}
+Consider the case of lognormally distributed durations: $\log d \sim \mathcal{N}(m, s^2)$. In this case, we have
+\begin{align}
+    h(d) &= \frac{1}{\sqrt{2\pi} d} \\
+    T(d) &= \begin{bmatrix}
+    \log d \\
+    (\log d) ^2
+    \end{bmatrix} \\
+    \eta &= \begin{bmatrix}
+    \frac{m}{s^2} \\
+    -\frac{1}{2s^2}
+    \end{bmatrix} \\
+    A(\eta) &= \frac{m^2}{2s^2} + \log s
+\end{align}
+If we then define $\tau = s^{-2}$ and put a Normal-Gamma posterior on $(m, \tau)$ with parameters $(\mu, \lambda, \alpha, \beta)$, we can easily calculate
+\begin{align}
+    \mathbb{E}_q[\eta] &= \mathbb{E}_q 
+    \begin{bmatrix}
+    m\tau \\
+    -\frac{1}{2}\tau
+    \end{bmatrix} =
+    \begin{bmatrix}
+    \mu\frac{\alpha}{\beta} \\
+    -\frac{\alpha}{2\beta}
+    \end{bmatrix} \\
+    \mathbb{E}_q[A(\eta)] &= \mathbb{E}_q\left[ 
+    \frac{1}{2}m^2\tau - \frac{1}{2} \log \tau
+    \right] \\
+    &= \frac{1}{2} \mathbb{E}_\tau\left[
+    \left(\mu^2 + \frac{1}{\lambda \tau}\right)\tau 
+    \right]
+    -\frac{1}{2} (\psi(\alpha) - \log \beta) \\
+    &= \frac{1}{2} \left(\mu^2 \frac{\alpha}{\beta} + \frac{1}{\lambda} \right)
+    -\frac{1}{2} (\psi(\alpha) - \log \beta)
+\end{align}
+The relevant piece of the evidence lower bound for updating $(\mu, \lambda, \alpha, \beta)$ is
+\begin{multline}
+    \sum_{i, d} C(d, i) [ \log h(d) + \mathbb{E}_q[\eta_i] \cdot T(d) -
+    \mathbb{E}_q[A(\eta_i)] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
+\end{multline}
+again, with $q(m, \tau) = \text{Normal-Gamma}(\mu, \lambda, \alpha, \beta)$.
+
+\subsubsection{Log-Normal updates}
+For the case above (lognormal durations, Normal-Gamma priors on the lognormal parameters), a convenient simplification occurs. We can see this by noting that the terms involving $C$ above include the posterior variational parameters only through linear combinations of $\mathbb{E}_q[\eta]$ and $\mathbb{E}_q[A(\eta)]$. But because the normal-gamma is conjugate to the lognormal, these quantites are themselves the expected natural parameters of the normal-gamma distribution: $(\log \tau, \tau, m\tau, m^2\tau)$. As a result, we can do Bayesian inference for the natural parameters of the normal-gamma in closed form:
+\begin{equation}
+    \begin{bmatrix}
+    \alpha - \frac{1}{2} \\
+    -\beta - \frac{\lambda\mu^2}{2} \\
+    \lambda\mu \\
+    -\frac{\lambda}{2}
+    \end{bmatrix}    
+    \leftarrow
+    \begin{bmatrix}
+    \frac{1}{2}\sum_d C(d) + \alpha_0 - \frac{1}{2} \\
+    -\frac{1}{2} \sum_d C(d) (\log d)^2 -\beta_0 - \frac{\lambda_0\mu_0^2}{2} \\
+    \sum_d C(d) \log d + \lambda_0\mu_0 \\
+    \sum_d C(d) - \frac{\lambda_0}{2}
+    \end{bmatrix}    
+\end{equation}
 
 \end{document}
