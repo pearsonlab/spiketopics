@@ -113,11 +113,11 @@ class Test_Forwards_Backwards:
     def _make_duration_dist(self):
         dvec = np.arange(1, self.D)
         logpdf = stats.norm.logpdf(dvec[np.newaxis, :], 
-            loc=self.obs_mean[:, np.newaxis],
-            scale=self.obs_std[:, np.newaxis])
+            loc=self.dur_mean[:, np.newaxis],
+            scale=self.dur_std[:, np.newaxis])
 
         # normalize
-        logpdf -= np.log(np.sum(np.exp(logpdf), axis=1, keepdims=True))
+        logpdf -= np.logaddexp.reduce(logpdf, axis=1, keepdims=True)
 
         self.Ddim = len(dvec)
         self.dvec = dvec
