@@ -237,7 +237,7 @@ class Test_Forwards_Backwards:
         # posterior
         gamma = np.empty((self.T + 1, self.K))
         gamma_star = np.empty((self.T + 1, self.K))
-        post = np.empty((self.T, self.K))
+        post = np.empty((self.T + 1, self.K))
         fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
             gamma, gamma_star, post) 
         npt.assert_allclose(np.sum(post, 1)[1:], 1.0)
@@ -258,10 +258,23 @@ class Test_Forwards_Backwards:
         beta_star = np.empty((self.T + 1, self.K))
         fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
 
+        # posterior
+        gamma = np.empty((self.T + 1, self.K))
+        gamma_star = np.empty((self.T + 1, self.K))
+        post = np.empty((self.T + 1, self.K))
+        fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
+            gamma, gamma_star, post) 
+
         # two-slice marginals
         Xi = np.empty((self.T - 1, self.K, self.K))
         fb._calc_two_slice(alpha, beta_star, np.log(self.A), Xi)
         npt.assert_allclose(np.sum(np.exp(Xi), axis=(1, 2)), 1.)
+        # we should have gamma_star = sum_z p(z', z|transition) 
+        # = sum_z Xi_{z'z}
+        npt.assert_allclose(gamma_star[1:-1], np.logaddexp.reduce(Xi, 2), 
+            atol=1e-10)
+        npt.assert_allclose(gamma[1:-1], np.logaddexp.reduce(Xi, 1), 
+            atol=1e-10)
 
     def test_estimate_duration_dist(self):
         B = np.empty((self.T, self.K, self.Ddim))

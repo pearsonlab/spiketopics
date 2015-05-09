@@ -130,8 +130,8 @@ def _backward(b, bstar, A, B, dvec, D):
 
     # initialize
     for m in xrange(M):
-        b[-1, m] = 1
-        bstar[-1, m] = 1
+        b[T - 1, m] = 1
+        bstar[T - 1, m] = 1
 
     for t in xrange(T - 2, -1, -1):
         for m in xrange(M):
@@ -169,6 +169,9 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
     Given filtered and smoothed probabilities from the forward and backward
     passes, calculate the posterior marginal of each state.
     The arrays passed in are all logs of their respective probabilities.
+
+    NOTE: gamma and gamma_star should NOT need to be normalized separately, 
+    but reduce operations with logaddexp are not as stable as necessary.
     """
     T, M = alpha.shape
 
@@ -200,6 +203,7 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
             else:
                 post[t, m] = post[t - 1, m]
                 post[t, m] += np.exp(gamma_star[t - 1, m]) - np.exp(gamma[t - 1, m])
+                
 @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :, :])", nopython=True)
 def _calc_two_slice(alpha, beta_star, A, Xi):
     """

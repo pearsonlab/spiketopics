@@ -555,8 +555,8 @@ However, in the case of HSMM, this is the probability $p(z_t=i, F=1|y_{1:T})$, t
 \end{equation}
 with 
 \begin{align}
-    \gamma_t(i) = p(z_t = i, F=1|y_{1:T}) &\propto \alpha_t(i) \beta_t(i) \\
-    \gamma^*_t(i) = p(z_{t + 1} = i, F=1|y_{1:T}) &\propto \alpha^*_t(i) \beta^*_t(i)
+    \gamma_t(i) = p(z_t = i, F_t=1|y_{1:T}) &\propto \alpha_t(i) \beta_t(i) \\
+    \gamma^*_t(i) = p(z_{t + 1} = i, F_t=1|y_{1:T}) &\propto \alpha^*_t(i) \beta^*_t(i)
 \end{align}
 
 It is similarly simple to calculate the log of the partition function, given the result of the forward algorithm:
@@ -621,5 +621,64 @@ Then Michell and Jamieson showed that the parameters of an exponential family mo
     \mathbb{E}_{\eta}[T_k(d)] = \mathbb{E}_{\hat{p}}[T_k(d)]
 \end{equation}
 that is, by matching moments of the non-parametric distribution. Clearly, this process must be repeated for each $\hat{p}(d|i)$, but if $D$, the number of distinct values taken by $d$, is small, then this is a low-dimensional optimization problem.
+
+\subsubsection{Contributions to the evidence lower bound}
+We would like to calculate $\mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right]$ for the semi-Markov model above. We begin by noting that the first term inside the expectation can be rewritten $p(N, z) = p(N|z)p(z)$. The first term remains the same as in the sections above, while the probability of the state sequence, $p(z)$, is significantly more complicated than in the Markov case. This is because the $z$ chain (obviously) no longer has the Markov property, and so its log cannot be written as a simple sum over time steps.
+
+However, if we use the expanded state space $Z \otimes D$ with deterministic countdown nodes $D$, we can write the transitions as
+\begin{align}
+    p(z'|z, d) &=
+        \begin{cases}
+            A_{z'z}, & d=0 \\
+            \delta_{z'z}, & d > 0
+        \end{cases} \\
+    p(d'|z', d) &=
+        \begin{cases}
+            p(d'|z'), & d=0 \\
+            \delta_{d', d - 1}, & d > 0
+        \end{cases}
+\end{align}
+This allows us to write the entire system as Markov, with the transition matrix
+\begin{equation}
+    p(z', d'|z, d) = p(d'|z', d) p(z'|z, d) =
+    \delta_{d0} A_{z'z}p(d'|z') + (1 - \delta_{d0}) \delta_{z'z} \delta_{d', d-1}
+\end{equation}
+leading to
+\begin{equation}
+    \mathbb{E}_q[\log p(z)] = \mathbb{E}_q\left[
+    \sum_{t = 1}^{T - 1} \log p(z_{t + 1}, d_{t + 1}|z_t, d_t) +
+    \log p(z_1, d_1)
+    \right]
+\end{equation}
+with the boundary condition $d_T = 0$ Clearly,
+\begin{equation}
+    \log p(z_{t + 1}, d_{t + 1}|z_t, d_t) = 
+    \begin{cases}
+        -\infty, & d > 0, (z'\neq z \vee d' \neq d - 1) \\
+        0, & d > 0, z' = z, d' = d - 1 \\
+        \log A_{z'z} + \log p(d'|z'), & d = 0
+    \end{cases}
+\end{equation}
+Clearly, the first condition is our constraint and the terms in the second condition do not contribute to the sum. For the third term, the correct weighting is via the two-slice marginals calculated above (which correctly handle the presence/absence of segment boundaries (i.e., $d=0$)):
+\begin{equation}
+    \mathbb{E}_q[\log p(z)] = \mathbb{E}_q\left[
+    \sum_{t = 1}^{T - 1} \log p(z_{t + 1}, d_{t + 1}|z_t, d_t)
+    \right] = \sum_{t = 1}^{T - 1}
+    \mathrm{tr}(\Xi^T_{t+1, t} \cdot \log A) + \gamma_t^* \cdot \log p(d)
+\end{equation}
+where we have used 
+\begin{align}
+    \gamma_t(i) &= \sum_j \Xi_{t+1, t}(j, i) \\
+    \gamma^*_t(j) &= \sum_i \Xi_{t+1, t}(j, i) 
+\end{align}
+and the dot products are sums over hidden state levels. Lastly, we can easily write
+\begin{equation}
+    \mathbb{E}_q[\log p(z_1, d_1)] = \xi_1 \cdot (\log \pi + \log p(d)) 
+\end{equation}
+
+
+
+
+
 
 \end{document}
