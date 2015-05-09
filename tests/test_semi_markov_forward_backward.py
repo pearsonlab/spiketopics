@@ -306,6 +306,19 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(np.logaddexp.reduce(logpd_hat, 1), 
             np.logaddexp.reduce((alpha + beta)[1:], 0), atol=0.1)
 
+    def test_rescaling_psi_compensated_by_Z(self):
+        offset = np.random.normal(size=self.T)
+        psi_r = self.log_evidence + offset[:, np.newaxis]
+        xi, logZ, Xi, C = fb.fb_infer(np.log(self.A), np.log(self.pi), 
+            self.log_evidence, self.dvec, self.logpd)
+
+        xi_r, logZ_r, Xi_r, C_r = fb.fb_infer(np.log(self.A), np.log(self.pi), 
+            psi_r, self.dvec, self.logpd)
+
+        npt.assert_allclose(xi, xi_r)
+        npt.assert_allclose(logZ_r, logZ + np.sum(offset))
+        npt.assert_allclose(Xi, Xi_r)
+        
 if __name__ == '__main__':
     np.random.rand(12345)
 
