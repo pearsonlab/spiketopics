@@ -60,6 +60,76 @@ class MarkovChainNode:
 
         return self
 
+class DurationNode:
+    """
+    Node encapsulating a duration distribution for states in a semi-Markov
+    model. Requires a vector of duration vaues and a parent node specifying
+    parameters for the distribution.
+    """
+    def __init__(self, duration_vals, parent_node, name='duration'):
+        D = duration_vals[0]
+
+        self.D = D
+        self.dvec = duration_vals.copy()
+        self.parent = parent_node
+
+    def logpd(self):
+        """
+        Return log probability of all duration values in dvec. Array should
+        be M x D x ..., where M is the number of levels of each hidden state
+        and D the total number of durations considered.
+        """
+        raise NotImplementedError('Instances must supply this method.')
+
+    def get_durations(self):
+        """
+        Return an array (M x D x ...) of possible hidden state durations.
+        M is the number of levels of each hidden state, D the number of 
+        durations, and other indices denote replicates.
+        """
+        return self.dvec
+
+    def update(self, idx, C):
+        """
+        Given sufficient statistics C from the forward-backward algorithm,
+        convert to expected sufficient statistics suitable for the parent 
+        node and update the distribution.
+        """
+        self.C[..., idx] = C
+        ess = self.calc_ess(idx)
+        self.parent.update(idx, *ess)
+
+        return self
+
+    def calc_ess(self):
+        """
+        Calculate expected sufficient statistics in a form suitable for 
+        updating parent node. Return a dict of named arguments for 
+        passing to parent node's update method.
+        """
+        raise NotImplementedError('Instances must supply this method.')
+
+    def entropy(self):
+        """
+        Return differential entropy for this piece. This is just the entropy
+        of the parameter distribution.
+        """
+        return self.parent.entropy()
+
+    def expected_log_prior(self):
+        """
+        Expected value of log prior under the posterior. 
+        """
+        return self.parent.expected_log_prior()
+
+    def expected_log_duration_prob(self):
+        """
+        Expected value of the piece of log state sequence depending upon 
+        p(d|z).
+        """
+        C = self.C
+        return np.sum(C * self.logpd())
+
 class HMMNode:
     """
     Node representing a Hidden Markov Model. Comprises a MarkovChainNode for 
