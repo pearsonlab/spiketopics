@@ -61,12 +61,13 @@ def fb_infer(logA, logpi, logpsi, dvec, logpd):
     _calc_two_slice(alpha, beta_star, logA, Xi)
 
     # calculate log of max-likelihood estimates of p(d|z)
-    logpd_hat = np.empty((M, D))
-    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logpd_hat)
+    C = np.empty((M, D))
+    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, C)
 
-    return post, logZ, Xi, logpd_hat
+    return post[1:], logZ, Xi, C
 
-@jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])")
+@jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])", 
+    nopython=True)
 def _calc_B(dvec, logpsi, B, cum_log_psi):
     """
     Calculate the logged version of B. If logpsi (T x M) is the log 
@@ -162,7 +163,7 @@ def _calc_logZ(alpha):
 
     return logZ
 
-@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :])")
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :])", nopython=True)
 def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
     gamma_star, post):
     """
@@ -203,7 +204,7 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
             else:
                 post[t, m] = post[t - 1, m]
                 post[t, m] += np.exp(gamma_star[t - 1, m]) - np.exp(gamma[t - 1, m])
-                
+
 @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :, :])", nopython=True)
 def _calc_two_slice(alpha, beta_star, A, Xi):
     """
@@ -227,7 +228,7 @@ def _calc_two_slice(alpha, beta_star, A, Xi):
                 Xi[t, i, j] += -norm
 
 @jit("void(float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :], float64[:, :])", nopython=True)
-def _estimate_duration_dist(a_star, b, B, dvec, D, Dhat):
+def _estimate_duration_dist(a_star, b, B, dvec, D, C):
     """
     Calculate sufficient statistics for maximum likelihood estimation
     of p(d|z).
@@ -236,20 +237,12 @@ def _estimate_duration_dist(a_star, b, B, dvec, D, Dhat):
 
     for m in xrange(M):
         for ix, d in enumerate(dvec):
-            Dhat[m, ix] = -np.inf
+            C[m, ix] = -np.inf
             for t in xrange(1, T):
                 if t >= d:
-                    Dhat[m, ix] = np.logaddexp(Dhat[m, ix], a_star[t - d, m] +
+                    C[m, ix] = np.logaddexp(C[m, ix], a_star[t - d, m] +
                      D[m, ix] + B[t, m, ix] + b[t, m])
 
-    #normalize            
-    for m in xrange(M):
-        norm = -np.inf 
-        for ix, d in enumerate(dvec):
-            norm = np.logaddexp(norm, Dhat[m, ix])
-
-        for ix, d in enumerate(dvec):
-            Dhat[m, ix] += -norm
 
 
 

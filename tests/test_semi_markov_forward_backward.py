@@ -292,10 +292,19 @@ class Test_Forwards_Backwards:
         beta_star = np.empty((self.T + 1, self.K))
         fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
 
+        # posterior
+        gamma = np.empty((self.T + 1, self.K))
+        gamma_star = np.empty((self.T + 1, self.K))
+        post = np.empty((self.T + 1, self.K))
+        fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
+            gamma, gamma_star, post) 
+
+        # sufficient stats for p(d|z)
         logpd_hat = np.empty((self.K, self.Ddim))
         fb._estimate_duration_dist(alpha_star, beta, B, self.dvec, 
-            self.logpd, logpd_hat)
-        npt.assert_allclose(np.sum(np.exp(logpd_hat), 1), 1.0)
+            self.logpd, logpd_hat,)
+        npt.assert_allclose(np.logaddexp.reduce(logpd_hat, 1), 
+            np.logaddexp.reduce((alpha + beta)[1:], 0), atol=0.1)
 
 if __name__ == '__main__':
     np.random.rand(12345)
