@@ -184,3 +184,12 @@ def test_initialize_lognormal_duration():
     assert_is_instance(node, nd.DurationNode)
     assert_is_instance(node.parent, nd.NormalGammaNode)
     npt.assert_allclose(np.sum(node.logpd(), 0), 1.)
+
+    # update C values
+    for k in xrange(K):
+        C = np.random.randint(0, 10, size=(M, D))
+        node.update(k, C)
+    post_lam = -2 * np.sum(node.C, axis=1) + node.parent.prior_scaling
+    npt.assert_allclose(post_lam, node.parent.post_scaling)
+    post_alpha = 0.5 * np.sum(node.C, axis=1) + node.parent.prior_shape
+    npt.assert_allclose(post_alpha, node.parent.post_shape)

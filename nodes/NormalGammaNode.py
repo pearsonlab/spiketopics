@@ -102,16 +102,29 @@ class NormalGammaNode:
 
         return np.sum(H)
 
-    def update(self, ess_mean, ess_scaling, ess_shape, ess_rate):
+    def update(self, idx, ess_1, ess_2, ess_3, ess_4):
         """
-        Update posterior given expected sufficient statistics.
+        Update posterior given sufficient statistics for the natural 
+        parameters.
         """
-        self.post_mean = self.prior_mean + ess_mean
-        self.post_scaling = self.prior_scaling + ess_scaling
-        self.post_shape = self.prior_shape + ess_shape
-        self.post_rate = self.prior_rate + ess_rate
+        # calculate prior values in natural parameters
+        prior_1 = self.prior_shape - 0.5
+        prior_2 = (-self.prior_rate - 0.5 * self.prior_scaling * 
+            self.prior_mean**2)
+        prior_3 = self.prior_scaling * self.prior_mean
+        prior_4 = -0.5 * self.prior_scaling
 
-        return self
+        # update to post using ess
+        post_1 = ess_1 + prior_1[..., idx]
+        post_2 = ess_2 + prior_2[..., idx]
+        post_3 = ess_3 + prior_3[..., idx]
+        post_4 = ess_4 + prior_4[..., idx]
+
+        # convert back
+        self.post_shape[..., idx] = post_1 + 0.5
+        self.post_rate[..., idx] = -post_2 + 0.25 * (post_3**2 / post_4)
+        self.post_mean[..., idx] = -0.5 * post_3 / post_4
+        self.post_scaling[..., idx] = -2 * post_4
 
 
 

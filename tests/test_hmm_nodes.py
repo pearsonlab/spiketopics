@@ -18,17 +18,20 @@ pi_shape = (M, K)
 z_shape = (M, T, K)
 zz_shape = (M, M, T - 1, K)
 logZ_shape = (K,)
-d_shape = (M, D, K)
+d_shape = (D, K)
 
 A = np.random.rand(*A_shape)
 pi = np.random.rand(*pi_shape)
 z = np.random.rand(*z_shape)
 zz = np.random.rand(*zz_shape)
 logZ = np.random.rand(*logZ_shape)
+dvec = np.random.rand(*d_shape)
+dvec /= np.sum(dvec, 0, keepdims=True)
 
 A_node = nd.DirichletNode(A, A, name='A')
 pi_node = nd.DirichletNode(pi, pi, name='pi')
 z_node = nd.MarkovChainNode(z, zz, logZ)
+d_node = nd.DurationNode(M, dvec, None)
 
 hmm = nd.HMMNode(z_node, A_node, pi_node)
 

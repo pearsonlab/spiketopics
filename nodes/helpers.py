@@ -248,8 +248,11 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
         kwargs['post_rate'])
 
     # make durations (must be > 0):
-    dvec = np.arange(1, D + 1)
-    node = DurationNode(dvec, parent_node)
+    # dvec should have one vector for each chain (could be different)
+    dvec = np.tile(np.arange(1, D + 1), (K, 1)).T
+
+    # make node
+    node = DurationNode(M, dvec, parent_node)
 
     def logpd(self):
         """
@@ -271,13 +274,31 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
 
         # normalize
         logpd /= np.sum(logpd, axis=0, keepdims=True)
-        
+
         return logpd
 
-    def calc_ess(self):
-        pass
+    def calc_ess(self, idx):
+        """
+        Calculate expected sufficient statistics to pass on to parent node 
+        (in this case, log normal).
+        """
+        C = self.C[..., idx]
+        dvec = self.dvec[..., idx]
 
-    # makes these bound methods
+        # calculate some summaries (axis 1 = d axis)
+        Csum = np.sum(C, axis=1)
+        Clogd = np.sum(C * np.log(dvec), axis=1)
+        Clogd2 = np.sum(C * np.log(dvec)**2, axis=1)
+
+        # calculate sufficient stats for natural parameters
+        eta1 = 0.5 * Csum
+        eta2 = -0.5 * Clogd2
+        eta3 = Clogd
+        eta4 = Csum
+
+        return (eta1, eta2, eta3, eta4)
+
+    # bind these methods to the duration node
     node.logpd = logpd.__get__(node, DurationNode)
     node.calc_ess = calc_ess.__get__(node, DurationNode)
 

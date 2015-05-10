@@ -67,12 +67,16 @@ class DurationNode:
     model. Requires a vector of duration values and a parent node specifying
     parameters for the distribution.
     """
-    def __init__(self, duration_vals, parent_node, name='duration'):
-        D = duration_vals[0]
+    def __init__(self, num_states, duration_vals, parent_node, 
+        name='duration'):
+        D = duration_vals.shape[0]
+        K = duration_vals.shape[1:]
+        M = num_states
 
         self.D = D
         self.dvec = duration_vals.copy()
         self.parent = parent_node
+        self.C = np.zeros((M, D) + K)
 
     def logpd(self):
         """
@@ -84,7 +88,7 @@ class DurationNode:
 
     def get_durations(self):
         """
-        Return an array (M x D x ...) of possible hidden state durations.
+        Return an array (D x ...) of possible hidden state durations.
         M is the number of levels of each hidden state, D the number of 
         durations, and other indices denote replicates.
         """
@@ -102,7 +106,7 @@ class DurationNode:
 
         return self
 
-    def calc_ess(self):
+    def calc_ess(self, idx):
         """
         Calculate expected sufficient statistics in a form suitable for 
         updating parent node. Return a dict of named arguments for 
