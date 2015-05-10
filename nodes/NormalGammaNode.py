@@ -8,8 +8,8 @@ class NormalGammaNode:
     Normal-Gamma distribution for (mean, precision). Parameters are 
     (mean, precision scaling, shape, rate).
     """
-    def __init__(self, prior_mean, prior_scaling, prior_rate, prior_shape,
-        post_mean, post_scaling, post_rate, post_shape, name='normalgamma'):
+    def __init__(self, prior_mean, prior_scaling, prior_shape, prior_rate,
+        post_mean, post_scaling, post_shape, post_rate, name='normalgamma'):
         if prior_scaling.shape != prior_mean.shape:
             raise ValueError('Dimensions of priors must agree!')
         if prior_shape.shape != prior_mean.shape:
