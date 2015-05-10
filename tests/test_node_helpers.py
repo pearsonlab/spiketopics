@@ -106,12 +106,15 @@ def test_can_initialize_HMM():
 
 def test_can_initialize_gaussian():
     child_shape = (10, 5)
+    prior_shape = (10,)
     basename = 'foo'
     cs = np.ones(child_shape)
-    vals = ({'prior_mean': cs, 'prior_prec': cs, 
+    ps = np.ones(prior_shape)
+    vals = ({'prior_mean': ps, 'prior_prec': ps, 
         'post_mean': cs, 'post_prec': cs })
 
-    nodes = nd.initialize_gaussian(basename, child_shape, **vals)
+    nodes = nd.initialize_gaussian(basename, child_shape, 
+        prior_shape, **vals)
 
     assert_equals(len(nodes), 1)
     assert_equals({'foo'}, {n.name for n in nodes})
@@ -164,3 +167,20 @@ def test_gaussian_hierarchy_updates():
     child = node_dict['foo']
     prec.update(1)
     child.update_parents(1)
+
+def test_initialize_lognormal_duration():
+    K = 5
+    M = 3
+    D = 100
+
+    ps = (M, K)
+    par_names = (['prior_mean', 'prior_scaling', 'prior_shape', 'prior_rate', 
+        'post_mean', 'post_scaling', 'post_shape', 'post_rate'])
+    pars = {name: np.random.rand(*ps) for name in par_names}
+
+    nodes = nd.initialize_lognormal_duration_node(K, M, D, **pars)
+
+    node = nodes[0]
+    assert_is_instance(node, nd.DurationNode)
+    assert_is_instance(node.parent, nd.NormalGammaNode)
+    npt.assert_allclose(np.sum(node.logpd(), 0), 1.)

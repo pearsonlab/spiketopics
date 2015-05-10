@@ -3,10 +3,12 @@ Helper functions for dealing with nodes.
 """
 from __future__ import division
 import numpy as np
+import scipy.stats as stats
 from .GammaNode import GammaNode
 from .GaussianNode import GaussianNode
 from .DirichletNode import DirichletNode
-from .HMM import MarkovChainNode, HMMNode
+from .NormalGammaNode import NormalGammaNode
+from .HMM import MarkovChainNode, HMMNode, DurationNode
 from .utility_nodes import ProductNode
 
 def check_shapes(par_shapes, pars):
@@ -221,3 +223,62 @@ def initialize_gaussian_hierarchy(basename, child_shape, parent_shape,
     child.has_parents = True
 
     return (prec, child)
+
+def initialize_lognormal_duration_node(n_chains, n_states, n_durations, 
+    **kwargs):
+    """
+    Initialize a lognormal distribution with normal-gamma priors to be 
+    used in a hidden semi-markov model.
+    """
+    K = n_chains
+    M = n_states
+    D = n_durations
+
+    par_shapes = ({'prior_mean': (M, K), 'prior_scaling': (M, K), 
+        'prior_shape': (M, K), 'prior_rate': (M, K), 
+        'post_mean': (M, K), 'post_scaling': (M, K), 
+        'post_shape': (M, K), 'post_rate': (M, K)})
+
+    check_shapes(par_shapes, kwargs)
+
+    parent_node = NormalGammaNode(kwargs['prior_mean'], 
+        kwargs['prior_scaling'], kwargs['prior_shape'], 
+        kwargs['prior_rate'], kwargs['post_mean'], 
+        kwargs['post_scaling'], kwargs['post_shape'],
+        kwargs['post_rate'])
+
+    # make durations (must be > 0):
+    dvec = np.arange(1, D + 1)
+    node = DurationNode(dvec, parent_node)
+
+    def logpd(self):
+        """
+        Calculate E[log p(d|z)] under the variational posterior.
+        logpd should be D x M x K
+        """
+        parent = self.parent
+        t = parent.expected_t()
+        logt = parent.expected_log_t()
+        tx = parent.expected_tx()
+        txx = parent.expected_txx()
+        dv = self.dvec.reshape(-1, 1, 1)
+
+        logpd = (0.5 * np.log(2 * np.pi) - 
+            0.5 * logt[np.newaxis, ...] -
+            np.log(dv) - 0.5 * txx[np.newaxis, ...] + 
+            np.log(dv) * tx - 
+            0.5 * (np.log(dv) ** 2) * t)
+
+        # normalize
+        logpd /= np.sum(logpd, axis=0, keepdims=True)
+        
+        return logpd
+
+    def calc_ess(self):
+        pass
+
+    # makes these bound methods
+    node.logpd = logpd.__get__(node, DurationNode)
+    node.calc_ess = calc_ess.__get__(node, DurationNode)
+
+    return (node,)

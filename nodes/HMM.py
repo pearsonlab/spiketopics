@@ -7,6 +7,7 @@ try:
     from ..forward_backward import fb_infer
 except ImportError:
     from ..fbi import fb_infer
+from ..hsmm_forward_backward import fb_infer as hsmm_fb_infer
 
 class MarkovChainNode:
     """
@@ -63,7 +64,7 @@ class MarkovChainNode:
 class DurationNode:
     """
     Node encapsulating a duration distribution for states in a semi-Markov
-    model. Requires a vector of duration vaues and a parent node specifying
+    model. Requires a vector of duration values and a parent node specifying
     parameters for the distribution.
     """
     def __init__(self, duration_vals, parent_node, name='duration'):
@@ -135,8 +136,10 @@ class HMMNode:
     Node representing a Hidden Markov Model. Comprises a MarkovChainNode for 
     the latent states, a DirichletNode for the transition matrix, and a 
     DirichletNode for the initial state probabilities.
+    If a d (=duration) node of type DurationNode is supplied, the model is a
+    Hidden Semi-Markov Model (HSMM).
     """
-    def __init__(self, z, A, pi, name='HMM'):
+    def __init__(self, z, A, pi, d=None, name='HMM'):
         M = z.shape[0]
         T = z.shape[1]
         if len(z.shape) > 2:
@@ -150,6 +153,8 @@ class HMMNode:
             raise ValueError(
                 'Transition matrix shape inconsistent with latents')
 
+        self.hsmm = d is not None
+
         self.M = M
         self.T = T
         self.K = K
@@ -158,6 +163,9 @@ class HMMNode:
         self.update_finalizer = None
 
         self.nodes = {'z': z, 'A': A, 'pi': pi} 
+        if self.hsmm:
+            self.nodes.update({'d': d})
+
         self.Hz = np.zeros(K)
 
     def update(self, idx, log_evidence):
@@ -188,7 +196,18 @@ class HMMNode:
         A_par = self.nodes['A'].expected_log_x()[..., idx]
         pi_par = self.nodes['pi'].expected_log_x()[..., idx]
 
-        xi, logZ, Xi = fb_infer(np.exp(A_par), np.exp(pi_par), np.exp(psi))
+        if not self.hsmm:
+            xi, logZ, Xi = fb_infer(np.exp(A_par), np.exp(pi_par), np.exp(psi))
+        else:
+            dvec = self.nodes['d'].get_durations()[..., idx]
+            logpd = self.nodes['d'].logpd()[..., idx]
+            logxi, logZ, logXi, logC = hsmm_fb_infer(A_par, pi_par, 
+                psi, dvec, logpd)
+            xi = np.exp(logxi)
+            Xi = np.exp(logXi)
+            C = np.exp(logC)
+            self.nodes['d'].update(idx, C)
+
         xi = xi.T  # now (M, T)
         Xi = Xi.transpose((1, 2, 0))  # now (M, M, T - 1)
         self.nodes['z'].update(idx, xi, Xi, logZ) 
@@ -208,12 +227,20 @@ class HMMNode:
         return self
 
     def entropy(self):
-        return (np.sum(self.Hz) + self.nodes['A'].entropy() + 
+        H = (np.sum(self.Hz) + self.nodes['A'].entropy() + 
             self.nodes['pi'].entropy())
+        if self.hsmm:
+            H += self.nodes['d'].entropy()
+
+        return H
 
     def expected_log_prior(self):
-        return (self.nodes['A'].expected_log_prior() + 
+        elp = (self.nodes['A'].expected_log_prior() + 
             self.nodes['pi'].expected_log_prior())
+        if self.hsmm:
+            elp += self.nodes['d'].expected_log_prior()
+
+        return elp
 
     def expected_log_state_sequence(self):
         """
@@ -224,4 +251,9 @@ class HMMNode:
         logpi = self.nodes['pi'].expected_log_x()
         logA = self.nodes['A'].expected_log_x()
 
-        return (np.sum(xi[:, 0] * logpi) + np.sum(Xi * logA[:, :, np.newaxis]))
+        elss = (np.sum(xi[:, 0] * logpi) + np.sum(Xi * logA[:, :, np.newaxis]))
+
+        if self.hsmm:
+            elss += self.nodes['d'].expected_log_duration_prob()
+
+        return elss
