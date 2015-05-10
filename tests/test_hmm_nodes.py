@@ -12,11 +12,13 @@ np.random.seed(12345)
 K = 5
 M = 3
 T = 50
+D = 35
 A_shape = (M, M, K)
 pi_shape = (M, K)
 z_shape = (M, T, K)
 zz_shape = (M, M, T - 1, K)
 logZ_shape = (K,)
+d_shape = (M, D, K)
 
 A = np.random.rand(*A_shape)
 pi = np.random.rand(*pi_shape)
@@ -46,7 +48,7 @@ def test_expected_log_prior_is_scalar():
 def test_update_works():
     psi = np.log(np.random.rand(T, M))
     flag = [0]
-    def set_flag():
+    def set_flag(x):
         flag[0] += 1
     hmm.update_finalizer = set_flag
     hmm.update(3, psi)
