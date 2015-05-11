@@ -54,9 +54,9 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     # calculate posterior
     gamma = np.empty((T + 1, M))
     gamma_star = np.empty((T + 1, M))
-    logpost = np.empty((T + 1, M))
+    post = np.empty((T + 1, M))
     _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
-        gamma_star, logpost)
+        gamma_star, post)
     del gamma, gamma_star
 
     # calculate two-slice marginals
@@ -67,7 +67,7 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     logC = np.empty((M, D))
     _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logC)
 
-    return logpost[1:], logZ, logXi, logC
+    return post[1:], logZ, np.exp(logXi), logC
 
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])", 
     nopython=True)
