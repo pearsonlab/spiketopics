@@ -86,6 +86,8 @@ class NormalGammaNode:
         elp += -gammaln(alpha)
         elp = elp.view(np.ndarray)
 
+        return np.sum(elp)
+
     def entropy(self):
         """
         Calculate differential entropy of posterior.

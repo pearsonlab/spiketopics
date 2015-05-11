@@ -279,14 +279,14 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
     def logpd(self):
         """
         Calculate E[log p(d|z)] under the variational posterior.
-        logpd should be D x M x K
+        logpd should be M x D x K
         """
         parent = self.parent
         t = parent.expected_t()
         logt = parent.expected_log_t()
         tx = parent.expected_tx()
         txx = parent.expected_txx()
-        dv = self.dvec.reshape(-1, 1, 1)
+        dv = self.dvec[:, np.newaxis, :]
 
         logpd = (0.5 * np.log(2 * np.pi) - 
             0.5 * logt[np.newaxis, ...] -
@@ -297,7 +297,7 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
         # normalize
         logpd /= np.sum(logpd, axis=0, keepdims=True)
 
-        return logpd
+        return logpd.transpose((1, 0, 2))
 
     def calc_ess(self, idx):
         """
@@ -324,4 +324,4 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
     node.logpd = logpd.__get__(node, DurationNode)
     node.calc_ess = calc_ess.__get__(node, DurationNode)
 
-    return (node,)
+    return node

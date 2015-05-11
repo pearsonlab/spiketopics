@@ -16,13 +16,14 @@ class GammaModel:
     \lambda ~ Gamma
     """
 
-    def __init__(self, data, K):
+    def __init__(self, data, K, D=None):
         """
         Construct model object.
 
         data: Pandas DataFrame with one row per observation and columns
             'unit', 'time', and 'count' (time is stimulus time)
         K: number of latent categories to infer
+        D: None for HMM; for HSMM, maximum duration
         nodedict: dictionary of nodes in the model; node names can be 
             'baseline': baseline firing rates
             'regressor': firing rate effects for each regressor
@@ -44,6 +45,7 @@ class GammaModel:
         self.T = T
         self.K = K
         self.U = U
+        self.D = D
 
         self.nodes = {}  # dict for variable nodes in graphical model
 
@@ -131,7 +133,7 @@ class GammaModel:
         return self
 
     def initialize_latents(self, **kwargs):
-        nodes = nd.initialize_HMM(self.K, 2, self.T, **kwargs)
+        nodes = nd.initialize_HMM(self.K, 2, self.T, self.D, **kwargs)
 
         self.nodes.update({n.name: n for n in nodes})
 
@@ -555,6 +557,8 @@ class GammaModel:
         if self.latents:
             for k in xrange(self.K):
                 logpsi = self.calc_log_evidence(k)
+                import pdb
+                pdb.set_trace()
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
