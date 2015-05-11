@@ -117,7 +117,7 @@ def initialize_gamma_hierarchy(basename, parent_shape,
 
     return (shape, mean, child)
 
-def initialize_HMM(n_chains, n_states, n_times, **kwargs):
+def initialize_HMM(n_chains, n_states, n_times, n_durations=None, **kwargs):
     """
     Initialize nodes that compose a Hidden Markov Model. 
     Nodes are:
@@ -131,9 +131,23 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
     K = n_chains
     M = n_states
     T = n_times
+
+    # if we specified durations, it's semi-Markov
+    hsmm = n_durations is not None
+
     par_shapes = ({'A_prior': (M, M, K), 'A_post': (M, M, K),
         'pi_prior': (M, K), 'pi_post': (M, K), 'z_init': (M, T, K), 
         'zz_init': (M, M, T - 1, K), 'logZ_init': (K,)})
+
+    if hsmm:
+        d_pars = ({'prior_mean': kwargs['d_prior_mean'], 
+            'prior_scaling': kwargs['d_prior_scaling'], 
+            'prior_shape': kwargs['d_prior_shape'], 
+            'prior_rate': kwargs['d_prior_rate'], 
+            'post_mean': kwargs['d_post_mean'], 
+            'post_scaling': kwargs['d_post_scaling'], 
+            'post_shape': kwargs['d_post_shape'], 
+            'post_rate': kwargs['d_post_rate']})
 
     check_shapes(par_shapes, kwargs)
 
@@ -141,8 +155,16 @@ def initialize_HMM(n_chains, n_states, n_times, **kwargs):
     pi = DirichletNode(kwargs['pi_prior'], kwargs['pi_post'], name='pi')
     z = MarkovChainNode(kwargs['z_init'], kwargs['zz_init'], 
         kwargs['logZ_init'], name='z')
+    if hsmm:
+        d = initialize_lognormal_duration_node(n_chains, n_states, 
+            n_durations, **d_pars)
 
-    return (HMMNode(z, A, pi),)
+    if hsmm:
+        node = HMMNode(z, A, pi, d)
+    else:
+        node = HMMNode(z, A, pi)
+
+    return (node,)
 
 def initialize_gaussian(name, node_shape, prior_shape, **kwargs):
     """
