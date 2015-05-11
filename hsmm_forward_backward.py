@@ -180,26 +180,14 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
     T, M = alpha.shape
 
     for t in xrange(T):
-        norm = -np.inf 
-        norm_star = -np.inf
-
         # gamma = alpha * beta
         for m in xrange(M):
             if t == 0:
                 gamma[t, m] = -np.inf
             else:
-                gamma[t, m] = alpha[t, m] + beta[t, m]
-                norm = np.logaddexp(norm, gamma[t, m])
+                gamma[t, m] = alpha[t, m] + beta[t, m] - logZ
 
-            gamma_star[t, m] = alpha_star[t, m] + beta_star[t, m]
-            norm_star = np.logaddexp(norm_star, gamma_star[t, m])
-
-        # normalize
-        for m in xrange(M):
-            # gamma[t, m] += -norm
-            # gamma_star[t, m] += -norm_star
-            gamma[t, m] += -logZ
-            gamma_star[t, m] += -logZ
+            gamma_star[t, m] = alpha_star[t, m] + beta_star[t, m] - logZ
 
         # calculate posterior
         for m in xrange(M):
