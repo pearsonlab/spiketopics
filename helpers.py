@@ -67,6 +67,19 @@ def gamma_from_hypers(mean_hyps, var_hyps, N=1e4):
     
     return stats.gamma.rvs(a=aa, scale=1./bb)
 
+def lognormal_from_hypers(mu, scale, shape, rate, N=1e4):
+    """
+    Draw N samples from a lognormal distribution whose (m, s) parameters
+    are drawn from a normal-gamma hyperprior with parameters 
+    (mu, scale, shape, rate)
+    """
+    tau = stats.gamma.rvs(a=shape, scale=1./rate, size=N)
+    s = 1. / np.sqrt(scale * tau)
+    m = stats.norm.rvs(loc=mu, scale=s, size=N)
+    x = stats.lognorm.rvs(scale=np.exp(m), s=s)
+    
+    return x
+
 def jitter_array(arr, percent):
     """
     Given an array, arr, return same array with each entry scaled by a 
