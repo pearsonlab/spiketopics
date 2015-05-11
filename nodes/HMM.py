@@ -205,10 +205,8 @@ class HMMNode:
         else:
             dvec = self.nodes['d'].get_durations()[..., idx]
             logpd = self.nodes['d'].logpd()[..., idx]
-            logxi, logZ, logXi, logC = hsmm_fb_infer(A_par, pi_par, 
+            xi, logZ, Xi, logC = hsmm_fb_infer(A_par, pi_par, 
                 psi, dvec, logpd)
-            xi = np.exp(logxi)
-            Xi = np.exp(logXi)
             C = np.exp(logC)
             self.nodes['d'].update(idx, C)
 

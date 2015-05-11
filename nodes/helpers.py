@@ -295,8 +295,9 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
             0.5 * (np.log(dv) ** 2) * t)
 
         # normalize
-        logpd /= np.sum(logpd, axis=0, keepdims=True)
+        logpd += -np.logaddexp.reduce(logpd, axis=0)
 
+        # logpd above is D x M x K; permute axes before returning
         return logpd.transpose((1, 0, 2))
 
     def calc_ess(self, idx):

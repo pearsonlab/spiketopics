@@ -565,7 +565,11 @@ It is similarly simple to calculate the log of the partition function, given the
     Z = \sum_i \alpha_T(i) = \sum_i \alpha^*_T(i) \propto 
     p(y_{1:T})
 \end{equation}
-since $\alpha_T(i) \propto p(z_T = i, y_{1:T})$.
+since $\alpha_T(i) \propto p(z_T = i, y_{1:T})$, with the constant of proportionality canceling in the ratio $\alpha / Z$. With this, we can write
+\begin{align}
+    \gamma_t(i) &= \alpha_t(i) \beta_t(i) / Z \\
+    \gamma^*_t(i) &= \alpha^*_t(i) \beta^*_t(i) / Z
+\end{align}
 
 \subsubsection{Log formulation}
 As Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and
@@ -610,9 +614,10 @@ We can easily see that this is equivalent to the posterior by noting that $\alph
 \subsubsection{Estimating $p(d)$}
 From Ferguson (1980), and recapitulated in other references above, for non-parametric estimation of $p(d|i)$, we need
 \begin{align}
-    \hat{p}(d|i) \propto C_{id} &\equiv \sum_t p(z_t = i, d, F=1|y_{1:T}) \\
-    &= \sum_t \alpha^*_{t - d}(i) p(d|i) B_{tid} \beta_t(i) \\
-    &= \sum_t \alpha_t(i, d)\beta_t(i) \propto \gamma_t(i, d)
+    \hat{p}(d|i) \propto C_{id} &\equiv \sum_t p(z_t = i, d, F_t=1|y_{1:T}) \\
+    &= \sum_t p(z_t = i, d, F_t=1, y_{1:T}) / p(y_{1:T}) \\
+    &= Z^{-1}\sum_t \alpha^*_{t - d}(i) p(d|i) B_{tid} \beta_t(i) \\
+    &= Z^{-1}\sum_t \alpha_t(i, d)\beta_t(i) = \sum_t \gamma_t(i, d)
 \end{align}
 as we will see below, it is this quantity we will need for inference.
 

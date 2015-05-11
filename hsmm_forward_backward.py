@@ -56,7 +56,7 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     gamma_star = np.empty((T + 1, M))
     post = np.empty((T + 1, M))
     _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
-        gamma_star, post)
+        gamma_star, logZ, post)
     del gamma, gamma_star
 
     # calculate two-slice marginals
@@ -132,10 +132,10 @@ def _backward(b, bstar, A, B, dvec, D):
     """
     T, M = b.shape
 
-    # initialize
+    # initialize (remember, it's on log scale)
     for m in xrange(M):
-        b[T - 1, m] = 1
-        bstar[T - 1, m] = 1
+        b[T - 1, m] = 0
+        bstar[T - 1, m] = 0
 
     for t in xrange(T - 2, -1, -1):
         for m in xrange(M):
@@ -166,9 +166,9 @@ def _calc_logZ(alpha):
 
     return logZ
 
-@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :])", nopython=True)
+@jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64[:, :], float64, float64[:, :])", nopython=True)
 def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
-    gamma_star, post):
+    gamma_star, logZ, post):
     """
     Given filtered and smoothed probabilities from the forward and backward
     passes, calculate the posterior marginal of each state.
@@ -187,7 +187,6 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
         for m in xrange(M):
             if t == 0:
                 gamma[t, m] = -np.inf
-                norm = 0.0
             else:
                 gamma[t, m] = alpha[t, m] + beta[t, m]
                 norm = np.logaddexp(norm, gamma[t, m])
@@ -197,8 +196,10 @@ def _calc_posterior(alpha, alpha_star, beta, beta_star, gamma,
 
         # normalize
         for m in xrange(M):
-            gamma[t, m] += -norm
-            gamma_star[t, m] += -norm_star
+            # gamma[t, m] += -norm
+            # gamma_star[t, m] += -norm_star
+            gamma[t, m] += -logZ
+            gamma_star[t, m] += -logZ
 
         # calculate posterior
         for m in xrange(M):
