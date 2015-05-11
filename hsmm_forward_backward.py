@@ -54,20 +54,20 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     # calculate posterior
     gamma = np.empty((T + 1, M))
     gamma_star = np.empty((T + 1, M))
-    post = np.empty((T + 1, M))
+    logpost = np.empty((T + 1, M))
     _calc_posterior(alpha, alpha_star, beta, beta_star, gamma, 
-        gamma_star, post)
+        gamma_star, logpost)
     del gamma, gamma_star
 
     # calculate two-slice marginals
-    Xi = np.empty((T - 1, M, M))
-    _calc_two_slice(alpha, beta_star, logA, Xi)
+    logXi = np.empty((T - 1, M, M))
+    _calc_two_slice(alpha, beta_star, logA, logXi)
 
     # calculate log of max-likelihood estimates of p(d|z)
-    C = np.empty((M, D))
-    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, C)
+    logC = np.empty((M, D))
+    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logC)
 
-    return post[1:], logZ, Xi, C
+    return logpost[1:], logZ, logXi, logC
 
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])", 
     nopython=True)
