@@ -65,7 +65,7 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
 
     # calculate log of max-likelihood estimates of p(d|z)
     logC = np.empty((M, D))
-    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logC)
+    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logZ, logC)
 
     return post[1:], logZ, np.exp(logXi), logC
 
@@ -219,8 +219,8 @@ def _calc_two_slice(alpha, beta_star, A, Xi):
             for j in xrange(M):
                 Xi[t, i, j] += -norm
 
-@jit("void(float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :], float64[:, :])", nopython=True)
-def _estimate_duration_dist(a_star, b, B, dvec, D, C):
+@jit("void(float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :], float64, float64[:, :])", nopython=True)
+def _estimate_duration_dist(a_star, b, B, dvec, D, logZ, C):
     """
     Calculate sufficient statistics for maximum likelihood estimation
     of p(d|z).
@@ -233,7 +233,7 @@ def _estimate_duration_dist(a_star, b, B, dvec, D, C):
             for t in xrange(1, T):
                 if t >= d:
                     C[m, ix] = np.logaddexp(C[m, ix], a_star[t - d, m] +
-                     D[m, ix] + B[t, m, ix] + b[t, m])
+                     D[m, ix] + B[t, m, ix] + b[t, m] - logZ)
 
 
 

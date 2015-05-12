@@ -65,25 +65,25 @@ class NormalGammaNode:
         return self.post_mean * (self.post_shape / self.post_rate)
 
     def expected_txx(self):
-        return (1. / self.post_scaling + 
+        return ((1. / self.post_scaling) + 
             self.post_mean ** 2 * (self.post_shape / self.post_rate))
 
     def expected_log_prior(self):
         """
         Calculate expected value of log prior under the posterior distribution.
         """
-        alpha = self.prior_shape.expected_x()
-        beta = self.prior_rate.expected_x()
-        mu = self.prior_mean.expected_x()
-        lam = self.prior_scaling.expected_x()
+        alpha = self.prior_shape
+        beta = self.prior_rate
+        mu = self.prior_mean
+        lam = self.prior_scaling
         elp = (alpha - 0.5) * self.expected_log_t()
         elp += -beta * self.expected_t()
         elp += -0.5 * lam * self.expected_txx()
         elp += lam * mu * self.expected_tx()
         elp += -0.5 * lam * mu ** 2
         elp += alpha * np.log(beta) 
-        elp += 0.5 * np.log(lam) - 0.5 * np.log(2 * np.pi)
         elp += -gammaln(alpha)
+        elp += 0.5 * np.log(lam / (2 * np.pi))
         elp = elp.view(np.ndarray)
 
         return np.sum(elp)
@@ -96,11 +96,11 @@ class NormalGammaNode:
         lam = self.post_scaling
         alpha = self.post_shape
         beta = self.post_rate
-        H = alpha - np.log(beta)
-        H += gammaln(alpha)
-        H += (0.5 - alpha) * digamma(alpha)
-        H += 0.5 * np.log(2 * np.pi * np.e / lam)
-        H += 0.5 * lam * (mu ** 2) * (1 - (alpha / beta))
+        H = alpha - np.log(beta) + gammaln(alpha)
+        H += (1 - alpha) * digamma(alpha)
+        H += -0.5 * np.log(lam / (2 * np.pi))
+        H += -0.5 * (digamma(alpha) - np.log(beta))
+        H += 0.5 + 0.5 * lam * (mu ** 2) * (1 - (alpha / beta))
 
         return np.sum(H)
 

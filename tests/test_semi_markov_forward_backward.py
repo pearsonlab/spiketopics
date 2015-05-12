@@ -301,9 +301,9 @@ class Test_Forwards_Backwards:
         # sufficient stats for p(d|z)
         logpd_hat = np.empty((self.K, self.Ddim))
         fb._estimate_duration_dist(alpha_star, beta, B, self.dvec, 
-            self.logpd, logpd_hat,)
+            self.logpd, logZ, logpd_hat)
         npt.assert_allclose(np.logaddexp.reduce(logpd_hat, 1), 
-            np.logaddexp.reduce((alpha + beta)[1:], 0), atol=0.1)
+            np.logaddexp.reduce((alpha + beta - logZ)[1:], 0), atol=0.1)
 
     def test_rescaling_psi_compensated_by_Z(self):
         offset = np.random.normal(size=self.T)

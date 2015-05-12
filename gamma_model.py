@@ -557,8 +557,6 @@ class GammaModel:
         if self.latents:
             for k in xrange(self.K):
                 logpsi = self.calc_log_evidence(k)
-                import pdb
-                pdb.set_trace()
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 

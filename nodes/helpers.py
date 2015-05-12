@@ -288,11 +288,10 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
         txx = parent.expected_txx()
         dv = self.dvec[:, np.newaxis, :]
 
-        logpd = (0.5 * np.log(2 * np.pi) - 
-            0.5 * logt[np.newaxis, ...] -
-            np.log(dv) - 0.5 * txx[np.newaxis, ...] + 
-            np.log(dv) * tx - 
-            0.5 * (np.log(dv) ** 2) * t)
+        logpd = (-0.5 * np.log(2 * np.pi) - np.log(dv)
+            + tx * np.log(dv) - 0.5 * t * np.log(dv) ** 2
+            - 0.5 * txx[np.newaxis, ...]
+            + 0.5 * logt[np.newaxis, ...])
 
         # normalize
         logpd += -np.logaddexp.reduce(logpd, axis=0)
@@ -317,7 +316,7 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
         eta1 = 0.5 * Csum
         eta2 = -0.5 * Clogd2
         eta3 = Clogd
-        eta4 = Csum
+        eta4 = -0.5 * Csum
 
         return (eta1, eta2, eta3, eta4)
 
