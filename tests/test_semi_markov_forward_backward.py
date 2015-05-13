@@ -317,6 +317,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(xi, xi_r, atol=1e-10)
         npt.assert_allclose(logZ_r, logZ + np.sum(offset))
         npt.assert_allclose(Xi, Xi_r)
+        npt.assert_allclose(C, C_r)
         
 if __name__ == '__main__':
     np.random.rand(12345)
