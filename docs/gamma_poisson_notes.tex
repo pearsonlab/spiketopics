@@ -659,7 +659,7 @@ with the boundary condition $d_T = 0$ Thus,
         \log A_{z'z} + \log p(d'|z'), & d = 0
     \end{cases}
 \end{equation}
-Clearly, the first condition is our constraint and the terms in the second condition do not contribute to the sum. For the third term, we have: 
+Clearly, the first condition is our constraint, and the terms in the second condition do not contribute to the sum. For the third term, we have: 
 \begin{align}
     \mathbb{E}_q[\log p(z)] &= \sum_{t = 1}^{T - 1} 
     \mathrm{tr}(\Xi^T_{t+1, t} \cdot \log A) + \xi_1 \cdot \log \pi + \sum_d C(d) \cdot \mathbb{E}_q[\log p(d)]
@@ -823,5 +823,18 @@ and the entropy:
     & - \frac{1}{2} \log \frac{\lambda}{2\pi} - \frac{1}{2} \left(\psi(\alpha) - \log \beta\right)
     + \frac{1}{2} 
 \end{align}
+We can also use this to calculate the normalization correction:
+\begin{equation}
+    \mathbb{E}_q[p(d|i, m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau)
+    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}} 
+    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)} 
+    \frac{\beta^\alpha}{\hat{\beta}^{\alpha + \frac{1}{2}}}
+\end{equation}
+with 
+\begin{equation}
+    \hat{\beta} = \beta + \frac{1}{2} \frac{\lambda}{1 + \lambda} 
+    (\log d - \mu)^2
+\end{equation}
+This can be derived either by performing the integral (using a log-normal for $p(d)$ and a normal-gamma for $(m, \tau)$) or by noting that the result should be proportional to the posterior (normal-gamma, by conjugacy) of $(m, \tau)$ after having observed a single data point, $\log d$.
 
 \end{document}
