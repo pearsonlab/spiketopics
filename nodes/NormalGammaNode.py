@@ -92,7 +92,6 @@ class NormalGammaNode:
         """
         Calculate differential entropy of posterior.
         """
-        mu = self.post_mean
         lam = self.post_scaling
         alpha = self.post_shape
         beta = self.post_rate
@@ -100,7 +99,7 @@ class NormalGammaNode:
         H += (1 - alpha) * digamma(alpha)
         H += -0.5 * np.log(lam / (2 * np.pi))
         H += -0.5 * (digamma(alpha) - np.log(beta))
-        H += 0.5 + 0.5 * lam * (mu ** 2) * (1 - (alpha / beta))
+        H += 0.5 
 
         return np.sum(H)
 

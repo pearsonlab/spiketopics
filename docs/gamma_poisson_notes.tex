@@ -814,13 +814,14 @@ We can also make use of the conversion from natural to conventional parameters:
 \end{equation}
 and the entropy:
 \begin{align}
-    H[q] &= \mathbb{E}_q[-\log q] = \mathbb{E}_q[p(\tau) + p(m|\tau)] \\
+    H[q] &= \mathbb{E}_q[-\log q] = \mathbb{E}_q[-\log q(\tau) - \log q(m|\tau)] \\
+    &= H_g(\alpha, \beta) + \mathbb{E}_q\left[
+    -\log \sqrt{\frac{\lambda\tau}{2\pi}} + 
+    \frac{\lambda\tau}{2} (m - \mu)^2 
+    \right] \\
     &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha) \psi(\alpha) \\
     & - \frac{1}{2} \log \frac{\lambda}{2\pi} - \frac{1}{2} \left(\psi(\alpha) - \log \beta\right)
-    + \frac{\lambda}{2} \left[
-    \frac{1}{\lambda} + \mu^2 \left(1 - \frac{\alpha}{\beta}\right)
-    \right]
+    + \frac{1}{2} 
 \end{align}
-Finally, we want to be able to calculate $\mathbb{E}_q[p(d|i)]$ in the normalization term above.
 
 \end{document}
