@@ -80,7 +80,7 @@ class NormalGammaNode:
         elp += -beta * self.expected_t()
         elp += -0.5 * lam * self.expected_txx()
         elp += lam * mu * self.expected_tx()
-        elp += -0.5 * lam * mu ** 2
+        elp += -0.5 * lam * self.expected_t() * mu ** 2
         elp += alpha * np.log(beta) 
         elp += -gammaln(alpha)
         elp += 0.5 * np.log(lam / (2 * np.pi))
