@@ -699,6 +699,19 @@ Of these, the first term is unchanged from the HMM case, the third is simply the
 \end{multline}
 Here, the first two terms are identical to the HMM case, while the last will contribute to the posterior over $\eta_i$, the duration distribution parameters in each state.
 
+\subsubsection{Corrections for truncation}
+The above treatment assumes that $p(d|z)$ can be described by any member of the exponential family, but in fact, the durations $d$ are discrete and have a maximum value, $D$. Thus, if $p(d|z)$ is \emph{any} distribution with specified form, the term above becomes
+\begin{align}
+    \sum_{i, d} C(d, i) \log \hat{p}(d|i) &= \sum_{i, d} C(d, i) \left[
+    \log p(d|i) - \log \left(\sum_{d=1}^D p(d|i) \right)
+    \right]
+\end{align}
+When attempting to calculate the expectation of this term with respect to the variational posterior, we can make use of the fact that $-\log x$ is convex to again lower bound the variational objective:
+\begin{equation}
+    \mathbb{E}_q\left[-\log \left(\sum_{d=1}^D p(d|i) \right)\right] \ge
+    -\log \sum_{d=1}^D \mathbb{E}_q\left[ p(d|i) \right]
+\end{equation}
+
 \subsubsection{Log-Normal durations}
 Consider the case of lognormally distributed durations: $\log d \sim \mathcal{N}(m, s^2)$. In this case, we have
 \begin{align}
@@ -744,6 +757,24 @@ again, with $q(m, \tau) = \text{Normal-Gamma}(\mu, \lambda, \alpha, \beta)$. We 
     \mathbb{E}_q[\log p(d|z)] &= -\frac{1}{2}\log 2\pi C_0 - C_1 + 
     \mathbb{E}_q[m\tau] C_1 -\frac{1}{2}\mathbb{E}_q[\tau] C_2  \\
     &- \frac{1}{2} C_0 \mathbb{E}_q[m^2\tau] + \frac{1}{2} C_0 \mathbb{E}_q[\log \tau] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right] \\
+    &= G + F \cdot T(m, \tau) + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right] 
+\end{align}
+where
+\begin{align}
+    G &\equiv -\frac{1}{2}\log 2\pi C_0 - C_1 \\
+    F \cdot T &=
+    \begin{bmatrix}
+        \frac{C_0}{2} & 
+        -\frac{C_2}{2} & 
+        C_1 &
+        -\frac{C_0}{2}
+    \end{bmatrix} \cdot \mathbb{E}_q
+    \begin{bmatrix}
+        \log \tau \\
+        \tau \\
+        m\tau \\
+        m^2 \tau
+    \end{bmatrix} \\
     C_0 &\equiv \sum_{id} C_{id} \\
     C_1 &\equiv \sum_{id} C_{id} \log d \\
     C_2 &\equiv \sum_{id} C_{id} (\log d)^2
@@ -766,15 +797,30 @@ For the case above (lognormal durations, Normal-Gamma priors on the lognormal pa
     -\frac{1}{2}\sum_d C(d) - \frac{\lambda_0}{2}
     \end{bmatrix}    
 \end{equation}
-We will also use the entropy:
+We can also make use of the conversion from natural to conventional parameters:
+\begin{equation}
+    \begin{bmatrix}
+        \alpha \\
+        \beta \\
+        \mu \\
+        \lambda 
+    \end{bmatrix} =
+    \begin{bmatrix}
+        \eta_1 + \frac{1}{2} \\
+        -\eta_2 + \frac{\eta_3^2}{4\eta_4} \\
+        -\frac{\eta_3}{2\eta_4} \\
+        -2\eta_4
+    \end{bmatrix}
+\end{equation}
+and the entropy:
 \begin{align}
     H[q] &= \mathbb{E}_q[-\log q] = \mathbb{E}_q[p(\tau) + p(m|\tau)] \\
     &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha) \psi(\alpha) \\
     & - \frac{1}{2} \log \frac{\lambda}{2\pi} - \frac{1}{2} \left(\psi(\alpha) - \log \beta\right)
     + \frac{\lambda}{2} \left[
-    \left(\frac{1}{\lambda} + \mu^2 \frac{\alpha}{\beta}  - 2\mu^2 \frac{\alpha}{\beta} + \mu^2
-    \right)
+    \frac{1}{\lambda} + \mu^2 \left(1 - \frac{\alpha}{\beta}\right)
     \right]
 \end{align}
+Finally, we want to be able to calculate $\mathbb{E}_q[p(d|i)]$ in the normalization term above.
 
 \end{document}
