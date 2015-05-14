@@ -66,7 +66,7 @@ class NormalGammaNode:
 
     def expected_txx(self):
         return ((1. / self.post_scaling) + 
-            self.post_mean ** 2 * (self.post_shape / self.post_rate))
+            self.post_mean**2 * (self.post_shape / self.post_rate))
 
     def expected_log_prior(self):
         """
