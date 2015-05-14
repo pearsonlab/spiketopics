@@ -288,13 +288,25 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
         txx = parent.expected_txx()
         dv = self.dvec[:, np.newaxis, :]
 
+        alpha = parent.post_shape
+        beta = parent.post_rate
+        mu = parent.post_mean
+        lam = parent.post_scaling
+
         logpd = (-0.5 * np.log(2 * np.pi) - np.log(dv)
             + tx * np.log(dv) - 0.5 * t * np.log(dv) ** 2
             - 0.5 * txx[np.newaxis, ...]
             + 0.5 * logt[np.newaxis, ...])
 
-        # normalize
-        logpd += -np.logaddexp.reduce(logpd, axis=0)
+        # take care of normalization constant
+        from scipy.special import gammaln
+        A1 = (0.5 * np.log(lam / (1 + lam)) + gammaln(alpha + 0.5) 
+            - gammaln(alpha) - 0.5 * np.log(beta) - 0.5 * np.log(2 * np.pi))
+        new_beta = 1 + (0.5 / beta) * (lam / (lam + 1)) * (np.log(dv) - mu) ** 2
+        A2d = np.exp(-(alpha + 0.5) * np.log(new_beta)) / dv
+        logA = A1 + np.log(np.sum(A2d, 0))
+
+        logpd += -logA
 
         # logpd above is D x M x K; permute axes before returning
         return logpd.transpose((1, 0, 2))
@@ -320,8 +332,51 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
 
         return (eta1, eta2, eta3, eta4)
 
+    def exact_updater(self, idx, C):
+        """
+        Use optimzation to find update exactly.
+        """
+        from scipy.optimize import minimize
+
+        self.C[..., idx] = C
+
+        mu = self.parent.post_mean[..., idx]
+        lam = self.parent.post_scaling[..., idx]
+        alpha = self.parent.post_shape[..., idx]
+        beta = self.parent.post_rate[..., idx]
+
+        inits = np.concatenate([mu.ravel(), np.log(lam).ravel(), 
+            np.log(alpha).ravel(), np.log(beta).ravel()])
+
+        def minfun(pars, node):
+            self.parent.post_mean[..., idx] = pars[:M]
+            self.parent.post_scaling[..., idx] = np.exp(pars[M:2 * M])
+            self.parent.post_shape[..., idx] = np.exp(pars[2 * M:3 * M])
+            self.parent.post_rate[..., idx] = np.exp(pars[3 * M:])
+
+            objval = node.expected_log_duration_prob()
+            objval += node.expected_log_prior()
+            objval += node.entropy()
+
+            return -objval
+
+        bounds = np.array([(-50, 50)] * 4 * M)
+        res = minimize(minfun, inits, args=(self,), bounds=bounds)
+
+        if not res.success:
+            print "Warning: optimization terminated without success."
+            print res.message
+
+        # make sure to assign best pars
+        pars = res.x
+        self.parent.post_mean[..., idx] = pars[:M]
+        self.parent.post_scaling[..., idx] = np.exp(pars[M:2 * M])
+        self.parent.post_shape[..., idx] = np.exp(pars[2 * M:3 * M])
+        self.parent.post_rate[..., idx] = np.exp(pars[3 * M:])
+
     # bind these methods to the duration node
     node.logpd = logpd.__get__(node, DurationNode)
     node.calc_ess = calc_ess.__get__(node, DurationNode)
+    node.update = exact_updater.__get__(node, DurationNode)
 
     return node
