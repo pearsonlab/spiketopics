@@ -30,6 +30,10 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     T = logpsi.shape[0]
     M, D = logpd.shape
 
+    # normalize p(d)
+    lpd = logpd - np.logaddexp.reduce(logpd, 1, keepdims=True)
+
+    # make sure durations are integer
     dvec = durations.astype('int64')
 
     alpha = np.empty((T + 1, M))
@@ -43,10 +47,10 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     del cum_log_psi  # free some memory
 
     # forward pass
-    _forward(alpha, alpha_star, logA, logpi, B, dvec, logpd)
+    _forward(alpha, alpha_star, logA, logpi, B, dvec, lpd)
 
     # backward pass
-    _backward(beta, beta_star, logA, B, dvec, logpd) 
+    _backward(beta, beta_star, logA, B, dvec, lpd) 
 
     # calculate normalization constant
     logZ = _calc_logZ(alpha)
@@ -65,19 +69,9 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
 
     # calculate log of max-likelihood estimates of p(d|z)
     logC = np.empty((M, D))
-    _estimate_duration_dist(alpha_star, beta, B, dvec, logpd, logZ, logC)
+    _estimate_duration_dist(alpha_star, beta, B, dvec, lpd, logZ, logC)
 
     return post[1:], logZ, np.exp(logXi), logC
-
-@jit("float64(float64, float64)", nopython=True)
-def lse(x, y):
-    if x > y:
-        base = x
-        eps = np.exp(y - x)
-    else:
-        base = y
-        eps = np.exp(x - y)
-    return base + np.log1p(eps)
 
 @jit("void(int64[:], float64[:, :], float64[:, :, :], float64[:, :])", 
     nopython=True)
@@ -124,7 +118,7 @@ def _forward(a, astar, A, pi, B, dvec, D):
             a[t, m] = -np.inf
             for ix, d in enumerate(dvec):
                 if t >= d:
-                    a[t, m] = lse(B[t, m, ix] + D[m, ix] + 
+                    a[t, m] = np.logaddexp(B[t, m, ix] + D[m, ix] + 
                         astar[t - d, m], a[t, m])
                 else:
                     break
@@ -133,7 +127,7 @@ def _forward(a, astar, A, pi, B, dvec, D):
             # calculate a^*[t, m]
             astar[t, m] = -np.inf
             for j in xrange(M):
-                astar[t, m] = lse(A[m, j] + a[t, j], astar[t, m])
+                astar[t, m] = np.logaddexp(A[m, j] + a[t, j], astar[t, m])
 
 
 @jit("void(float64[:, :], float64[:, :], float64[:, :], float64[:, :, :], int64[:], float64[:, :])", nopython=True)
@@ -155,14 +149,14 @@ def _backward(b, bstar, A, B, dvec, D):
             bstar[t, m] = -np.inf
             for ix, d in enumerate(dvec):
                 if t + d < T:
-                    bstar[t, m] = lse(b[t + d, m] + 
+                    bstar[t, m] = np.logaddexp(b[t + d, m] + 
                         B[t + d, m, ix] + D[m, ix], bstar[t, m])
 
         for m in xrange(M):
             # calculate b[t, m]
             b[t, m] = -np.inf
             for j in xrange(M):
-                b[t, m] = lse(bstar[t, j] + A[j, m], b[t, m])
+                b[t, m] = np.logaddexp(bstar[t, j] + A[j, m], b[t, m])
 
 @jit("float64(float64[:, :])", nopython=True)
 def _calc_logZ(alpha):
@@ -174,7 +168,7 @@ def _calc_logZ(alpha):
     logZ = -np.inf
 
     for m in xrange(M):
-        logZ = lse(alpha[-1, m], logZ)
+        logZ = np.logaddexp(alpha[-1, m], logZ)
 
     return logZ
 
@@ -224,7 +218,7 @@ def _calc_two_slice(alpha, beta_star, A, Xi):
         for i in xrange(M):
             for j in xrange(M):
                 Xi[t, i, j] = bstar[t, i] + A[i, j] + a[t, j]
-                norm = lse(norm, Xi[t, i, j])
+                norm = np.logaddexp(norm, Xi[t, i, j])
 
         # normalize joint distribution
         for i in xrange(M):
@@ -244,8 +238,9 @@ def _estimate_duration_dist(a_star, b, B, dvec, D, logZ, C):
             C[m, ix] = -np.inf
             for t in xrange(1, T):
                 if t >= d:
-                    C[m, ix] = lse(C[m, ix], a_star[t - d, m] +
-                     D[m, ix] + B[t, m, ix] + b[t, m] - logZ)
+                    C[m, ix] = np.logaddexp(C[m, ix], a_star[t - d, m] +
+                     D[m, ix] + B[t, m, ix] + b[t, m])
+            C[m, ix] += -logZ
 
 
 

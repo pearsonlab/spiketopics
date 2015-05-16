@@ -170,7 +170,7 @@ class Test_Forwards_Backwards:
             cum_log_psi[this_t])
 
     def test_forward(self):
-        B = np.empty((self.T, self.K, self.Ddim))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -193,7 +193,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(fin, fin_star)
 
     def test_backward(self):
-        B = np.empty((self.T, self.K, self.Ddim))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -207,7 +207,7 @@ class Test_Forwards_Backwards:
         assert(np.all(np.isfinite(beta_star[0])))
 
     def test_logZ(self):
-        B = np.empty((self.T, self.K, self.Ddim))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -221,7 +221,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(logZ, np.logaddexp.reduce(alpha_star[-1]))
 
     def test_posterior(self):
-        B = np.empty((self.T, self.K, self.Ddim))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -246,7 +246,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(np.sum(post, 1)[1:], 1.0)
 
     def test_two_slice(self):
-        B = np.empty((self.T, self.K, self.Ddim))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -275,7 +275,7 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(np.sum(np.exp(logXi), axis=(1, 2)), 1.)
 
     def test_estimate_duration_dist(self):
-        B = np.empty((self.T, self.K, self.Ddim))
+        B = np.empty((self.T + 1, self.K, self.Ddim))
         cum_log_psi = np.empty((self.T, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
@@ -319,6 +319,20 @@ class Test_Forwards_Backwards:
         npt.assert_allclose(Xi, Xi_r)
         npt.assert_allclose(C, C_r)
         
+    def test_rescaling_pd_compensated_by_Z(self):
+        rescale = 0.77
+
+        xi, logZ, Xi, C = fb.fb_infer(np.log(self.A), np.log(self.pi), 
+            self.log_evidence, self.dvec, self.logpd)
+
+        xi_r, logZ_r, Xi_r, C_r = fb.fb_infer(np.log(self.A), np.log(self.pi), 
+            self.log_evidence, self.dvec, self.logpd + np.log(rescale))
+
+        npt.assert_allclose(xi, xi_r, atol=1e-10)
+        npt.assert_allclose(logZ_r, logZ)
+        npt.assert_allclose(Xi, Xi_r)
+        npt.assert_allclose(C, C_r)
+
 if __name__ == '__main__':
     np.random.rand(12345)
 
