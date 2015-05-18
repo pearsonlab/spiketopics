@@ -171,7 +171,7 @@ class Test_Forwards_Backwards:
 
     def test_forward(self):
         B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         alpha = np.empty((self.T + 1, self.K))
@@ -194,7 +194,7 @@ class Test_Forwards_Backwards:
 
     def test_backward(self):
         B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         beta = np.empty((self.T + 1, self.K))
@@ -208,7 +208,7 @@ class Test_Forwards_Backwards:
 
     def test_logZ(self):
         B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         alpha = np.empty((self.T + 1, self.K))
@@ -222,7 +222,7 @@ class Test_Forwards_Backwards:
 
     def test_posterior(self):
         B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # forward
@@ -247,7 +247,7 @@ class Test_Forwards_Backwards:
 
     def test_two_slice(self):
         B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # forward
@@ -276,7 +276,7 @@ class Test_Forwards_Backwards:
 
     def test_estimate_duration_dist(self):
         B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T, self.K))
+        cum_log_psi = np.empty((self.T + 1, self.K))
         fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
         # forward
