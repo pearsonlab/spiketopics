@@ -221,6 +221,10 @@ class HMMNode:
         logq = emission_piece + initial_piece + transition_piece
         self.Hz[idx] = -logq + logZ
 
+        if self.hsmm:
+            duration_piece = np.sum(C * logpd)
+            self.Hz[idx] += -duration_piece
+
         assert(np.all(self.Hz >= 0))
 
         if self.update_finalizer is not None:

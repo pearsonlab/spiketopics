@@ -667,11 +667,12 @@ Clearly, the first condition is our constraint, and the terms in the second cond
 where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log A$ terms, we have marginalized out $d$ to leave us with the two-slice marginals. In the second term, we have marginalized out $z$ to leave us with the sufficient statistics for observations, i.e., the number of times we enter each state $z'$ and draw duration $d$.} Thus we confirm that $C_{id}$ are indeed the correct sufficient statistics to calculate in performing maximum likelihood inference for $p(d|z)$. Moreover, the first and second terms are the same as in the HMM case, while the third is a new addition to be used in updating our estimate of the duration distribution in each state (see below).
 
 \subsubsection{$\mathbb{E}_q[-\log q]$}
-Finally, we can ask about the entropy term in the observation piece, $\mathbb{E}_q[-\log q(z)]$. From free-form variational arguments, $q(z)$ should take the same form as $\mathbb{E}_q[\log p(N, z|\eta, \lambda, A, \pi)]$. However, we need only include terms in the posterior related to $z$ itself. (The normalizer for the posterior $\log Z$ will cancel the terms involving $C$ above, which do not depend on $z$.) Thus the expression in (\ref{KLobs}) is unchanged, save for the addition of a term
+Finally, we can ask about the entropy term in the observation piece, $\mathbb{E}_q[-\log q(z)]$. From free-form variational arguments, $q(z)$ should take the same form as $\mathbb{E}_q[\log p(N, z|\eta, \lambda, A, \pi)]$. However, the joint posterior over $(z, d)$ also contains a term of the same form as $C \mathbb{E}[\log p]$, where the expectations are replaced by variational parameters, but, the expression in (\ref{KLobs}) is unchanged, save for the addition of a term
 \begin{equation}
-    \sum_{k, i, d} C(k, d, i) \mathbb{E}_q\left[ \log p(d|i, k) \right]
+    \sum_{k, i, d} C(k, d, i) [\mathbb{E}_q\left[ \log p(d|i, k) \right] 
+    - f_{dik}(\nu)]
 \end{equation}
-with $k$ labeling hidden states and $i$ labeling levels of those states.
+with $k$ labeling hidden states, $i$ labeling levels of those states, and $f(\nu)$ a set of functions of the variational parameters, $\nu$, for the duration distribution.
 
 \subsubsection{Updates for $p(d)$}
 Now assume the delay distribution is a member of the exponential family with base measure $h$ and natural parameter $\eta$:

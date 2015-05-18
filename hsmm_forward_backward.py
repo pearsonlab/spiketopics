@@ -31,7 +31,7 @@ def fb_infer(logA, logpi, logpsi, durations, logpd):
     M, D = logpd.shape
 
     # normalize p(d)
-    lpd = logpd - np.logaddexp.reduce(logpd, 1, keepdims=True)
+    lpd = logpd #- np.logaddexp.reduce(logpd, 1, keepdims=True)
 
     # make sure durations are integer
     dvec = durations.astype('int64')
