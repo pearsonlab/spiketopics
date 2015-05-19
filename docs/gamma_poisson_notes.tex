@@ -501,7 +501,7 @@ The posterior distributions are
 \end{align}
 
 \section{Semi-Markov Models}
-This section follows the technical report by Murphy (2002), as well as papers by Mithcell and Jamieson (1993) and Mitchell, Harper, and Jamieson (1995).
+This section follows the paper by Yu and Kobayashi (2006), as well as papers by Mithcell and Jamieson (1993) and Mitchell, Harper, and Jamieson (1995).
 
 We again begin with the parameters defining the Hidden Markov Model (HMM): $A_{ji} = p({i \rightarrow j})$ is the transition matrix between states, with the columns of $A$ summing to 1 (again, the opposite of the usual convention, such that time evolution is equivalent to $A$ acting to the right on a state vector). Likewise, the initial probability of state $i$ is $\pi_i = p(z_0 = i)$. Finally, we will write $\psi_{tj} = p(y_t|z_t = j)$ for the local evidence for the observation $y_t$. Here, we will follow Murphy in adopting the convention that observations are indexed from 1 to $T$, with initial conditions indexed by 0. (Note that, for the forward-backward algorithm, $\psi$ does not have to be normalized along its second index. In fact, we have the freedom to rescale $\psi$ by an overall constant \emph{at each $t$}.)
 
@@ -514,113 +514,79 @@ Now, for the semi-Markov case, we assume that states $\tau$ persist for (integer
 with $t_{i(\tau)}$ and $t_{f(\tau)}$ the start and end points of the given state and we have made the strong conditional independence assumptions that state durations depend only on the current state, state transitions are independent of duration, and observations within each state are iid.
 
 \subsection{Forward-Backward Algorithm for HSMM}
-If the durations $d_\tau$ were known, the normal FB algorithm could be implemented as usual, paying attention only to the state transitions and aggregating over observations within each state. However, for the case of unknown state durations, we write:
-
-\subsubsection{Backward}
-As usual define
-\begin{align}
-    \beta_t(i) & = p(\text{future evidence}|\text{just finished \emph{i}}) \\
-    &= \sum_j A(j, i) \sum_d p(d|j) \beta_{t + d}(j) \psi_{(t+1):(t+d)}(j)
-\end{align} 
-In addition, we will also make use of
-\begin{align}
-    \beta^*_t(i) & = p(\text{future evidence}|\text{start \emph{i} at \;} t + 1) \\
-    &= \sum_d p(d|i) \beta_{t + d}(i) \psi_{(t+1):(t+d)}(i) \\
-    \Rightarrow \quad
-    \beta_t (i) &= \sum_j A(j, i) \beta_t^*(j)
-\end{align} 
-with 
-\begin{equation}
-    \psi_{(t + 1):(t + d)}(j) \equiv \prod_{t' = t + 1}^{t + d} \psi_{t'}(j)
-\end{equation}
-Our initial condition will be $\beta_T(i) = 1$. Further requiring that $\beta_T = \beta^*_T \cdot A$ then also gives $\beta^*_T(i) = 1$. Note also that, given the definition of $\beta^*_t$, $\beta^*_0$ and thus $\beta_0$ are well-defined.
+Here, we follow Yu and Kobayashi, mutatis mutandis. Define:
+\begin{align*}
+    \psi_t(m) &= p(y_t|z_t=m) &\text{observation probability}\\
+    \alpha_{t|x}(m, d) &= p(z_t=m, d_t=d|y_{1:x}) &\text{condition on data}\\
+    \gamma_{t|x}(m) &= \sum_d \alpha_{t|x} (m, d) &\text{marginalize out }d\\
+    \psi^*_t(m) &= \frac{\alpha_{t|t}(m, d)}{\alpha_{t|t-1}(m, d)} =
+    \frac{\psi_t(m)}{p(y_t|y_{1:t-1})} \\
+    r_t^{-1} &= p(y_t|y_{1:t-1}) = \sum_{m,d} \alpha_{t|t-1}(m, d)\psi_t(m) 
+    = \sum_m \gamma_{t|t-1}(m) \psi_t(m)\\
+    Z &= p(y_{1:T}) = \left(\prod_{t=1}^T r_t\right)^{-1} &\text{probability of data} \\
+    \mathcal{D}_{t|x}(m, d) &= p(z_t=m, d_t=d, d_{t-1}=1|y_{1:x}) &\rightarrow (m, d) \\
+    \mathcal{T}_{t|x}(n, m) &= p(z_t=n, z_{t-1}=m, d_{t-1}=1|y_{1:x}) &m \rightarrow n \\
+    \mathcal{E}_t(m) &= p(z_t=m, d_t=1|y_{1:t}) = \alpha_{t|t-1}(m, 1) \psi^*_t(m) &m \text{ ends at } t \\
+    \mathcal{S}_t(m) &= p(d_t=1, z_{t+1}=m|y_{1:t}) = \sum_n A(m, n)\mathcal{E}_t(n) &m \text{ starts at } t+1
+\end{align*}
+and for the backward pieces
+\begin{align*}
+    \beta_t(m, d) &= \frac{p(z_t=m, d_t=d|y_{1:T})}{p(z_t=m, d_t=d|y_{1:t-1})}
+    = \frac{p(y_{t:T}|z_t=m, d_t=d)}{p(y_{t:T}|y_{1:t-1})} \\
+    \mathcal{E}^*_t(m) &= \frac{p(y_{t:T}|z_t=m, d_{t-1} = 1)}{p(y_{t:T}|y_{1:t-1})} = \sum_d p_m(d) \beta_t(m, d) \\
+    \mathcal{S}^*_t(m) &= \frac{p(y_{t:T}|z_{t-1}=m, d_{t-1}=1)}{p(y_{t:T}|y_{1:t-1})} = \sum_n \mathcal{E}^*_t(n) A(n, m)
+\end{align*}
+These quantities then allow us to write the posterior probabilities
+\begin{align*}
+    \alpha_{t|T}(m, d) &= \beta_t(m, d) \alpha_{t|t-1}(m, d) &\text{posterior prob of }(m, d) \\
+    \mathcal{T}_{t|T}(n, m) &= \mathcal{E}^*_t(n) A(n, m) \mathcal{E}_{t - 1}(m) &\text{posterior prob of } m \rightarrow n \\
+    \mathcal{D}_{t|T}(m, d) &= \beta_t(m, d)p_m(d) \mathcal{S}_{t-1}(m) &\text{posterior prob of entering }(m, d) \text{ at } t
+\end{align*}
 
 \subsubsection{Forward}
-Here, we define
-\begin{align}
-    \alpha_t (i) & = p(\text{just finished \emph{i}}, \text{observed evidence}) \\
-    &= \sum_d \psi_{(t-d+1):t}(i) p(d|i) \sum_j A(i, j) \alpha_{t - d}(j) \\
-    & = \sum_d \psi_{(t-d+1):t}(i) p(d|i) \alpha^*_{t - d}(i) \\
-    \alpha^*_t(i) &= \sum_j A(i, j) \alpha_t (j)
-\end{align} 
-where as above, the latter is the probability of starting in $i$ at time $t + 1$. Here, the initial condition is $\alpha^*_0(i) = \pi(i)$, and $\alpha_0$ need not be defined.
+From Yu and Kobayashi, we have the following forward pass:
+\begin{enumerate}
+    \item $\alpha_{1|0}(m, d) = \pi_m p_m(d)$ for time 1; otherwise, use 
+    \begin{equation}
+        \alpha_{t|t-1}(m, d) = S_{t-1}(m) p_m(d) + \psi^*_{t-1}(m) \alpha_{t-1|t-2}(m, d + 1)
+    \end{equation}
+    \item Use $\alpha_{t|t-1}$ and $\psi_t$ to get $r_t$; together, these give 
+    $\psi_t^*$. Store $r_t$
+    \item Calculate and save $\mathcal{E}_t$.
+    \item Calculate $\mathcal{S}_t$.
+    \item Loop.
+\end{enumerate}
 
-\subsubsection{Posterior Marginals and Normalization}
-We would like to calculate $\xi_t(i) \equiv p(z_t = i|y_{1:T})$ as in the standard FB algorithm, this is given (up to normalization) by
-\begin{equation}
-    \xi_t(i) = \frac{\alpha_t(i) \beta_t(i)}{Z_t}
-\end{equation}
-However, in the case of HSMM, this is the probability $p(z_t=i, F=1|y_{1:T})$, that is, conditioned on the state just having ended. As Murphy shows, the the correct posterior, marginalizing over $F$, is given by 
-\begin{equation}
-    \xi_t(i) = \sum_{s < t} [\gamma_s^*(i) - \gamma_s(i)] \\
-\end{equation}
-with 
-\begin{align}
-    \gamma_t(i) = p(z_t = i, F_t=1|y_{1:T}) &\propto \alpha_t(i) \beta_t(i) \\
-    \gamma^*_t(i) = p(z_{t + 1} = i, F_t=1|y_{1:T}) &\propto \alpha^*_t(i) \beta^*_t(i)
-\end{align}
+\subsubsection{Backward}
+Again following Yu and Kobayashi:
+\begin{enumerate}
+    \item Initialize $\beta_T(m, d) = \psi^*_T(m) = \psi_T(m) r_T$
+    \item $\psi^*_t(m) = \psi_t(m) r_t$
+    \item Calculate $\beta_t(m, d)$ by
+    \begin{equation}
+        \beta_t(m, d) = 
+        \begin{cases}
+            \mathcal{S}^*_{t+1}(m)\psi^*_t(m), & d=1 \\
+            \beta_{t+1}(m, d - 1) \psi^*_t(m), & d > 1
+        \end{cases}
+    \end{equation}
+    where, again,
+    \begin{align}
+        \mathcal{S}^*_{t + 1}(m) &= \sum_{n} \mathcal{E}^*_{t+1}(n) A(n, m) \\
+        \mathcal{E}^*_{t + 1}(n) &= \sum_d \beta_{t+1}(n, d) p_n(d) 
+    \end{align}
+    \item Use the above equation to calculate $\mathcal{E}^*_t$ and $\mathcal{S}^*_t$. Save $\mathcal{E}^*$.
+\end{enumerate}
 
-To calculate $Z \equiv p(y_{1:T})$, we need to sum all the segments that terminate at $T$ (the $F_T = 1$ condition) and all the segments that extend beyond $T$ ($F_T = 0$):
+\subsubsection{Sufficient Statistics}
+Finally, we can calculate and return:
 \begin{align}
-    Z &= p(F_T=1, y_{1:T}) + p(F_T=0, y_{1:T}) \\
-    &= Z_1 + Z_0 \\
-    &= \sum_i \alpha_T(i) + \sum_{i, d + t > T} \alpha^*_t(i) \psi_{(t + 1):T}(i) p(d|i)
+    \log Z &= - \sum_{t=1}^T \log r_t \\
+    \xi_t(m) &= \sum_d \alpha_{t|T}(m,d) = \gamma_{t|T}(m) = \sum_d \alpha_{t|t-1}(m, d) \beta_t(m, d) \\
+    \Xi_{t+1, t}(n, m) &= \mathcal{T}_{t+1|T}(n, m) = \mathcal{E}^*_{t+1}(n) A(n, m) \mathcal{E}_t(m) \\
+    C_t(m, d) &= \mathcal{D}_{t|T}(m, d) = \mathcal{S}_{t-1}(m)p_m(d) \beta_t(m, d) \\
+    &= \sum_n A(m, n) \mathcal{E}_{t-1}(n) p_m(d) \beta_t(m, d)
 \end{align}
-Thus we can write:
-\begin{align}
-    \gamma_t(i) &= \alpha_t(i) \beta_t(i) / Z \\
-    \gamma^*_t(i) &= \alpha^*_t(i) \beta^*_t(i) / Z
-\end{align}
-
-\subsubsection{Log formulation}
-As Murphy points out, finding a sensible normalization for $\alpha$ and $\beta$ that prevents underflow in the forward and backward steps is a challenge. As such, we will elect to work in log space. Defining $\tilde{\alpha} \equiv \log \alpha$, etc., and
-\begin{equation}
-    \mathrm{lse}_i(x_i) \equiv \log \left( 
-    \sum_i e^{x_i}
-    \right)
-\end{equation}
-we can take logs and rewrite the forward equation as
-\begin{align}
-    \tilde{\alpha}_{t, i} &= \mathrm{lse}_d(\tilde{B}_{tid} + \tilde{D}_{id} + \tilde{\alpha}^*_{t - d, i}) \\
-    \tilde{\alpha}^*_{t, i} &= \mathrm{lse}_j(\tilde{A}_{i, j} + \tilde{\alpha}_{t, j})
-\end{align}
-with 
-\begin{align}
-    B_{tid} &\equiv \psi_{(t-d+1):t}(i) = \prod_{t' = t - d + 1}^{t} \psi_{t'}(i)\\
-    D_{id} &\equiv p(d|i)
-\end{align}
-Similarly, the backward steps can be rewritten
-\begin{align}
-    \tilde{\beta}_{t, i} &= \mathrm{lse}_j (\tilde{\beta}^*_{t, j} + \tilde{A}_{j, i}) \\
-    \tilde{\beta}^*_{t, i} &= \mathrm{lse}_d (\beta_{t + d, i} + 
-    \tilde{B}_{t + d, i, d} + \tilde{D}_{id})
-\end{align}
-
-\subsubsection{Two-slice Marginals}
-For updating $A$ and $\pi$, we need to calculate the ML estimates of each (to be combined with priors, if doing Bayesian inference). Again, following Murphy, we have
-\begin{equation}
-    \hat{A}_{ji} \propto \sum_t \beta^*_t(j) A(j, i) \alpha_t(i) 
-\end{equation}
-where the constant of proportionality is determined by the requirement that $\sum_j \hat{A}_{ji} = 1$ for all $i$.
-Equivalently, we might want to calculate the two-slice marginals:
-\begin{equation}
-    \Xi_{t+1, t}(j, i) \propto \beta^*_t(j) A(j, i) \alpha_t(i)
-\end{equation}
-where the normalization restriction in this case is that $\sum_{i, j} \Xi_{t + 1, t} (j, i) = 1$. Likewise the maximum likelihood estimate for the initial state is
-\begin{equation}
-    \hat{\pi}(i) \propto \pi(i) \beta^*_0(i)
-\end{equation}
-We can easily see that this is equivalent to the posterior by noting that $\alpha_0^* = \pi$, so $\hat{\pi}(i) = \alpha_0^*(i) \beta^*_0(i) \propto \gamma^*_0(i) = \xi_1(i)$. 
-
-\subsubsection{Estimating $p(d)$}
-From Ferguson (1980), and recapitulated in other references above, for non-parametric estimation of $p(d|i)$, we need
-\begin{align}
-    \hat{p}(d|i) \propto C_{id} &\equiv \sum_t p(z_t = i, d, F_t=1|y_{1:T}) \\
-    &= \sum_t p(z_t = i, d, F_t=1, y_{1:T}) / p(y_{1:T}) \\
-    &= Z^{-1}\sum_t \alpha^*_{t - d}(i) p(d|i) B_{tid} \beta_t(i) \\
-    &= Z^{-1}\sum_t \alpha_t(i, d)\beta_t(i) = \sum_t \gamma_t(i, d)
-\end{align}
-As we will see below, it is this quantity we will need for inference.
 
 \subsection{Contributions to the evidence lower bound}
 \subsubsection{$\mathbb{E}_q[\log p]$}
