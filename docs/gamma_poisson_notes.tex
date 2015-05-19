@@ -561,9 +561,11 @@ with
 \end{align}
 
 To calculate $Z \equiv p(y_{1:T})$, we need to sum all the segments that terminate at $T$ (the $F_T = 1$ condition) and all the segments that extend beyond $T$ ($F_T = 0$):
-\begin{equation}
-    Z = \sum_i \alpha_T(i) + \sum_{i, d + t > T} \alpha^*_t(i) \psi_{(t + 1):T}(i) p(d|i)
-\end{equation}
+\begin{align}
+    Z &= p(F_T=1, y_{1:T}) + p(F_T=0, y_{1:T}) \\
+    &= Z_1 + Z_0 \\
+    &= \sum_i \alpha_T(i) + \sum_{i, d + t > T} \alpha^*_t(i) \psi_{(t + 1):T}(i) p(d|i)
+\end{align}
 Thus we can write:
 \begin{align}
     \gamma_t(i) &= \alpha_t(i) \beta_t(i) / Z \\
@@ -669,17 +671,12 @@ where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log
 Finally, we can ask about the entropy term in the observation piece, $\mathbb{E}_q[-\log q(z)]$. From free-form variational arguments, $q(z)$ should take the same form as $\mathbb{E}_q[\log p(N, z|\eta, \lambda, A, \pi)]$. However, the joint posterior over $(z, d)$ also contains a term of the same form as $C \mathbb{E}[\log p]$, where the expectations are replaced by variational parameters, but, the expression in (\ref{KLobs}) is unchanged, save for the addition of a term
 \begin{equation}
     \sum_{k, i, d} C(k, d, i) [\mathbb{E}_q\left[ \log p(d|i, k) \right] 
-    - \nu_{dik} + \log W_{ik}] 
+    - \nu_{dik} ] 
 \end{equation}
 with $k$ labeling hidden states, $i$ labeling levels of those states, and $\nu$ a set of functions of variational parameters. Just as with $\tilde{A}$ and $\tilde{\pi}$ above, variation with respect to $\nu$ trivially yields 
 \begin{equation}
      \nu_{dik} = \mathbb{E}_q[\log p(d|i, k)]
  \end{equation} 
- Moreover, we can easily calculate the normalization constant $W$ from the restriction that the sum of the variational posterior over $d$ is 1:
- \begin{equation}
-     W_{ik} = \sum_{d} e^{\nu_{dik}}
- \end{equation}
-
 
 \subsubsection{Updates for $p(d)$}
 Now assume the delay distribution is a member of the exponential family with base measure $h$ and natural parameter $\eta$:
