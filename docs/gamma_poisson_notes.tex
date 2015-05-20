@@ -584,9 +584,13 @@ Finally, we can calculate and return:
     \log Z &= - \sum_{t=1}^T \log r_t \\
     \xi_t(m) &= \sum_d \alpha_{t|T}(m,d) = \gamma_{t|T}(m) = \sum_d \alpha_{t|t-1}(m, d) \beta_t(m, d) \\
     \Xi_{t+1, t}(n, m) &= \mathcal{T}_{t+1|T}(n, m) = \mathcal{E}^*_{t+1}(n) A(n, m) \mathcal{E}_t(m) \\
-    C_t(m, d) &= \mathcal{D}_{t|T}(m, d) = \mathcal{S}_{t-1}(m)p_m(d) \beta_t(m, d) \\
-    &= \sum_n A(m, n) \mathcal{E}_{t-1}(n) p_m(d) \beta_t(m, d)
+    C_t(m, d) &= \mathcal{D}_{t|T}(m, d) = 
+    \begin{cases}
+        \pi_m p_m(d) \beta_1(m, d) & t = 1 \\
+        \mathcal{S}_{t-1}(m)p_m(d) \beta_t(m, d) & t > 1 \\
+    \end{cases}
 \end{align}
+Note that, because $\Xi_{t+1, t}$ is the \emph{joint} absolute probability of the transition (i.e., not conditioned on $d_t = 1$) it is \emph{not} normalized when summing over $m$ and $n$. The same is true for $C$ when summing over $m$ and $d$.
 
 \subsection{Contributions to the evidence lower bound}
 \subsubsection{$\mathbb{E}_q[\log p]$}
@@ -596,19 +600,19 @@ However, if we use the expanded state space $Z \otimes D$ with deterministic cou
 \begin{align}
     p(z'|z, d) &=
         \begin{cases}
-            A_{z'z}, & d=0 \\
-            \delta_{z'z}, & d > 0
+            A_{z'z}, & d=1 \\
+            \delta_{z'z}, & d > 1
         \end{cases} \\
     p(d'|z', d) &=
         \begin{cases}
-            p(d'|z'), & d=0 \\
-            \delta_{d', d - 1}, & d > 0
+            p(d'|z'), & d=1 \\
+            \delta_{d', d - 1}, & d > 1
         \end{cases}
 \end{align}
 This allows us to write the entire system as Markov, with the transition matrix
 \begin{equation}
     p(z', d'|z, d) = p(d'|z', d) p(z'|z, d) =
-    \delta_{d0} A_{z'z}p(d'|z') + (1 - \delta_{d0}) \delta_{z'z} \delta_{d', d-1}
+    \delta_{d1} A_{z'z}p(d'|z') + (1 - \delta_{d1}) \delta_{z'z} \delta_{d', d-1}
 \end{equation}
 leading to
 \begin{equation}
@@ -623,13 +627,13 @@ with the boundary condition $d_T = 0$ Thus,
     \begin{cases}
         -\infty, & d > 0, (z'\neq z \vee d' \neq d - 1) \\
         0, & d > 0, z' = z, d' = d - 1 \\
-        \log A_{z'z} + \log p(d'|z'), & d = 0
+        \log A_{z'z} + \log p(d'|z'), & d = 1
     \end{cases}
 \end{equation}
 Clearly, the first condition is our constraint, and the terms in the second condition do not contribute to the sum. For the third term, we must weight by the probability of observing the given transition $(z, d) \rightarrow (z', d')$ and then take the expectation. However, the first piece of this term is independent of $d$, while the second is independent of $z$, allowing us to marginalize and yielding:
 \begin{align}
     \mathbb{E}_q[\log p(z)] &= \sum_{t = 1}^{T - 1} 
-    \mathrm{tr}(\Xi^T_{t+1, t} \cdot \log A) + \xi_1 \cdot \log \pi + \sum_d C(d) \cdot \mathbb{E}_q[\log p(d)]
+    \mathrm{tr}(\Xi_{t+1, t}^T \cdot \log A) + \xi_1 \cdot \log \pi + \sum_d C(d) \cdot \mathbb{E}_q[\log p(d)]
 \end{align}
 where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log A$ terms, we have marginalized out $d$ to leave us with the two-slice marginals. In the second term, we have marginalized out $z$ to leave us with the sufficient statistics for observations, i.e., the number of times we enter each state $z'$ and draw duration $d$.} Thus we confirm that $C_{id}$ are indeed the correct sufficient statistics to calculate in performing maximum likelihood inference for $p(d|z)$. Moreover, the first and second terms are the same as in the HMM case, while the third is a new addition to be used in updating our estimate of the duration distribution in each state (see below).
 

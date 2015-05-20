@@ -31,7 +31,7 @@ class Test_Forwards_Backwards:
         These variables determine problem size.
         """
         self.T = 500  # times
-        self.K = 4  # levels of hidden state
+        self.M = 4  # levels of hidden state
         self.D = 50
 
     @classmethod
@@ -42,13 +42,13 @@ class Test_Forwards_Backwards:
             """ 
             lo, hi = 1, 20
             rows = []
-            for _ in xrange(self.K):
-                alpha = stats.randint.rvs(lo, hi, size=self.K)
+            for _ in xrange(self.M):
+                alpha = stats.randint.rvs(lo, hi, size=self.M)
                 row = stats.dirichlet.rvs(alpha)
                 rows.append(row)
             self.A = np.vstack(rows).T
 
-            alpha = stats.randint.rvs(lo, hi, size=self.K)
+            alpha = stats.randint.rvs(lo, hi, size=self.M)
             self.pi = stats.dirichlet.rvs(alpha).squeeze()
 
     @classmethod
@@ -58,11 +58,11 @@ class Test_Forwards_Backwards:
         """
 
         # make the chain by evolving each category through time
-        chain = np.empty((self.K, self.T), dtype='int')
+        chain = np.empty((self.M, self.T), dtype='int')
 
         # pick pars for duration distribution
-        mm = 10 * np.random.rand(self.K) # mean
-        ss = 3 * np.random.rand(self.K) # standard deviation
+        mm = 10 * np.random.rand(self.M) # mean
+        ss = 3 * np.random.rand(self.M) # standard deviation
 
         # initialize
         t = 0
@@ -90,8 +90,8 @@ class Test_Forwards_Backwards:
 
     @classmethod
     def _make_fb_data(self):
-        mu = 10 * np.random.rand(self.K)
-        sig = 2 * np.random.rand(self.K)
+        mu = 10 * np.random.rand(self.M)
+        sig = 2 * np.random.rand(self.M)
 
         y = stats.norm.rvs(loc=mu.dot(self.chain), 
             scale=sig.dot(self.chain), 
@@ -135,175 +135,112 @@ class Test_Forwards_Backwards:
             np.log(self.A), bad_log_pi, self.log_evidence,
             self.dvec, self.logpd)
 
-    def test_calc_B(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
-
-        # first, check cum_log_psi
-        npt.assert_allclose(cum_log_psi[1], self.log_evidence[0])
-        npt.assert_allclose(cum_log_psi[3], 
-            np.cumsum(self.log_evidence, axis=0)[2])
-        assert_true(np.all(np.isfinite(cum_log_psi)))
-
-        # check B in general
-        assert_true(np.all(np.isfinite(B)))
-
-        # check a few entries in B
-        npt.assert_allclose(B[1, 2], cum_log_psi[1, 2])
-
-        didx = 2
-        this_d = self.dvec[didx]
-        this_t = 5
-        start = max(0, this_t - this_d + 1)
-        npt.assert_allclose(B[this_t, :, didx], 
-            cum_log_psi[this_t] - cum_log_psi[start - 1])
-
-        this_t = this_d
-        start = max(0, this_t - this_d + 1)
-        npt.assert_allclose(B[this_t, :, didx], 
-            cum_log_psi[this_t] - cum_log_psi[start - 1])
-
-        this_t = this_d - 1
-        start = max(0, this_t - this_d + 1)
-        npt.assert_allclose(B[this_t, :, didx], 
-            cum_log_psi[this_t])
-
     def test_forward(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+        logalpha = np.empty((self.T, self.M, self.Ddim)) 
+        logZ = np.empty(self.T,)
+        logE = np.empty((self.T, self.M))
+        logS = np.empty((self.T, self.M))
 
-        alpha = np.empty((self.T + 1, self.K))
-        alpha_star = np.empty((self.T + 1, self.K))
+        fb._forward(logalpha, logZ, logE, logS, np.log(self.pi), 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
-            B, self.dvec, self.logpd)
+        # alpha finite
+        assert(np.all(np.isfinite(logalpha)))
 
-        assert(np.all(np.isfinite(alpha[-1])))
-        assert(np.all(np.isfinite(alpha_star[-1])))
+        # alpha normalized
+        loggamma = np.logaddexp.reduce(logalpha, 2)
+        npt.assert_allclose(np.exp(np.logaddexp.reduce(loggamma, 1)), 1.)
 
-        # sum over all final states should give the same p(evidence), whether
-        # or not we use alpha or alpha_star
-        fin = -np.inf
-        fin_star = -np.inf
-        for j in xrange(self.K):
-            fin = np.logaddexp(fin, alpha[-1, j])
-            fin_star = np.logaddexp(fin_star, alpha_star[-1, j])
-        npt.assert_allclose(fin, fin_star)
+        # Z correct
+        lZ = np.logaddexp.reduce(loggamma + self.log_evidence, 1)
+        npt.assert_allclose(logZ, lZ)
+
+        # S and E compatible
+        lS = np.logaddexp.reduce(logS, 1)
+        lE = np.logaddexp.reduce(logE, 1)
+        npt.assert_allclose(lS, lE)
 
     def test_backward(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+        logalpha = np.empty((self.T, self.M, self.Ddim)) 
+        logbeta = np.empty((self.T, self.M, self.Ddim)) 
+        logZ = np.empty(self.T,)
+        logE = np.empty((self.T, self.M))
+        logEstar = np.empty((self.T, self.M))
+        logS = np.empty((self.T, self.M))
+        logSstar = np.empty((self.T, self.M))
 
-        beta = np.empty((self.T + 1, self.K))
-        beta_star = np.empty((self.T + 1, self.K))
-        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+        fb._forward(logalpha, logZ, logE, logS, np.log(self.pi), 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        npt.assert_allclose(np.exp(beta[-1]), 1)
-        npt.assert_allclose(np.exp(beta_star[-1]), 1)
-        assert(np.all(np.isfinite(beta[0])))
-        assert(np.all(np.isfinite(beta_star[0])))
+        fb._backward(logbeta, logZ, logEstar, logSstar, 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-    def test_logZ(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
-
-        alpha = np.empty((self.T + 1, self.K))
-        alpha_star = np.empty((self.T + 1, self.K))
-        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
-            B, self.dvec, self.logpd)
-        logZ = fb._calc_logZ(alpha)
-        assert(np.isfinite(logZ))
-        assert_equals(logZ, np.logaddexp.reduce(alpha[-1]))
-        npt.assert_allclose(logZ, np.logaddexp.reduce(alpha_star[-1]))
+        # beta finite
+        assert(np.all(np.isfinite(logbeta)))
 
     def test_posterior(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+        logalpha = np.empty((self.T, self.M, self.Ddim)) 
+        logbeta = np.empty((self.T, self.M, self.Ddim)) 
+        logZ = np.empty(self.T,)
+        logE = np.empty((self.T, self.M))
+        logEstar = np.empty((self.T, self.M))
+        logS = np.empty((self.T, self.M))
+        logSstar = np.empty((self.T, self.M))
+        logxi = np.empty((self.T, self.M))
 
-        # forward
-        alpha = np.empty((self.T + 1, self.K))
-        alpha_star = np.empty((self.T + 1, self.K))
-        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
-            B, self.dvec, self.logpd)
-        logZ = fb._calc_logZ(alpha)
+        fb._forward(logalpha, logZ, logE, logS, np.log(self.pi), 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        # backward
-        beta = np.empty((self.T + 1, self.K))
-        beta_star = np.empty((self.T + 1, self.K))
-        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+        fb._backward(logbeta, logZ, logEstar, logSstar, 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        # posterior
-        gamma = np.empty((self.T + 1, self.K))
-        gamma_star = np.empty((self.T + 1, self.K))
-        post = np.empty((self.T + 1, self.K))
-        fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
-            gamma, gamma_star, logZ, post) 
-        npt.assert_allclose(np.sum(post, 1)[1:], 1.0)
+        fb._posterior(logalpha, logbeta, logxi)
+
+        # posterior sums to 1
+        norm = np.logaddexp.reduce(logxi, 1)
+        npt.assert_allclose(np.exp(norm), 1.)
 
     def test_two_slice(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
+        logalpha = np.empty((self.T, self.M, self.Ddim)) 
+        logbeta = np.empty((self.T, self.M, self.Ddim)) 
+        logZ = np.empty(self.T,)
+        logE = np.empty((self.T, self.M))
+        logEstar = np.empty((self.T, self.M))
+        logS = np.empty((self.T, self.M))
+        logSstar = np.empty((self.T, self.M))
+        logXi = np.empty((self.T - 1, self.M, self.M))
 
-        # forward
-        alpha = np.empty((self.T + 1, self.K))
-        alpha_star = np.empty((self.T + 1, self.K))
-        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
-            B, self.dvec, self.logpd)
-        logZ = fb._calc_logZ(alpha)
+        fb._forward(logalpha, logZ, logE, logS, np.log(self.pi), 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        # backward
-        beta = np.empty((self.T + 1, self.K))
-        beta_star = np.empty((self.T + 1, self.K))
-        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+        fb._backward(logbeta, logZ, logEstar, logSstar, 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        # posterior
-        gamma = np.empty((self.T + 1, self.K))
-        gamma_star = np.empty((self.T + 1, self.K))
-        post = np.empty((self.T + 1, self.K))
-        fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
-            gamma, gamma_star, logZ, post) 
+        fb._two_slice(logE, logEstar, np.log(self.A), logXi)
 
-        # two-slice marginals
-        logXi = np.empty((self.T - 1, self.K, self.K))
-        fb._calc_two_slice(alpha, beta_star, np.log(self.A), logXi)
-        npt.assert_allclose(np.sum(np.exp(logXi), axis=(1, 2)), 1.)
+        assert(np.all(np.isfinite(logXi)))
 
-    def test_estimate_duration_dist(self):
-        B = np.empty((self.T + 1, self.K, self.Ddim))
-        cum_log_psi = np.empty((self.T + 1, self.K))
-        fb._calc_B(self.dvec, self.log_evidence, B, cum_log_psi)
 
-        # forward
-        alpha = np.empty((self.T + 1, self.K))
-        alpha_star = np.empty((self.T + 1, self.K))
-        fb._forward(alpha, alpha_star, np.log(self.A), np.log(self.pi),
-            B, self.dvec, self.logpd)
-        logZ = fb._calc_logZ(alpha)
+    def test_sequence_entry(self):
+        logalpha = np.empty((self.T, self.M, self.Ddim)) 
+        logbeta = np.empty((self.T, self.M, self.Ddim)) 
+        logZ = np.empty(self.T,)
+        logE = np.empty((self.T, self.M))
+        logEstar = np.empty((self.T, self.M))
+        logS = np.empty((self.T, self.M))
+        logSstar = np.empty((self.T, self.M))
+        logC = np.empty((self.T, self.M, self.Ddim))
 
-        # backward
-        beta = np.empty((self.T + 1, self.K))
-        beta_star = np.empty((self.T + 1, self.K))
-        fb._backward(beta, beta_star, np.log(self.A), B, self.dvec, self.logpd)
+        fb._forward(logalpha, logZ, logE, logS, np.log(self.pi), 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        # posterior
-        gamma = np.empty((self.T + 1, self.K))
-        gamma_star = np.empty((self.T + 1, self.K))
-        post = np.empty((self.T + 1, self.K))
-        fb._calc_posterior(alpha, alpha_star, beta, beta_star, 
-            gamma, gamma_star, logZ, post) 
+        fb._backward(logbeta, logZ, logEstar, logSstar, 
+            np.log(self.A), self.log_evidence, self.dvec, self.logpd)
 
-        # sufficient stats for p(d|z)
-        logpd_hat = np.empty((self.K, self.Ddim))
-        fb._estimate_duration_dist(alpha_star, beta, B, self.dvec, 
-            self.logpd, logZ, logpd_hat)
-        npt.assert_allclose(np.logaddexp.reduce(logpd_hat, 1), 
-            np.logaddexp.reduce((alpha + beta - logZ)[1:], 0), atol=0.1)
+        fb._sequence_entry(logS, self.logpd, np.log(self.pi), 
+            logbeta, logC)
+
+        assert(np.all(np.isfinite(logC)))
 
     def test_rescaling_psi_compensated_by_Z(self):
         offset = np.random.normal(size=self.T)
@@ -329,7 +266,22 @@ class Test_Forwards_Backwards:
             self.log_evidence, self.dvec, self.logpd + np.log(rescale))
 
         npt.assert_allclose(xi, xi_r, atol=1e-10)
-        npt.assert_allclose(logZ_r, logZ)
+        npt.assert_allclose(logZ_r, logZ + np.sum(C * np.log(rescale)))
+        npt.assert_allclose(Xi, Xi_r)
+        npt.assert_allclose(C, C_r)
+
+    def test_rescaling_A_compensated_by_Z(self):
+        rescale = 0.77
+
+        xi, logZ, Xi, C = fb.fb_infer(np.log(self.A), np.log(self.pi), 
+            self.log_evidence, self.dvec, self.logpd)
+
+        xi_r, logZ_r, Xi_r, C_r = fb.fb_infer(np.log(self.A) + 
+            np.log(rescale), np.log(self.pi), 
+            self.log_evidence, self.dvec, self.logpd)
+
+        npt.assert_allclose(xi, xi_r, atol=1e-10)
+        npt.assert_allclose(logZ_r, logZ + np.log(rescale) * np.sum(Xi))
         npt.assert_allclose(Xi, Xi_r)
         npt.assert_allclose(C, C_r)
 
