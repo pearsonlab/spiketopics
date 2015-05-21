@@ -346,13 +346,14 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
         beta = self.parent.post_rate[..., idx]
 
         inits = np.concatenate([mu.ravel(), np.log(lam).ravel(), 
-            np.log(alpha).ravel(), np.log(beta).ravel()])
+            np.log(alpha).ravel(), np.log(beta).ravel()]) 
 
         def minfun(pars, node):
-            self.parent.post_mean[..., idx] = pars[:M]
-            self.parent.post_scaling[..., idx] = np.exp(pars[M:2 * M])
-            self.parent.post_shape[..., idx] = np.exp(pars[2 * M:3 * M])
-            self.parent.post_rate[..., idx] = np.exp(pars[3 * M:])
+            pp = pars
+            self.parent.post_mean[..., idx] = pp[:M]
+            self.parent.post_scaling[..., idx] = np.exp(pp[M:2 * M])
+            self.parent.post_shape[..., idx] = np.exp(pp[2 * M:3 * M]) 
+            self.parent.post_rate[..., idx] = np.exp(pp[3 * M:]) 
 
             objval = node.expected_log_duration_prob()
             objval += node.expected_log_prior()
@@ -360,7 +361,7 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
 
             return -objval
 
-        bounds = np.array([(-50, 50)] * 4 * M)
+        bounds = np.array([(-5, 5)] * 4 * M)
         res = minimize(minfun, inits, args=(self,), bounds=bounds)
 
         if not res.success:
@@ -368,7 +369,7 @@ def initialize_lognormal_duration_node(n_chains, n_states, n_durations,
             print res.message
 
         # make sure to assign best pars
-        pars = res.x
+        pars = res.x 
         self.parent.post_mean[..., idx] = pars[:M]
         self.parent.post_scaling[..., idx] = np.exp(pars[M:2 * M])
         self.parent.post_shape[..., idx] = np.exp(pars[2 * M:3 * M])

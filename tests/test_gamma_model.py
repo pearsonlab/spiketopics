@@ -497,6 +497,73 @@ class Test_Gamma_Model:
         Elogp = gpm.expected_log_evidence()
         assert_is_instance(Elogp, np.float64)
 
+    def test_duration_dist_optimization(self):
+        D = 50
+        # add duration dist
+        d_hypers = (2.5, 4., 2., 40.)
+        d_pars = ({'d_prior_mean': d_hypers[0] * np.ones((2, self.K)), 
+          'd_prior_scaling': d_hypers[1] * np.ones((2, self.K)),
+          'd_prior_shape': d_hypers[2] * np.ones((2, self.K)),
+          'd_prior_rate': d_hypers[3] * np.ones((2, self.K))})
+        self.latent_dict.update(d_pars)
+
+        d_inits = (3., 1.1, 1.7, 2.)
+        d_post_pars = ({'d_post_mean': d_inits[0] * np.ones((2, self.K)), 
+                        'd_post_scaling': d_inits[1] * np.ones((2, self.K)),
+                        'd_post_shape': d_inits[2] * np.ones((2, self.K)),
+                        'd_post_rate': d_inits[3] * np.ones((2, self.K))})
+        self.latent_dict.update(d_post_pars)
+
+        # instatiate model
+        gpm = gp.GammaModel(self.N, self.K, D)
+        gpm.initialize_baseline(**self.baseline_dict)
+        gpm.initialize_fr_latents(**self.fr_latent_dict)
+        gpm.initialize_latents(**self.latent_dict)
+        gpm.initialize_fr_regressors(**self.fr_regressors_dict)
+        gpm.finalize()
+
+        dnode = gpm.nodes['HMM'].nodes['d']
+        par = dnode.parent
+
+        # check that for C = 0, prior and posterior have same parameters
+        k = 1
+
+        # before update, priors and inits are correct
+        assert_equals(par.post_mean[0, k], d_inits[0])
+        assert_equals(par.post_scaling[0, k], d_inits[1])
+        assert_equals(par.post_shape[0, k], d_inits[2])
+        assert_equals(par.post_rate[0, k], d_inits[3])
+
+        assert_equals(par.prior_mean[0, k], d_hypers[0])
+        assert_equals(par.prior_scaling[0, k], d_hypers[1])
+        assert_equals(par.prior_shape[0, k], d_hypers[2])
+        assert_equals(par.prior_rate[0, k], d_hypers[3])
+
+        # after update with C = 0, posteriors are priors
+        dnode.update(k, 0.0)
+        npt.assert_allclose(par.post_mean[..., k], 
+            par.prior_mean[..., k], rtol=1e-3)
+        npt.assert_allclose(par.post_scaling[..., k], 
+            par.prior_scaling[..., k], rtol=1e-3)
+        npt.assert_allclose(par.post_shape[..., k], 
+            par.prior_shape[..., k], rtol=1e-3)
+        npt.assert_allclose(par.post_rate[..., k], 
+            par.prior_rate[..., k], rtol=1e-3)
+
+
+        # now set C and scale to be large; after update, logpd should be
+        # the ML estimate, which is just C normalized
+        lpd = np.empty((2, D))
+        lpd[0] = stats.lognorm.logpdf(xrange(1, D + 1), scale=10, s=0.5)
+        lpd[1] = stats.lognorm.logpdf(xrange(1, D + 1), scale=15, s=0.25)
+        lpd -= np.logaddexp.reduce(lpd, 1, keepdims=True)  # normalization
+        scale_up = 1e6
+        bigC = scale_up * np.exp(lpd)
+        dnode.update(k, bigC)
+        lpd_inferred = dnode.logpd()[..., k]
+        lpd_inferred -= np.logaddexp.reduce(lpd_inferred, 1, keepdims=True)
+        npt.assert_allclose(np.exp(lpd_inferred), np.exp(lpd), atol=1e-3)
+
     def test_L(self):
         gpm = gp.GammaModel(self.N, self.K)
         gpm.initialize_baseline(**self.baseline_dict)
