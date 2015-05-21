@@ -74,9 +74,10 @@ def lognormal_from_hypers(mu, scale, shape, rate, N=1e4):
     (mu, scale, shape, rate)
     """
     tau = stats.gamma.rvs(a=shape, scale=1./rate, size=N)
+    sig = 1. / np.sqrt(tau)
     s = 1. / np.sqrt(scale * tau)
     m = stats.norm.rvs(loc=mu, scale=s, size=N)
-    x = stats.lognorm.rvs(scale=np.exp(m), s=s)
+    x = stats.lognorm.rvs(scale=np.exp(m), s=sig, size=N)
     
     return x
 

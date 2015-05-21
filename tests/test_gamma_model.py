@@ -554,15 +554,35 @@ class Test_Gamma_Model:
         # now set C and scale to be large; after update, logpd should be
         # the ML estimate, which is just C normalized
         lpd = np.empty((2, D))
-        lpd[0] = stats.lognorm.logpdf(xrange(1, D + 1), scale=10, s=0.5)
-        lpd[1] = stats.lognorm.logpdf(xrange(1, D + 1), scale=15, s=0.25)
+        mm = np.array([10, 15])
+        ss = np.array([0.5, 0.25])
+        for m in xrange(2):
+            lpd[m] = stats.lognorm.logpdf(xrange(1, D + 1), 
+                scale=mm[m], s=ss[m])
         lpd -= np.logaddexp.reduce(lpd, 1, keepdims=True)  # normalization
-        scale_up = 1e6
+        scale_up = 1e5
         bigC = scale_up * np.exp(lpd)
         dnode.update(k, bigC)
-        lpd_inferred = dnode.logpd()[..., k]
-        lpd_inferred -= np.logaddexp.reduce(lpd_inferred, 1, keepdims=True)
-        npt.assert_allclose(np.exp(lpd_inferred), np.exp(lpd), atol=1e-3)
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        from helpers import lognormal_from_hypers
+        logm = np.empty(2)
+        logstd = np.empty(2)
+        for m in xrange(2):
+            mu = par.post_mean[m, k]
+            lam = par.post_scaling[m, k]
+            alpha = par.post_shape[m, k]
+            beta = par.post_rate[m, k]
+            samples = lognormal_from_hypers(mu, lam, alpha, beta, N=1e6)
+            valid = (samples >= 1) & (samples <= 50)
+            samples = samples[valid]
+            logm[m] = np.mean(np.log(samples))
+            logstd[m] = np.std(np.log(samples))
+            plt.plot(xrange(1, D + 1), np.exp(lpd[m]))
+            sns.kdeplot(samples, gridsize=1e5, clip=(1, 50))
+        npt.assert_allclose(np.log(mm), logm, rtol=1e-2)
+        npt.assert_allclose(ss, logstd, rtol=1e-2)
+        # plt.show()
 
     def test_L(self):
         gpm = gp.GammaModel(self.N, self.K)

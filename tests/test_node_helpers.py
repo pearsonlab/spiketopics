@@ -184,12 +184,3 @@ def test_initialize_lognormal_duration():
     assert_is_instance(node, nd.DurationNode)
     assert_is_instance(node.parent, nd.NormalGammaNode)
 
-def test_normal_gamma_par_conversion():
-    pars = np.random.rand(4)
-    eta = np.array([5., -10., 4., -8.])
-
-    npt.assert_allclose(pars, nd.normal_gamma_naturals_to_pars(
-        nd.normal_gamma_pars_to_naturals(pars)))
-
-    npt.assert_allclose(eta, nd.normal_gamma_pars_to_naturals(
-        nd.normal_gamma_naturals_to_pars(eta)))
