@@ -162,11 +162,9 @@ def _two_slice(logE, logEstar, logA, logXi):
     T, M = logE.shape
 
     for t in xrange(T - 1):
-        norm = -np.inf
         for n in xrange(M):
             for m in xrange(M):
                 logXi[t, n, m] = logEstar[t + 1, n] + logA[n, m] + logE[t, m]
-                norm = np.logaddexp(norm, logXi[t, n, m])
 
 @jit("void(float64[:, :], float64[:, :], float64[:], float64[:, :, :], float64[:, :, :])", nopython=True)
 def _sequence_entry(logS, logpd, logpi, logbeta, logC):
