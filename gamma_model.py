@@ -512,13 +512,14 @@ class GammaModel:
                 self.nodes['baseline'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-                assert(Lval >= lastL | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print "         updated baselines: L = {}".format(Lval)
 
         if self.latents:
-            for k in np.random.permutation(self.K):
+            # for k in np.random.permutation(self.K):
+            for k in xrange(self.K):
 
                 # M step
                 self.nodes['fr_latents'].update(k)
@@ -526,7 +527,7 @@ class GammaModel:
                     self.nodes['fr_latents'].update_parents(k)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-                    assert(Lval >= lastL | np.isclose(Lval, lastL))
+                    assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
                     print ("chain {}: updated firing rate effects: L = {}"
@@ -537,7 +538,7 @@ class GammaModel:
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-                    assert(Lval >= last | np.isclose(Lval, lastL))
+                    assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
                     print "chain {}: updated z: L = {}".format(k, Lval)
@@ -548,7 +549,7 @@ class GammaModel:
                 self.nodes['fr_regressors'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-                assert(Lval >= lastL | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print "         updated regressor effects: L = {}".format(Lval)
@@ -559,7 +560,7 @@ class GammaModel:
                 self.nodes['overdispersion'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-                assert(Lval >= lastL | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print ("         updated overdispersion effects: L = {}"
