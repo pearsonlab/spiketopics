@@ -183,6 +183,15 @@ if __name__ == '__main__':
         for a in to_delete:
             delattr(node, a)
 
+    # for semi-Markov, more stuff to delete
+    try:
+        dnode = gpm.nodes['HMM'].nodes['d']
+        to_delete = ['logpd', 'calc_ess', 'update']
+        for fn in to_delete:
+            delattr(dnode, fn)
+    except:
+        pass
+
     print "Writing to disk..."
     outfile = 'data/fitted_model_object.pkl'
     pickle.dump(gpm, open(outfile, 'wb'))
