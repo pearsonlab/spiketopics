@@ -79,9 +79,9 @@ if __name__ == '__main__':
 
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
-    fr_shape_rate = 1e-2 * np.ones((K,))
-    fr_mean_shape = 40 * np.ones((K,))
-    fr_mean_rate = 40 * np.ones((K,))
+    fr_shape_rate = 1e-4 * np.ones((K,))
+    fr_mean_shape = 4 * np.ones((K,))
+    fr_mean_rate = 4 * np.ones((K,))
 
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape, 
