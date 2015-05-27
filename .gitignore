@@ -9,3 +9,4 @@
 *.synctex*
 /data
 /output
+/experiments/**/data
