@@ -33,10 +33,12 @@ if __name__ == '__main__':
 
     # set up params 
     print "Calculating parameters..."
-    dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin 
+    # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin 
+    dt = 0.02
 
     # juggle columns 
-    df = df.drop(['trial', 'time'], axis=1)  # drop some
+    # df = df.drop(['trial', 'time'], axis=1)  # drop some
+    df = df[['utime', 'unit', 'count']]
     df = df.rename(columns={'utime': 'time'})  # utime --> time
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1] 
@@ -45,7 +47,7 @@ if __name__ == '__main__':
     T = df['time'].drop_duplicates().shape[0]
     U = df['unit'].drop_duplicates().shape[0]
     R = df.shape[1] - len(['time', 'unit', 'count'])
-    K = 5
+    K = 20
     D = 500  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
 
@@ -80,8 +82,8 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-4 * np.ones((K,))
-    fr_mean_shape = 4 * np.ones((K,))
-    fr_mean_rate = 4 * np.ones((K,))
+    fr_mean_shape = 0.4 * U * np.ones((K,))
+    fr_mean_rate = 0.4 * U * np.ones((K,))
 
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape, 

@@ -84,6 +84,22 @@ def make_count_frame(dat, event_frame, dt, start, stop):
     except:
         return None
 
+def normalize_times(df):
+    """
+    Convert (stimulus, relative time) pairs in dataframe to a unique time 
+    index.
+    """
+
+    t_index = df[['stimulus', 'time']].drop_duplicates().sort(['stimulus', 'time'])
+    t_index = t_index.reset_index(drop=True)  # get rid of original index
+    t_index.index.name = 'utime'  # name integer index
+    t_index = t_index.reset_index()  # make time a column
+
+    allframe = pd.merge(df, t_index).copy()  # merge time with original df
+    allframe = allframe.drop(['stimulus', 'time'], axis=1)  # drop cols
+
+    return allframe
+
 if __name__ == '__main__':
     
     # the following regex matches the pattern 
@@ -111,7 +127,8 @@ if __name__ == '__main__':
                     df_list.append(process_file(fn_full, unit))
 
     countframe = pd.concat(df_list)
+    countframe = normalize_times(countframe)
 
     # write out to disk
-    outfile = 'data/rointman_fd_data.csv'
+    outfile = 'data/roitman_fd_data.csv'
     countframe.to_csv(outfile, index=False)
