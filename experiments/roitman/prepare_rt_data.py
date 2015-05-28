@@ -53,4 +53,5 @@ countframe = countframe.reset_index()  # make it a column
 countframe = countframe.rename(columns={'index': 'utime'})  # rename it 'utime'
 
 # write out to disk
-countframe.to_csv('data/roitman_data.csv', index=False)
+outfile = 'data/roitman_rt_data.csv'
+countframe.to_csv(outfile, index=False)
