@@ -38,10 +38,11 @@ def process_file(fname, unit):
     X = X[stim_dur > 900]
     ## take only delay periods longer than 500
     delay = X['fixation_off'] - X['stim_off']
-    X = X[delay > 300]
+    # X = X[delay > 700]
 
     dt = 20  # bin size in ms
-    countframe = make_count_frame(dat, X, dt, 'stim_on', 'stim_off', -700, 300)
+    # countframe = make_count_frame(dat, X, dt, 'stim_on', 'stim_off', -700, 500)
+    countframe = make_count_frame(dat, X, dt, 'stim_on', 'stim_off', -0, 0)
     if countframe is not None:
         countframe['unit'] = unit
 
@@ -176,19 +177,20 @@ if __name__ == '__main__':
     Xstim = countframe.groupby(['unit', 'trial']).apply(censored_stim)
     Xstim = Xstim.reset_index()
 
-    # make boxcar for period before stim on
-    grab_fun = lambda x: is_peri_stim(x, 'stim_on', -700)
-    Xpre = countframe.groupby(['unit', 'trial']).apply(grab_fun)
-    Xpre.name = 'Xpre'
-    Xpre = Xpre.reset_index()
+    # # make boxcar for period before stim on
+    # grab_fun = lambda x: is_peri_stim(x, 'stim_on', -700)
+    # Xpre = countframe.groupby(['unit', 'trial']).apply(grab_fun)
+    # Xpre.name = 'Xpre'
+    # Xpre = Xpre.reset_index()
 
-    # make boxcar for period after stim on
-    grab_fun = lambda x: is_peri_stim(x, 'stim_on', 300)
-    Xpost = countframe.groupby(['unit', 'trial']).apply(grab_fun)
-    Xpost.name = 'Xpost'
-    Xpost = Xpost.reset_index()
+    # # make boxcar for period after stim on
+    # grab_fun = lambda x: is_peri_stim(x, 'stim_on', 500)
+    # Xpost = countframe.groupby(['unit', 'trial']).apply(grab_fun)
+    # Xpost.name = 'Xpost'
+    # Xpost = Xpost.reset_index()
 
-    Xframe = Xstim.merge(Xpre).merge(Xpost)
+    # Xframe = Xstim.merge(Xpre).merge(Xpost)
+    Xframe = Xstim
 
     countframe = countframe.merge(Xframe)
 
@@ -196,7 +198,9 @@ if __name__ == '__main__':
     countframe = countframe.drop_duplicates() 
 
     # make regressors for each coherence level
-    for coh in countframe['coherence'].unique():
+    clevels = countframe['coherence'].unique()
+    clevels.sort()
+    for coh in clevels:
         countframe['Xcoh' + str(int(coh))] = (
             (countframe['coherence'] == coh) & countframe['Xstim'])
 

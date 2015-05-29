@@ -48,7 +48,7 @@ if __name__ == '__main__':
     U = df['unit'].drop_duplicates().shape[0]
     R = df.shape[1] - len(['time', 'unit', 'count'])
     K = 10
-    D = 500  # maximum semi-Markov duration
+    D = 100  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
 
     #################### priors and initial values
@@ -78,8 +78,8 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-4 * np.ones((K,))
-    fr_mean_shape = 0.8 * U * np.ones((K,))
-    fr_mean_rate = 0.8 * U * np.ones((K,))
+    fr_mean_shape = 1 * U * np.ones((K,))
+    fr_mean_rate = 1 * U * np.ones((K,))
 
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape, 
@@ -213,5 +213,7 @@ if __name__ == '__main__':
         pass
 
     print "Writing to disk..."
-    outfile = 'data/fitted_model_object.pkl'
+    # fstub = '_{}K_{}S'.format(K, numstarts)
+    fstub = ''
+    outfile = 'data/fitted_model_object{}.pkl'.format(fstub)
     pickle.dump(gpm, open(outfile, 'wb'))
