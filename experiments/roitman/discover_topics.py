@@ -47,13 +47,9 @@ if __name__ == '__main__':
     T = df['time'].drop_duplicates().shape[0]
     U = df['unit'].drop_duplicates().shape[0]
     R = df.shape[1] - len(['time', 'unit', 'count'])
-    K = 20
+    K = 10
     D = 500  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
-
-    # set up model object
-    print "Initializing model..."
-    gpm = gp.GammaModel(df, K)
 
     #################### priors and initial values
 
@@ -82,8 +78,8 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-4 * np.ones((K,))
-    fr_mean_shape = 0.4 * U * np.ones((K,))
-    fr_mean_rate = 0.4 * U * np.ones((K,))
+    fr_mean_shape = 0.8 * U * np.ones((K,))
+    fr_mean_rate = 0.8 * U * np.ones((K,))
 
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape, 
@@ -100,10 +96,12 @@ if __name__ == '__main__':
 
     ############ latent states ####################
     ###### A ###############
-    A_off = 10.
-    A_on = 1.
-    Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
-    A_prior = np.tile(Avec, (1, 2, K))
+    # A_off = 10.
+    # A_on = 1.
+    # Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
+    # A_prior = np.tile(Avec, (1, 2, K))
+    A_cat = (10 * np.eye(2) + 1).reshape(2, 2, 1)
+    A_prior = np.tile(A_cat, (1, 1, K))
 
     ###### pi ###############
     pi_off = 15.
@@ -170,16 +168,31 @@ if __name__ == '__main__':
                 })
 
     ############ initialize model ####################
-    gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
-    gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
-    gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
-    # gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
-    # gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))   
-    gpm.finalize()
+    numstarts = 5
+    fitobjs = []
+    Lvals = []
+    for idx in xrange(numstarts):
+        # set up model object
+        gpm = gp.GammaModel(df, K)
+        gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
+        gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
+        gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
+        # gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
+        gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
+        gpm.finalize()
+        
+        print "Start {} -----------------------".format(idx)
+        gpm.do_inference(tol=1e-4, verbosity=2)
+        print "Final L = {}".format(gpm.L())
+        Lvals.append(gpm.L())
+        fitobjs.append(gpm)
 
     ############## fit model
-    print "Fitting model..."
-    gpm.do_inference(tol=1e-4, verbosity=2)
+    print "Choosing best model..."
+    # pick out best fit
+    bestind = np.argmax(Lvals)
+    gpm = fitobjs[bestind]
+    del fitobjs  # to save memory
 
     print "Cleaning up..."
     # need to get rid of externally defined functions for pickling

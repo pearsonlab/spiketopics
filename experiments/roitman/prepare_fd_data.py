@@ -32,19 +32,29 @@ def process_file(fname, unit):
     # make it a data frame: all times are in ms relative to fixation on
     X = pd.DataFrame(dat[1][:, idx_to_grab].byteswap().newbyteorder(), columns=cols_to_grab)
 
+    # filtering operations
+    ## take only stim periods near 1s
+    stim_dur = X['stim_off'] - X['stim_on']
+    X = X[stim_dur > 900]
+    ## take only delay periods longer than 500
+    delay = X['fixation_off'] - X['stim_off']
+    X = X[delay > 300]
+
     dt = 20  # bin size in ms
-    countframe = make_count_frame(dat, X, dt, -100, 500)
+    countframe = make_count_frame(dat, X, dt, 'stim_on', 'stim_off', -700, 300)
     if countframe is not None:
         countframe['unit'] = unit
 
     return countframe
 
-def make_count_frame(dat, event_frame, dt, start, stop):
+def make_count_frame(dat, event_frame, dt, start_evt, stop_evt, start, stop):
     """
     Construct a dataframe of counts and events. 
     dat is the matlab data structure
     event_frame is the event dataframe
     dt is the time bin size (in ms)
+    start_evt is a string specifying the event that is time 0
+    stop_evt is a string specifying the event relative to which time is stopped
     start is the time relative to fixation point on (negative = before)
     stop is the time relative to saccade
     Returns a dataframe like event frame, but with a relative time axis and 
@@ -65,10 +75,11 @@ def make_count_frame(dat, event_frame, dt, start, stop):
             spike_clock_start = dat[2][idx, 1]  
 
             # reconcile to fixation point onset
-            spikes -= spike_clock_start
+            spikes -= spike_clock_start + row[start_evt]
 
-            # taxis 100 ms before fixation point to 500 ms after reward
-            t_axis = np.arange(start, row['saccade'] + stop, dt)
+            # taxis start ms before fixation point to stop ms after stim_off
+            dur = row[stop_evt] - row[start_evt]
+            t_axis = np.arange(start, dur + stop, dt)
 
             # bin, make data frame, append to chunklist
             counts, _ = np.histogram(spikes, bins=t_axis)
@@ -83,6 +94,38 @@ def make_count_frame(dat, event_frame, dt, start, stop):
         return countframe
     except:
         return None
+
+def is_during_stim(df, origin):
+    """
+    Make binary/Boolean indicator series for whether each row is
+    during stim presentation.
+    origin is a string specifying the event that is time 0
+    """
+    origin = df[origin].iloc[0]
+    stim_on = df['stim_on'].iloc[0] - origin
+    stim_off = df['stim_off'].iloc[0] - origin
+    X = (df['time'] > stim_on) & (df['time'] <= stim_off)
+    X.index = df['time'].copy() 
+    X.name = 'Xstim'
+    return X
+
+def is_peri_stim(df, origin, interval):
+    """
+    Make binary/Boolean indicator series for whether each row is
+    is in a window around stim presentation. Negative numbers are
+    before onset, postive numbers after offset.
+    origin is a string specifying the event that is time 0
+    """
+    origin = df[origin].iloc[0]
+    stim_on = df['stim_on'].iloc[0] - origin
+    stim_off = df['stim_off'].iloc[0] - origin
+    if interval < 0:
+        X = (df['time'] > stim_on + interval) & (df['time'] <= stim_on)
+    elif interval > 0: 
+        X = (df['time'] > stim_off) & (df['time'] <= stim_off + interval)
+    X.index = df['time'].copy() 
+    X.name = 'Xperi' + str(int(interval))
+    return X
 
 def normalize_times(df):
     """
@@ -127,7 +170,46 @@ if __name__ == '__main__':
                     df_list.append(process_file(fn_full, unit))
 
     countframe = pd.concat(df_list)
+
+    # make boxcar regressor for stim on
+    censored_stim = lambda x: is_during_stim(x, 'stim_on')
+    Xstim = countframe.groupby(['unit', 'trial']).apply(censored_stim)
+    Xstim = Xstim.reset_index()
+
+    # make boxcar for period before stim on
+    grab_fun = lambda x: is_peri_stim(x, 'stim_on', -700)
+    Xpre = countframe.groupby(['unit', 'trial']).apply(grab_fun)
+    Xpre.name = 'Xpre'
+    Xpre = Xpre.reset_index()
+
+    # make boxcar for period after stim on
+    grab_fun = lambda x: is_peri_stim(x, 'stim_on', 300)
+    Xpost = countframe.groupby(['unit', 'trial']).apply(grab_fun)
+    Xpost.name = 'Xpost'
+    Xpost = Xpost.reset_index()
+
+    Xframe = Xstim.merge(Xpre).merge(Xpost)
+
+    countframe = countframe.merge(Xframe)
+
+    # for some reason, the above merge introduces duplicates
+    countframe = countframe.drop_duplicates() 
+
+    # make regressors for each coherence level
+    for coh in countframe['coherence'].unique():
+        countframe['Xcoh' + str(int(coh))] = (
+            (countframe['coherence'] == coh) & countframe['Xstim'])
+
+    # make regressors for stimulus direction (into (True) vs out of RF (False))
+    is_stim_and_correct = countframe['Xstim'] & countframe['correct']
+    chose_out_RF = (countframe['choice'] - 1).astype('bool')
+    chose_into_RF = ~chose_out_RF
+    countframe['Xinto'] = is_stim_and_correct & chose_into_RF
+    countframe['Xout'] = is_stim_and_correct & chose_out_RF
+
+    # convert to unique times
     countframe = normalize_times(countframe)
+
 
     # write out to disk
     outfile = 'data/roitman_fd_data.csv'
