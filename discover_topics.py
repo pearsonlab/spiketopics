@@ -40,7 +40,7 @@ if __name__ == '__main__':
     T = df['time'].drop_duplicates().shape[0]
     U = df['unit'].drop_duplicates().shape[0]
     R = df.shape[1] - len(['time', 'unit', 'count'])
-    K = 5
+    K = 20
     D = 500  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
 
@@ -75,8 +75,8 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-2 / T * np.ones((K,))
-    fr_mean_shape = 0.4 * T * np.ones((K,))
-    fr_mean_rate = 0.4 * T * np.ones((K,))
+    fr_mean_shape = 1000 * np.ones((K,))
+    fr_mean_rate = 1000 * np.ones((K,))
 
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape, 
