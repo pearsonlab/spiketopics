@@ -140,7 +140,7 @@ def normalize_times(df):
     t_index = t_index.reset_index()  # make time a column
 
     allframe = pd.merge(df, t_index).copy()  # merge time with original df
-    allframe = allframe.drop(['stimulus', 'time'], axis=1)  # drop cols
+    # allframe = allframe.drop(['stimulus', 'time'], axis=1)  # drop cols
 
     return allframe
 
@@ -190,6 +190,7 @@ if __name__ == '__main__':
     # Xpost = Xpost.reset_index()
 
     # Xframe = Xstim.merge(Xpre).merge(Xpost)
+    # Xframe = Xstim.merge(Xpre)
     Xframe = Xstim
 
     countframe = countframe.merge(Xframe)
@@ -206,14 +207,16 @@ if __name__ == '__main__':
 
     # make regressors for stimulus direction (into (True) vs out of RF (False))
     is_stim_and_correct = countframe['Xstim'] & countframe['correct']
+    correct = countframe['correct'].astype('bool')
     chose_out_RF = (countframe['choice'] - 1).astype('bool')
     chose_into_RF = ~chose_out_RF
     countframe['Xinto'] = is_stim_and_correct & chose_into_RF
     countframe['Xout'] = is_stim_and_correct & chose_out_RF
+    countframe['into_RF'] = ((chose_into_RF & correct) |
+        chose_out_RF & ~correct).astype('int')
 
     # convert to unique times
     countframe = normalize_times(countframe)
-
 
     # write out to disk
     outfile = 'data/roitman_fd_data.csv'
