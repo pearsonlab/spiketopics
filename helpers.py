@@ -46,6 +46,7 @@ def mi(x, z):
     Calculate mutual information (normalized between 0 and 1) between 
     an observed binary sequence x and a sequence of posterior probabilities
     z. 
+    WARNING: Not particularly careful: can produce negative results.
     """
     zm = np.mean(z)
     xm = np.mean(x)
