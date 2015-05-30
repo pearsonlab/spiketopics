@@ -25,6 +25,43 @@ def rle(x):
     values = x[starts]
     return starts, runlens, values
 
+def mutual_information_matrix(X, Z):
+    """
+    Given X, an observations x variables array of observed binary variables and
+    Z, variables x probabilities, p(z = 1), construct a matrix of 
+    (normalized) mutual information scores. Output shape is 
+    X.shape[1] x Z.shape[1]
+    """
+    Nx = X.shape[1]
+    Nz = Z.shape[1]
+    mi_mat = np.empty((Nx, Nz))
+    for i in xrange(Nx):
+        for j in xrange(Nz):
+            mi_mat[i, j] = mi(X[:, i], Z[:, j])
+
+    return mi_mat
+
+def mi(x, z):
+    """
+    Calculate mutual information (normalized between 0 and 1) between 
+    an observed binary sequence x and a sequence of posterior probabilities
+    z. 
+    """
+    zm = np.mean(z)
+    xm = np.mean(x)
+    Hz = -zm * np.log(zm) - (1 - zm) * np.log(1 - zm)
+    Hx = -xm * np.log(xm) - (1 - xm) * np.log(1 - xm)
+    x0 = x == 0
+    x1 = x == 1
+    p1 = np.mean(x)
+    p0 = 1 - p1
+    pz0 = np.mean(z[x0]) 
+    pz1 = np.mean(z[x1])
+    Hzx = -p0 * (pz0 * np.log(pz0) + (1 - pz0) * np.log(1 - pz0))
+    Hzx += -p1 * (pz1 * np.log(pz1) + (1 - pz1) * np.log(1 - pz1))
+    
+    return (Hz - Hzx) / np.sqrt(Hz * Hx)
+
 def frames_to_times(df):
     """
     Convert a dataframe with movie and frame columns to one with a single
