@@ -1,12 +1,13 @@
 .ipynb_checkpoints/
 **/*.pyc
-*.pdf
+**/*.pdf
 *.?sv
 *.stats
-*.aux
+**/*.aux
 *.fdb*
 *.log
-*.synctex*
+**/*.synctex*
+**/*.out
 /data
 /output
 /experiments/**/data
