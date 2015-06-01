@@ -2,6 +2,8 @@
 \usepackage{nips15submit_e,times}
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{amssymb,amsmath}
+\usepackage[pdftex]{graphicx}
 %\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
 
 
@@ -9,9 +11,7 @@
 
 
 \author{
-John M.~Pearson\thanks{ Use footnote for providing further information
-about author (webpage, alternative address)---\emph{not} for acknowledging
-funding agencies.} \\
+John M.~Pearson\\
 Duke Institute for Brain Sciences \\
 Duke University\\
 Durham, NC 27708 \\
@@ -21,7 +21,7 @@ Jeffrey M.~Beck \\
 Department of Neurobiology \\
 Duke University Medical Center \\
 Durham, NC 27708 \\
-\texttt{email} \\
+\texttt{jeff.beck@duke.edu} \\
 }
 
 % The \author macro works with any number of authors. There are two commands
@@ -49,24 +49,39 @@ Typically, experiments studying stimulus encoding at the level of individual neu
 \section{Introduction}
 The question of how the brain encodes information from the natural world forms one of the primary areas of study within neuroscience. For many sensory systems, particularly vision and audition, the discovery that single neurons modulate their firing of action potentials in response to particular stimulus features has proven foundational for theories of sensory function. Indeed, neuronal responses to contrast, edges, and motion direction appear to form fundamental primitives on which higher-level visual abstractions are built. Nevertheless, many of these higher-level abstractions, increasingly of interested to modern neuroscience, do not exist in a stimulus space with obvious axes. As a result, experimentalists must choose \emph{a priori} features of interest in constructing their stimulus sets, with the result that cells may appear broadly and weakly tuned due to misalignment of stimulus and neural axes.
 
-In vision, methods like reverse correlation have proven successful in reverse engineering response properties of some cell types, but such techniques rely on a well-behaved stimulus space and a highly constrained encoding model in order to achieve sufficient statistical power to perform inference \cite{steveninck1988realtime,ringach2004reverse,ringach2002receptive}. However, natural stimuli are known to violate both criteria, and generate patterns of neural activity that differ markedly from those observed in controlled experiments with limited stimulus complexity \cite{ringach2002receptive,sharpee2004analyzing,Vinje2000-dx}. 
+In vision, methods like reverse correlation have proven successful in elucidating response properties of some cell types, but such techniques rely on a well-behaved stimulus space and a highly constrained encoding model in order to achieve sufficient statistical power to perform inference \cite{steveninck1988realtime,ringach2004reverse,ringach2002receptive}. However, natural stimuli are known to violate both criteria, and generate patterns of neural activity that differ markedly from those observed in controlled experiments with limited stimulus complexity \cite{ringach2002receptive,sharpee2004analyzing,Vinje2000-dx}. Information-based approaches have gone some way in addressing this challenge \cite{sharpee2004analyzing}, but this approach must often assume a metric structure on stimuli in order to optimize encoded information.
 
-work by Gallant lab and Sharpee paper on feature finding
-    - downside: these are methods for linear readout?
-    - how much feature space must be spelled out in advance?
-    - Sharpee paper requires a metric on the stimulus space
+More recently, Gallant and collaborators have tackled this problem in the context of fMRI, demonstrating that information present in the blood oxygen level-dependent (BOLD) signal is sufficient to classify and map the representation of natural movie stimuli across the brain \cite{Kay2008-gd,Vu2011-da,Huth2012-cj,Stansbury2013-nm}. These studies have used a number of modeling frameworks, from latent dirichlet allocation for categorizing scene contents \cite{Stansbury2013-nm} to regularized linear regression \cite{Huth2012-cj} to sparse nonparametric models \cite{Vu2011-da} to characterize brain encoding of stimuli, but in each case, models were built on pre-labeled training data. Clearly, a method that could infer stimulus structure from neural data themselves would be able to extend such work to include less easily characterized stimulus sets like those depicting social interaction.
 
-more recently NLP methods:
-    - fast
-    - variational
-    - have not focused as much on feature discovery
+Another recent line of work, this one focused on cascaded linear-nonlinear-Poisson (NLP) models, has addressed itself to the task of modeling dynamics of neural populations at the single unit scale \cite{Pillow2008-em,Vogelstein2009-ax,Park2014-el,Buesing2014-ta}. Using generalized linear models as building blocks, these models have proven able to infer (functional) connectivity \cite{Pillow2008-em}, deconvolve spike times generating a calcium image \cite{Vogelstein2009-ax}, and finding subgroups of responsive neurons \cite{Buesing2014-ta}. Inference is generally performed via expectation maximization, though these models are also closely related to those based on information maximization \cite{Williamson2013-rg}.
 
-we sit at the intersection of the above two
+Our model sits at the intersection of these two approaches. We use Variational Bayesian methods, closely related to expectation maximization, to perform inference in a framework reminiscent of generalized linear models. We do this to infer latent, time-varying, discrete features in stimulus sets, in our case from observations of spike counts from neural populations. Unlike previous work, we do not assume these features in advance, though our model does allow experimental features of interest to be specified as regressors. In addition, we include a sparse hierarchical prior over individual units' response strengths to each feature, resulting in a parsimonious explanation of firing rates.In this way, our work shares features with that of \cite{Ulrich2014-zc}, which used spectral content of local field potentials (LFP) to classify moment-by-moment neural activity into distinct brain states. Our model differs in two key ways from that approach: (1) our observations are count data (spike counts) as opposed to continuously measured LFPs and (2) our model infers multiple features, each with distinct dynamics, rather than a single class label at each time. Moreover, because most updates in our model utilize conjugate distributions, inference is fast. Finally, our model allows for semi-Markov dynamics in the latent feature space, accommodating features at multiple, distinct time scales.
 
-figure 1:
-    - graphical model diagram
-    - cartoon of spikes/raster <---> firing matrix x feature matrix --> Poiss
+\section{Model}
+\subsection{Observation model}
+Consider a population of $U$ spiking neurons exposed to a series of stimuli indexed by a (unique) time index $t\in \lbrace 1\ldots T\rbrace$. Moreover, each neuron is exposed to each stimulus $M_{tu}$ times, where we do not assume either that each neuron observes each stimulus time or that consecutive times are observed by the same sets of neurons. That is $M_{tu}$ may have many 0s. For each observation $m$ (a unique unit, time pair), we then observe a spike count, $N_m$. We model these spike counts as arising from a Poisson process with time-dependent rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
+\begin{align}
+    &N_{m} \sim \text{Pois}(\Lambda_{t(m), u(m)} \theta_m) 
+    &\theta_m \sim \text{Ga}(s_{u(m)}, s_{u(m)})
+\end{align}
+Note that both the unit and time are functions of the observation index, $m$, and that the distribution of the overdispersion for each observation is specific to the unit observed. 
 
+\subsection{Firing rate model}
+At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ known, continuous regressors $x_{tr}$. We further assume that each unit's firing rate response at each time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit, (2) a product of responses to each latent state, and (3) a product of responses to each observed regressor:
+\begin{equation}
+    \Lambda_{tu} = \lambda_{0u} \prod_{k = 1}^K \lambda_{zuk}^{z_{tk}}  
+    \prod_{r = 1}^R \lambda_{xur}^{x_{tr}}   
+\end{equation} 
+Note that this is conceptually similar to the generalized linear model for firing rates (in which we model $\log \Lambda$) with the identification $\beta = \log \lambda$. However, by modeling the firing rate directly as a product and placing Gamma priors on the individual effects, we will be able to take advantage of closed-form variational updates resulting from conjugacy that avoid explicit optimization in the case of the $z$s (see below). 
+
+In addition, to enforce parsimony in the inferred features, we put sparse hierarchical priors on the $\lambda_z$ terms:
+\begin{align}
+    \lambda_u &\sim \text{Ga}(c, cd) & c&\sim \text{Ga}(s, r)
+    & d&\sim \text{Ga}(t, w)
+\end{align}
+That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around 0. And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified regressor responses, $\lambda_{xu}$, we model the unit effects non-hierarchially using independent Gamma priors.
+
+\includegraphics[width=0.6\linewidth]{figures/model}
 
 \section{Submission of papers to NIPS 2015}
 
