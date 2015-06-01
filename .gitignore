@@ -8,6 +8,8 @@
 *.log
 **/*.synctex*
 **/*.out
+**/*.bbl
+**/*.blg
 /data
 /output
 /experiments/**/data

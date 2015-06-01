@@ -5,38 +5,23 @@
 %\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
 
 
-\title{Formatting Instructions for NIPS 2015}
+\title{Variational Bayesian Inference for Neural Feature Tagging in Unstructured Stimuli}
 
 
 \author{
-David S.~Hippocampus\thanks{ Use footnote for providing further information
+John M.~Pearson\thanks{ Use footnote for providing further information
 about author (webpage, alternative address)---\emph{not} for acknowledging
 funding agencies.} \\
-Department of Computer Science\\
-Cranberry-Lemon University\\
-Pittsburgh, PA 15213 \\
-\texttt{hippo@cs.cranberry-lemon.edu} \\
+Duke Institute for Brain Sciences \\
+Duke University\\
+Durham, NC 27708 \\
+\texttt{john.pearson@duke.edu} \\
 \And
-Coauthor \\
-Affiliation \\
-Address \\
+Jeffrey M.~Beck \\
+Department of Neurobiology \\
+Duke University Medical Center \\
+Durham, NC 27708 \\
 \texttt{email} \\
-\AND
-Coauthor \\
-Affiliation \\
-Address \\
-\texttt{email} \\
-\And
-Coauthor \\
-Affiliation \\
-Address \\
-\texttt{email} \\
-\And
-Coauthor \\
-Affiliation \\
-Address \\
-\texttt{email} \\
-(if needed)\\
 }
 
 % The \author macro works with any number of authors. There are two commands
@@ -50,7 +35,7 @@ Address \\
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
 
-%\nipsfinalcopy % Uncomment for camera-ready version
+% \nipsfinalcopy % Uncomment for camera-ready version
 
 \begin{document}
 
@@ -58,12 +43,15 @@ Address \\
 \maketitle
 
 \begin{abstract}
-The abstract paragraph should be indented 1/2~inch (3~picas) on both left and
-right-hand margins. Use 10~point type, with a vertical spacing of 11~points.
-The word \textbf{Abstract} must be centered, bold, and in point size 12. Two
-line spaces precede the abstract. The abstract must be limited to one
-paragraph.
+Typically, experiments studying stimulus encoding at the level of individual neurons choose a small set of features present in the world --- contrast and luminance for vision, pitch and intensity for sound --- and assemble a set of stimuli that systematically varies along these dimensions. Neuronal responses in the form of firing rates are then tested for systematic variation with respect to these features. However, such an approach requires that experimenters know (or guess) in advance the relevant features coded by a given neural population. For instance, the feature space for socially relevant stimuli is poorly understood, and the need for an \emph{a priori} choice of features may give rise to confirmation bias. Here we present an approach to automatic feature inference in unstructured stimulus sets based on population neuronal responses. Utilizing a Variational Bayesian approach, we construct a model of latent discrete time-varying features with (semi-)Markov dynamics under a Poisson observation model. Our model correctly recovers hidden features in synthetic data as well as ground-truth stimulus features in a prototypical neural dataset. Finally, we apply our method to the problem of feature tagging in a database of naturalistic stimuli based on neural responses in prefrontal cortex.
 \end{abstract}
+
+\section{Introduction}
+The question of how the brain encodes information from the natural world forms one of the primary areas of study within neuroscience. For many sensory systems, particularly vision and audition, the discovery that single neurons modulate their firing of action potentials in response to particular stimulus features has proven foundational for theories of sensory function. Indeed, neuronal responses to contrast, edges, and motion direction appear to form fundamental primitives on which higher-level visual abstractions are built. Nevertheless, many of these higher-level abstractions, increasingly of interested to modern neuroscience, do not exist in a stimulus space with obvious axes. As a result, experimentalists must choose \emph{a priori} features of interest in constructing their stimulus sets, with the result that cells may appear broadly and weakly tuned due to misalignment of stimulus and neural axes.
+
+In vision, methods like reverse correlation have  proven successful in reverse engineering response properties of some cell types, but such techniques rely on a well-behaved stimulus space and a highly constrained encoding model in order to achieve sufficient statistical power to perform inference \cite{ringach2004reverse,ringach2002receptive}. However, natural stimuli are known to violate both criteria, and generate patterns of neural activity that differ markedly from those observed in controlled experiments with limited stimulus complexity \cite{ringach2002receptive,sharpee2004analyzing,Vinje2000-dx}. 
+
+
 
 \section{Submission of papers to NIPS 2015}
 
@@ -428,28 +416,13 @@ acknowledgments go at the end of the paper. Do not include
 acknowledgments in the anonymized submission, only in the 
 final paper. 
 
+
+\newpage
 \subsubsection*{References}
-
-References follow the acknowledgments. Use unnumbered third level heading for
-the references. Any choice of citation style is acceptable as long as you are
-consistent. It is permissible to reduce the font size to `small' (9-point) 
-when listing the references. {\bf Remember that this year you can use
-a ninth page as long as it contains \emph{only} cited references.}
-
-\small{
-[1] Alexander, J.A. \& Mozer, M.C. (1995) Template-based algorithms
-for connectionist rule extraction. In G. Tesauro, D. S. Touretzky
-and T.K. Leen (eds.), {\it Advances in Neural Information Processing
-Systems 7}, pp. 609-616. Cambridge, MA: MIT Press.
-
-[2] Bower, J.M. \& Beeman, D. (1995) {\it The Book of GENESIS: Exploring
-Realistic Neural Models with the GEneral NEural SImulation System.}
-New York: TELOS/Springer-Verlag.
-
-[3] Hasselmo, M.E., Schnell, E. \& Barkai, E. (1995) Dynamics of learning
-and recall at excitatory recurrent synapses and cholinergic modulation
-in rat hippocampal region CA3. {\it Journal of Neuroscience}
-{\bf 15}(7):5249-5262.
-}
+\begingroup
+\renewcommand{\section}[2]{}
+\bibliography{pearson_beck}{}
+\bibliographystyle{unsrt}
+\endgroup
 
 \end{document}
