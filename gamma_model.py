@@ -567,18 +567,6 @@ class GammaModel:
                 print ("         updated overdispersion effects: L = {}"
                     ).format(Lval)
 
-        # # E step        
-        # if self.latents:
-        #     for k in xrange(self.K):
-        #         logpsi = self.calc_log_evidence(k)
-        #         self.nodes['HMM'].update(k, logpsi)
-        #         if calc_L:
-        #             Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
-        #             assert(Lval >= lastL)
-        #             lastL = Lval
-        #         if doprint:
-        #             print "chain {}: updated z: L = {}".format(k, Lval)
-
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
         maxiter=np.inf, delayed_iters=[]):
         """
