@@ -49,8 +49,23 @@ Typically, experiments studying stimulus encoding at the level of individual neu
 \section{Introduction}
 The question of how the brain encodes information from the natural world forms one of the primary areas of study within neuroscience. For many sensory systems, particularly vision and audition, the discovery that single neurons modulate their firing of action potentials in response to particular stimulus features has proven foundational for theories of sensory function. Indeed, neuronal responses to contrast, edges, and motion direction appear to form fundamental primitives on which higher-level visual abstractions are built. Nevertheless, many of these higher-level abstractions, increasingly of interested to modern neuroscience, do not exist in a stimulus space with obvious axes. As a result, experimentalists must choose \emph{a priori} features of interest in constructing their stimulus sets, with the result that cells may appear broadly and weakly tuned due to misalignment of stimulus and neural axes.
 
-In vision, methods like reverse correlation have  proven successful in reverse engineering response properties of some cell types, but such techniques rely on a well-behaved stimulus space and a highly constrained encoding model in order to achieve sufficient statistical power to perform inference \cite{ringach2004reverse,ringach2002receptive}. However, natural stimuli are known to violate both criteria, and generate patterns of neural activity that differ markedly from those observed in controlled experiments with limited stimulus complexity \cite{ringach2002receptive,sharpee2004analyzing,Vinje2000-dx}. 
+In vision, methods like reverse correlation have proven successful in reverse engineering response properties of some cell types, but such techniques rely on a well-behaved stimulus space and a highly constrained encoding model in order to achieve sufficient statistical power to perform inference \cite{steveninck1988realtime,ringach2004reverse,ringach2002receptive}. However, natural stimuli are known to violate both criteria, and generate patterns of neural activity that differ markedly from those observed in controlled experiments with limited stimulus complexity \cite{ringach2002receptive,sharpee2004analyzing,Vinje2000-dx}. 
 
+work by Gallant lab and Sharpee paper on feature finding
+    - downside: these are methods for linear readout?
+    - how much feature space must be spelled out in advance?
+    - Sharpee paper requires a metric on the stimulus space
+
+more recently NLP methods:
+    - fast
+    - variational
+    - have not focused as much on feature discovery
+
+we sit at the intersection of the above two
+
+figure 1:
+    - graphical model diagram
+    - cartoon of spikes/raster <---> firing matrix x feature matrix --> Poiss
 
 
 \section{Submission of papers to NIPS 2015}
