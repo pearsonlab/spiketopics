@@ -58,16 +58,20 @@ Another recent line of work, this one focused on cascaded linear-nonlinear-Poiss
 Our model sits at the intersection of these two approaches. We use Variational Bayesian methods, closely related to expectation maximization, to perform inference in a framework reminiscent of generalized linear models. We do this to infer latent, time-varying, discrete features in stimulus sets, in our case from observations of spike counts from neural populations. Unlike previous work, we do not assume these features in advance, though our model does allow experimental features of interest to be specified as regressors. In addition, we include a sparse hierarchical prior over individual units' response strengths to each feature, resulting in a parsimonious explanation of firing rates.In this way, our work shares features with that of \cite{Ulrich2014-zc}, which used spectral content of local field potentials (LFP) to classify moment-by-moment neural activity into distinct brain states. Our model differs in two key ways from that approach: (1) our observations are count data (spike counts) as opposed to continuously measured LFPs and (2) our model infers multiple features, each with distinct dynamics, rather than a single class label at each time. Moreover, because most updates in our model utilize conjugate distributions, inference is fast. Finally, our model allows for semi-Markov dynamics in the latent feature space, accommodating features at multiple, distinct time scales.
 
 \section{Model}
+\begin{figure}[ht]
+    \includegraphics[width=1\linewidth]{figures/model}
+    \caption{\textbf{Generative model for spike counts.} Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M$. Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed regressors $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$.}
+\end{figure}
 \subsection{Observation model}
 Consider a population of $U$ spiking neurons exposed to a series of stimuli indexed by a (unique) time index $t\in \lbrace 1\ldots T\rbrace$. Moreover, each neuron is exposed to each stimulus $M_{tu}$ times, where we do not assume either that each neuron observes each stimulus time or that consecutive times are observed by the same sets of neurons. That is $M_{tu}$ may have many 0s. For each observation $m$ (a unique unit, time pair), we then observe a spike count, $N_m$. We model these spike counts as arising from a Poisson process with time-dependent rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
 \begin{align}
-    &N_{m} \sim \text{Pois}(\Lambda_{t(m), u(m)} \theta_m) 
-    &\theta_m \sim \text{Ga}(s_{u(m)}, s_{u(m)})
+    N_{m} &\sim \text{Pois}(\Lambda_{t(m), u(m)} \theta_m) &
+    \theta_m &\sim \text{Ga}(s_{u(m)}, s_{u(m)})
 \end{align}
 Note that both the unit and time are functions of the observation index, $m$, and that the distribution of the overdispersion for each observation is specific to the unit observed. 
 
 \subsection{Firing rate model}
-At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ known, continuous regressors $x_{tr}$. We further assume that each unit's firing rate response at each time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit, (2) a product of responses to each latent state, and (3) a product of responses to each observed regressor:
+At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ observed, continuous regressors $x_{tr}$. We further assume that each unit's firing rate response at each time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit, (2) a product of responses to each latent state, and (3) a product of responses to each observed regressor:
 \begin{equation}
     \Lambda_{tu} = \lambda_{0u} \prod_{k = 1}^K \lambda_{zuk}^{z_{tk}}  
     \prod_{r = 1}^R \lambda_{xur}^{x_{tr}}   
@@ -76,12 +80,18 @@ Note that this is conceptually similar to the generalized linear model for firin
 
 In addition, to enforce parsimony in the inferred features, we put sparse hierarchical priors on the $\lambda_z$ terms:
 \begin{align}
-    \lambda_u &\sim \text{Ga}(c, cd) & c&\sim \text{Ga}(s, r)
-    & d&\sim \text{Ga}(t, w)
+    \lambda_{uk} &\sim \text{Ga}(c_k, c_k d_k) & c_k &\sim \text{Ga}(s_k, r_k)
+    & d_k &\sim \text{Ga}(t_k, w_k)
 \end{align}
-That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around 0. And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified regressor responses, $\lambda_{xu}$, we model the unit effects non-hierarchially using independent Gamma priors.
+That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around 0. And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified regressor responses, $\lambda_{xu}$, we model the unit effects non-hierarchially using independent Gamma priors for each unit.
 
-\includegraphics[width=0.6\linewidth]{figures/model}
+\subsection{Latent state model}
+We model the latent states $z_{tk}$ as an independent Hidden Markov Model (HMM) for each feature $k$. That is, each $k$ indexes an independent Markov chain with initial state probability $\pi^{(k)}$ and transition matrix $A^{(k)}$. For the semi-Markov case, we assume that the dwell times in each state are distributed independently for each chain according to an integer-valued, truncated lognormal distribution with maximum duration $D$:
+\begin{align}
+    p_k(d|z = j) &= \text{Log-Normal}(d|m_{kj}, s^2_{kj}) / W  &
+    W &= \sum_{d = 1}^D \text{Log-Normal}(d|m_{kj}, s^2_{kj}) 
+\end{align}
+where we have allowed the dwell time distribution to depend on both the feature $k$ and the state of the Markov chain $j$. In addition, we put indpendent Normal-Gamma priors on the mean $(m_{kj})$ and precision $(\tau_{kj} \equiv s_{kj}^{-2})$parameters of the distribution: $(m, \tau) \sim \text{NG}(\mu, \lambda, \alpha, \beta)$.
 
 \section{Submission of papers to NIPS 2015}
 
