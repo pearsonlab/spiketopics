@@ -4,6 +4,7 @@ Helper functions for dealing with nodes.
 from __future__ import division
 import numpy as np
 import scipy.stats as stats
+from scipy.special import digamma, gammaln
 from .GammaNode import GammaNode
 from .GaussianNode import GaussianNode
 from .DirichletNode import DirichletNode
@@ -110,12 +111,103 @@ def initialize_gamma_hierarchy(basename, parent_shape,
         shape.update(idx)
         mean.update(idx)
 
+    def expected_log_prior(self):
+        """
+        Calculate expected value of log prior under the posterior distribution.
+        """
+        c = shape.expected_x()
+        th = mean.expected_x()
+        logc = shape.expected_log_x()
+        logth = mean.expected_log_x()
+        elp = (c - 1) * (self.expected_log_x() + 1)
+        elp += -c * th * self.expected_x() 
+        elp += c * logth
+        elp += 0.5 * logc
+
+        return np.sum(elp)
+
     shape.update = update_shape
     mean.update = update_mean
     child.has_parents = True
     child.update_parents = update_parents
 
+    # instead of monkey-patching, honestly bind functions
+    child.expected_log_prior = expected_log_prior.__get__(child, GammaNode)
+
     return (shape, mean, child)
+
+def initialize_ragged_gamma_hierarchy(basename, parent_shape, 
+    child_shape, **kwargs):
+    """
+    Initialize a hierarchical gamma variable in which the parent and 
+        child nodes have incompatible shapes: 
+        lambda ~ Gamma(c, c)
+        c ~ Gamma
+
+    basename is the name of the name of the child variable 
+    parent_shape and child_shape are the shapes of the parent and
+        child variables
+    kwargs must contain a variable, 'mapper', of shape child_shape, 
+        the entries of which must take values in 0 to U - 1, where U
+        is the 0th dimension of parent_shape
+    """
+    pars = {k: np.array(v) for k, v in kwargs.iteritems()}
+
+    par_shapes = ({'mapper': child_shape,
+        'prior_parent_shape': parent_shape, 
+        'prior_parent_rate': parent_shape, 
+        'post_parent_shape': parent_shape, 'post_parent_rate': parent_shape, 
+        'post_child_shape': child_shape, 'post_child_rate': child_shape})
+
+    check_shapes(par_shapes, pars)
+
+    mapper = kwargs['mapper']
+    U = parent_shape[0]
+    if np.max(mapper) >= U:
+        raise ValueError('Too many targets for map: got {}, expected {}'.format(U, np.max(mapper)))
+    # calculate number of observations for each entry in parent
+    N = np.bincount(mapper)
+
+    
+    parentname = basename + '_parent'
+    parent = GammaNode(pars['prior_parent_shape'], 
+        pars['prior_parent_rate'], pars['post_parent_shape'], 
+        pars['post_parent_rate'], name=parentname)
+
+    child = GammaNode(parent, parent,
+        pars['post_child_shape'], pars['post_child_rate'], 
+        name=basename)
+
+    def update_parent_node():
+        """
+        Update for parent variable in terms of child node.
+        """ 
+        parent.post_shape = parent.prior_shape + 0.5 * N
+
+        eff_rate = (child.expected_x() - child.expected_log_x() - 1)
+        unit_rate = np.bincount(mapper, weights=eff_rate)
+        parent.post_rate = parent.prior_rate + unit_rate
+
+    def expected_log_prior(self):
+        """
+        Calculate expected value of log prior under the posterior distribution.
+        """
+        c = self.prior_shape.expected_x()[mapper]
+        logc = self.prior_shape.expected_log_x()[mapper]
+        elp = (c - 1) * (self.expected_log_x() + 1)
+        elp += -c * self.expected_x() 
+        elp += 0.5 * logc
+
+        return np.sum(elp)
+        
+    parent.update = update_parent_node
+    child.has_parents = True
+    child.update_parents = update_parent_node
+
+    # instead of monkey-patching, honestly bind functions
+    child.expected_log_prior = expected_log_prior.__get__(child, GammaNode)
+
+    return (parent, child)
 
 def initialize_HMM(n_chains, n_states, n_times, n_durations=None, **kwargs):
     """

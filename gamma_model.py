@@ -90,6 +90,9 @@ class GammaModel:
         if 'prior_shape_shape' in kwargs:
             nodes = nd.initialize_gamma_hierarchy(name, parent_shape,
                 node_shape, **kwargs)
+        elif 'mapper' in kwargs:
+            nodes = nd.initialize_ragged_gamma_hierarchy(name, parent_shape,
+                node_shape, **kwargs)
         else:
             nodes = nd.initialize_gamma(name, node_shape, **kwargs)
 
@@ -129,7 +132,7 @@ class GammaModel:
         Set up trial-to-trial overdispersion on firing rates.
         """
         self._initialize_gamma_nodes('overdispersion', (self.M,), 
-            (), **kwargs)
+            (self.U,), **kwargs)
 
         return self
 
@@ -322,8 +325,12 @@ class GammaModel:
         F = self.F_prod()
         G = self.G_prod()
 
-        node.post_shape = node.prior_shape + np.array(nn)
-        node.post_rate = node.prior_rate + np.array(bl * F * G)
+        if node.has_parents:
+            node.post_shape = node.prior_shape.expected_x()[uu] + np.array(nn)
+            node.post_rate = node.prior_rate.expected_x()[uu] + np.array(bl * F * G)
+        else:
+            node.post_shape = node.prior_shape + np.array(nn)
+            node.post_rate = node.prior_rate + np.array(bl * F * G)
 
     def finalize(self):
         """

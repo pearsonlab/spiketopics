@@ -55,6 +55,27 @@ def test_can_initialize_gamma_hierarchy():
         {n.name for n in nodes})
     assert_is_instance(nodes[0], nd.GammaNode)
 
+def test_can_initialize_ragged_gamma_hierarchy():
+    parent_shape = (3,)
+    child_shape = (20,)
+    basename = 'foo'
+    U = parent_shape[0]
+    mapper = np.random.randint(0, U, size=child_shape[0])
+    ps = np.ones(parent_shape)
+    cs = np.ones(child_shape)
+    vals = ({'prior_parent_shape': ps, 'prior_parent_rate': ps, 
+        'post_parent_shape': ps, 'post_parent_rate': ps,
+        'post_child_shape': cs, 'post_child_rate': cs, 
+        'mapper': mapper})
+
+    nodes = nd.initialize_ragged_gamma_hierarchy(basename, parent_shape, 
+        child_shape, **vals)
+
+    assert_equals(len(nodes), 2)
+    assert_equals({'foo', 'foo_parent'}, 
+        {n.name for n in nodes})
+    assert_is_instance(nodes[0], nd.GammaNode)
+
 def test_hierarchy_updates():
     parent_shape = (5, 6)
     child_shape = (10, 5, 6)

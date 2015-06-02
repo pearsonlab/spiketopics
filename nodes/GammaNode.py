@@ -41,11 +41,11 @@ class GammaNode:
         """
         Calculate expected value of log prior under the posterior distribution.
         """
-        alpha = self.prior_shape.expected_x()
-        beta = self.prior_rate.expected_x()
-        elp = (alpha - 1) * self.expected_log_x() 
+        alpha = self.prior_shape
+        beta = self.prior_rate
+        elp = (alpha - 1) * self.expected_log_x()
         elp += -beta * self.expected_x() 
-        elp += alpha * np.log(beta) 
+        elp += alpha * np.log(beta)
         elp += -gammaln(alpha)
         elp = elp.view(np.ndarray)
 
