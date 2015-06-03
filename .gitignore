@@ -1,6 +1,7 @@
 .ipynb_checkpoints/
 **/*.pyc
 **/*.pdf
+!**/figures/*.pdf
 *.?sv
 *.stats
 **/*.aux
