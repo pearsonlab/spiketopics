@@ -210,7 +210,7 @@ if __name__ == '__main__':
     correct = countframe['correct'].astype('bool')
     chose_out_RF = (countframe['choice'] - 1).astype('bool')
     chose_into_RF = ~chose_out_RF
-    countframe['Xinto'] = is_stim_and_correct & chose_into_RF
+    countframe['Xin'] = is_stim_and_correct & chose_into_RF
     countframe['Xout'] = is_stim_and_correct & chose_out_RF
     countframe['into_RF'] = ((chose_into_RF & correct) |
         chose_out_RF & ~correct).astype('int')
