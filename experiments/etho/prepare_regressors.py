@@ -6,7 +6,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-from helpers import frames_to_times, regularize_zeros
+from spiketopics.helpers import frames_to_times, regularize_zeros
 import argparse
 
 if __name__ == '__main__':

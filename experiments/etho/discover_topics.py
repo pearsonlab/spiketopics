@@ -179,7 +179,7 @@ if __name__ == '__main__':
     # also has the effect of "neutering" object from futher update
     for name, node in gpm.nodes.iteritems():
         attrs = node.__dict__.keys()
-        to_delete = [a for a in attrs if 'update' in a]
+        to_delete = [a for a in attrs if 'update' in a or 'log_prior' in a]
         for a in to_delete:
             delattr(node, a)
 
