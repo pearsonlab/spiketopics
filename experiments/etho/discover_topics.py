@@ -4,8 +4,8 @@ Fit Gamma-Poisson topic model to movie/ethogram dataset.
 from __future__ import division
 import numpy as np
 import pandas as pd
-import gamma_model as gp
-from helpers import jitter_inits
+import spiketopics.gamma_model as gp
+from spiketopics.helpers import jitter_inits
 import argparse
 import cPickle as pickle
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     T = df['time'].drop_duplicates().shape[0]
     U = df['unit'].drop_duplicates().shape[0]
     R = df.shape[1] - len(['time', 'unit', 'count'])
-    K = 20
+    K = 10
     D = 500  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
 
@@ -93,10 +93,12 @@ if __name__ == '__main__':
 
     ############ latent states ####################
     ###### A ###############
-    A_off = 10.
-    A_on = 1.
-    Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
-    A_prior = np.tile(Avec, (1, 2, K))
+    # A_off = 10.
+    # A_on = 1.
+    # Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
+    # A_prior = np.tile(Avec, (1, 2, K))
+    A_cat = (10 * np.eye(2) + 1).reshape(2, 2, 1)
+    A_prior = np.tile(A_cat, (1, 1, K))
 
     ###### pi ###############
     pi_off = 15.
@@ -163,12 +165,30 @@ if __name__ == '__main__':
                 })
 
     ############ initialize model ####################
-    gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
-    gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
-    gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
-    gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
-    gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))   
-    gpm.finalize()
+    numstarts = 1
+    fitobjs = []
+    Lvals = []
+    for idx in xrange(numstarts):
+        # set up model object
+        gpm = gp.GammaModel(df, K)
+        gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
+        gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
+        gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
+        gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
+        gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
+        gpm.finalize()
+        
+        print "Start {} -----------------------".format(idx)
+        gpm.do_inference(tol=1e-4, verbosity=2)
+        print "Final L = {}".format(gpm.L())
+        Lvals.append(gpm.L())
+        fitobjs.append(gpm)
+
+    print "Choosing best model..."
+    # pick out best fit
+    bestind = np.argmax(Lvals)
+    gpm = fitobjs[bestind]
+    del fitobjs  # to save memory
 
     ############## fit model
     print "Fitting model..."
