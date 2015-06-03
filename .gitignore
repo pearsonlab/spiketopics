@@ -10,6 +10,8 @@
 **/*.out
 **/*.bbl
 **/*.blg
+**/*.svg
+!**/figures/*.svg
 /data
 /output
 /experiments/**/data
