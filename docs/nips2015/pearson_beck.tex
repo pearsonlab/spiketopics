@@ -55,43 +55,156 @@ More recently, Gallant and collaborators have tackled this problem in the contex
 
 Another recent line of work, this one focused on cascaded linear-nonlinear-Poisson (NLP) models, has addressed itself to the task of modeling dynamics of neural populations at the single unit scale \cite{Pillow2008-em,Vogelstein2009-ax,Park2014-el,Buesing2014-ta}. Using generalized linear models as building blocks, these models have proven able to infer (functional) connectivity \cite{Pillow2008-em}, deconvolve spike times generating a calcium image \cite{Vogelstein2009-ax}, and finding subgroups of responsive neurons \cite{Buesing2014-ta}. Inference is generally performed via expectation maximization, though these models are also closely related to those based on information maximization \cite{Williamson2013-rg}.
 
-Our model sits at the intersection of these two approaches. We use Variational Bayesian methods, closely related to expectation maximization, to perform inference in a framework reminiscent of generalized linear models. We do this to infer latent, time-varying, discrete features in stimulus sets, in our case from observations of spike counts from neural populations. Unlike previous work, we do not assume these features in advance, though our model does allow experimental features of interest to be specified as regressors. In addition, we include a sparse hierarchical prior over individual units' response strengths to each feature, resulting in a parsimonious explanation of firing rates.In this way, our work shares features with that of \cite{Ulrich2014-zc}, which used spectral content of local field potentials (LFP) to classify moment-by-moment neural activity into distinct brain states. Our model differs in two key ways from that approach: (1) our observations are count data (spike counts) as opposed to continuously measured LFPs and (2) our model infers multiple features, each with distinct dynamics, rather than a single class label at each time. Moreover, because most updates in our model utilize conjugate distributions, inference is fast. Finally, our model allows for semi-Markov dynamics in the latent feature space, accommodating features at multiple, distinct time scales.
+Our model sits at the intersection of these two approaches. We use Variational Bayesian methods, closely related to expectation maximization, to perform inference in a framework reminiscent of generalized linear models. We do this to infer latent, time-varying, discrete features in stimulus sets, in our case from observations of spike counts from neural populations. Unlike previous work, we do not assume these features in advance, though our model does allow experimental features of interest to be specified as covariates. In addition, we include a sparse hierarchical prior over individual units' response strengths to each feature, resulting in a parsimonious explanation of firing rates.In this way, our work shares features with that of \cite{Ulrich2014-zc}, which used spectral content of local field potentials (LFP) to classify moment-by-moment neural activity into distinct brain states. Our model differs in two key ways from that approach: (1) our observations are count data (spike counts) as opposed to continuously measured LFPs and (2) our model infers multiple features, each with distinct dynamics, rather than a single class label at each time. Moreover, because most updates in our model utilize conjugate distributions, inference is fast. Finally, our model allows for semi-Markov dynamics in the latent feature space, accommodating features at multiple, distinct time scales.
 
 \section{Model}
+\label{model_sec}
 \begin{figure}[ht]
     \includegraphics[width=1\linewidth]{figures/model}
-    \caption{\textbf{Generative model for spike counts.} Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M$. Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed regressors $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$.}
+    \caption{\textbf{Generative model for spike counts.} Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M$. Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed covariates $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$.}
 \end{figure}
 \subsection{Observation model}
 Consider a population of $U$ spiking neurons exposed to a series of stimuli indexed by a (unique) time index $t\in \lbrace 1\ldots T\rbrace$. Moreover, each neuron is exposed to each stimulus $M_{tu}$ times, where we do not assume either that each neuron observes each stimulus time or that consecutive times are observed by the same sets of neurons. That is $M_{tu}$ may have many 0s. For each observation $m$ (a unique unit, time pair), we then observe a spike count, $N_m$. We model these spike counts as arising from a Poisson process with time-dependent rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
 \begin{align}
+    \label{obs_model}
     N_{m} &\sim \text{Pois}(\Lambda_{t(m), u(m)} \theta_m) &
     \theta_m &\sim \text{Ga}(s_{u(m)}, s_{u(m)})
 \end{align}
 Note that both the unit and time are functions of the observation index, $m$, and that the distribution of the overdispersion for each observation is specific to the unit observed. 
 
 \subsection{Firing rate model}
-At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ observed, continuous regressors $x_{tr}$. We further assume that each unit's firing rate response at each time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit, (2) a product of responses to each latent state, and (3) a product of responses to each observed regressor:
+At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ observed covariates $x_{tr}$. We further assume that each unit's firing rate response at each time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit, (2) a product of responses to each latent state, and (3) a product of responses to each observed covariate:
 \begin{equation}
+    \label{fr_model}
     \Lambda_{tu} = \lambda_{0u} \prod_{k = 1}^K \lambda_{zuk}^{z_{tk}}  
     \prod_{r = 1}^R \lambda_{xur}^{x_{tr}}   
 \end{equation} 
 Note that this is conceptually similar to the generalized linear model for firing rates (in which we model $\log \Lambda$) with the identification $\beta = \log \lambda$. However, by modeling the firing rate directly as a product and placing Gamma priors on the individual effects, we will be able to take advantage of closed-form variational updates resulting from conjugacy that avoid explicit optimization in the case of the $z$s (see below). 
 
-In addition, to enforce parsimony in the inferred features, we put sparse hierarchical priors on the $\lambda_z$ terms:
+In addition, to enforce parsimony in the inferred features, we put sparse hierarchical priors with hyperparameters $\gamma = (c, d)$ on the $\lambda_z$ terms:
 \begin{align}
-    \lambda_{uk} &\sim \text{Ga}(c_k, c_k d_k) & c_k &\sim \text{Ga}(s_k, r_k)
-    & d_k &\sim \text{Ga}(t_k, w_k)
+    \label{hierarchy}
+    \lambda_{uk} &\sim \text{Ga}(c_k, c_k d_k) & c_k &\sim \text{Ga}(a_{ck}, b_{ck})
+    & d_k &\sim \text{Ga}(a_{dk}, b_{dk})
 \end{align}
-That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around 0. And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified regressor responses, $\lambda_{xu}$, we model the unit effects non-hierarchially using independent Gamma priors for each unit.
+That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around 0. And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified covariate responses, $\lambda_{xu}$, we model the unit effects non-hierarchially using independent Gamma priors for each unit.
 
 \subsection{Latent state model}
-We model the latent states $z_{tk}$ as an independent Hidden Markov Model (HMM) for each feature $k$. That is, each $k$ indexes an independent Markov chain with initial state probability $\pi^{(k)}$ and transition matrix $A^{(k)}$. For the semi-Markov case, we assume that the dwell times in each state are distributed independently for each chain according to an integer-valued, truncated lognormal distribution with maximum duration $D$:
+We model the latent states $z_{tk}$ as an independent Hidden Markov Model (HMM) for each feature $k$. That is, each $k$ indexes an independent Markov chain with initial state probability $\pi_k$ and transition matrix $A_k$. For the semi-Markov case, we assume that the dwell times in each state are distributed independently for each chain according to an integer-valued, truncated lognormal distribution with maximum duration $D$:
 \begin{align}
-    p_k(d|z = j) &= \text{Log-Normal}(d|m_{kj}, s^2_{kj}) / W  &
-    W &= \sum_{d = 1}^D \text{Log-Normal}(d|m_{kj}, s^2_{kj}) 
+    \label{semi-markov}
+    p_k(d|z = j) &= \text{Log-Normal}(d|m_{jk}, s^2_{jk}) / W_{jk}  &
+    W_{jk} &= \sum_{d = 1}^D \text{Log-Normal}(d|m_{jk}, s^2_{jk}) 
 \end{align}
-where we have allowed the dwell time distribution to depend on both the feature $k$ and the state of the Markov chain $j$. In addition, we put indpendent Normal-Gamma priors on the mean $(m_{kj})$ and precision $(\tau_{kj} \equiv s_{kj}^{-2})$parameters of the distribution: $(m, \tau) \sim \text{NG}(\mu, \lambda, \alpha, \beta)$.
+where we have allowed the dwell time distribution to depend on both the feature $k$ and the state of the Markov chain $j$. In addition, we put indpendent Normal-Gamma priors on the mean $(m_{kj})$ and precision $(\tau_{kj} \equiv s_{kj}^{-2})$ parameters of the distribution: $(m, \tau) \sim \text{NG}(\mu, \lambda, \alpha, \beta)$.
+
+\section{Inference}
+We perform variational inference for the posteriors over the model variables $\Theta = (\lambda_0, \lambda_z, \lambda_x, z, A, \pi, \theta, c_0, d_0, c_z, d_z, s)$. In addition, for the semi-Markov case, we include variables $(m, \tau)$, the parameters for the state dwell time distribution. That is, we wish to approximate the joint posterior density, 
+\begin{equation}
+    p(\Theta|N) \propto p(N, z|\lambda, A, \pi, \theta, \gamma) 
+    p(\lambda|\gamma) p(\gamma)
+    p(A)p(\pi)p(\theta|s)p(s)
+\end{equation}
+by a variational posterior $q(\Theta)$ that is closest to $p$ as measured by the Kullback-Leibler divergence \cite{Wainwright2008-ii}. Equivalently, we wish to maximize the variational objective
+\begin{equation}
+    \mathcal{L} \equiv \mathbb{E}_q \left[\log \frac{p(\Theta|N)}{q(\Theta)} \right] = \mathbb{E}_q \left[\log p(\Theta|N) \right] + \mathcal{H}[q(\Theta)]
+\end{equation}
+with $\mathcal{H}$ the entropy of the variational posterior. For the form of our variational posterior, we take a quasi-mean field approximation in which the posterior factorizes over units and latent and observed factors, but not time. That is, it forms a factorial HMM \cite{ghahramani1997factorial}:
+\begin{multline}
+    q(\Theta) = q(c_0)q(d_0)\prod_m q(\theta_m) \prod_u q(s_u) q(\lambda_{0u}) \prod_r q(\lambda_{xur}) \times \\ 
+    \prod_k q(c_k) q(d_k) 
+    q(\lambda_{zuk}) q(c_{zk}) q(d_{zk}) q(z_k) q(\pi_k) q(A_k)
+\end{multline}
+With this ansatz, the variational objective decomposes in a natural way, and choices are available for many of the $q$s that lead to closed-form updates.
+
+\subsection{Expected log evidence}
+From \ref{obs_model} and \ref{fr_model} above, we can write the probability of the observed data $N$ as
+\begin{multline}
+    \label{log_evidence}
+    \log p(N, z|x, \Theta) = \sum_{mkr} \left[ 
+        N_m \left( \log \theta_m +
+            \log \lambda_{0u(m)} +
+            z_{t(m) k} \log \lambda_{zu(m) k} + 
+            x_{t(m) r} \log \lambda_{xu(m) r}
+            \right)
+    \right] \\
+    - \sum_m \Lambda_{t(m) u(m)} + \text{constant,}
+\end{multline}
+where again, $m$ indexes observations of (time, unit) pairs. Given that \ref{log_evidence} is of an exponential family form for $\theta$ and $\lambda$ conditioned on all other variables, free-form variational arguments \cite{Blei2006-oh} suggest variational posteriors:
+\begin{align}
+    \lambda_{0u} &\sim \text{Ga}(\alpha_{0u}, \beta_{0u}) &
+    \lambda_{zuk} &\sim \text{Ga}(\alpha_{zuk}, \beta_{zuk}) &
+    \lambda_{xur} &\sim \text{Ga}(\alpha_{xur}, \beta_{xur})
+\end{align}
+For the first of these two, updates in terms of expected sufficient statistics involving expectations of $\gamma = (c, d)$ are straightforward (see Supplement). However, this relies on the fact that $z_t \in \lbrace0, 1\rbrace$. The observed covariates $x_t$ follow no such restriction, which results in a transcendental equation for the $\beta_x$ updates which we solve using an explicit BFGS optimization on each iteration. Moreover, we place non-hierarchical Gamma priors on these effects: $\lambda_{xur} \sim \text{Ga}(a_{xur}, b_{xur})$.
+
+\subsection{Hyperparameter updates}
+As stated above, we place hierarchical priors on $\lambda_0$, $\lambda_z$, and $\theta$ of the form \ref{hierarchy}\footnote{This hierarchy is over units for $\lambda$ and over observations for $\theta$.}. This involves multiple terms in the expected log evidence of the form
+\begin{equation}
+    \mathbb{E}_q \left[\sum_u \log p(\lambda_u|c, d)\right] = \sum_u \mathbb{E}_q \left[ 
+    (c - 1) \log \lambda_u - cd\lambda_u + c \log cd - \log \Gamma(c) 
+    \right] 
+\end{equation}
+In order to calculate the expectation, we make use of the inequality \cite{abramowitz1964handbook}
+\begin{equation}
+    \sqrt{2\pi} \le \frac{z!}{z^{z+\frac{1}{2}} e^{-z}} \le e
+\end{equation}
+to lower bound the negative gamma function and approximate the above as
+\begin{equation}
+    \log p(\lambda) \ge \sum_u \left[ 
+    (c - 1) (\log \lambda_u + 1) - cd\lambda_u + c \log d + \frac{1}{2}\log c\right]
+\end{equation}
+Clearly, the conditional probabilities for $c$ and $d$ are gamma in form, so that if we use priors $c \sim \text{Ga}(a_c, b_c)$ and $d\sim \text{Ga}(a_d, b_d)$ the posteriors have the form
+\begin{align}
+    c &\sim \text{Ga}\left(a_c + \frac{U}{2}, 
+    b_c + \sum_u\mathbb{E}_q 
+        \left[d \lambda_u - \log \lambda_u - \log d - 1\right]\right) \\
+    d &\sim \text{Ga}\left(
+        a_d + U\mathbb{E}_q[c], b_d + \sum_u \mathbb{E}_q [c \lambda_u]
+    \right)
+\end{align}
+This basic form, with appropriate indices added, gives the update rules for the hyperparameter posteriors for $\lambda_0$ and $\lambda_z$. For $\theta$, we simply set $c = s_u$ and $d = 1$.
+
+\subsection{Latent state inference}
+For Hidden Markov Models, given the observation model \ref{log_evidence}, inference for $z$, $A$, and $\pi$ can be performed efficiently via conjugate updates and the well-known forward-backward algorithm \cite{beal2003variational}. For the case of semi-Markov dynamics, we additionally need to perform inference on the parameters $(m, \tau)$ of the dwell time distributions for each state. In the case of continuous dwell times, our model \ref{semi-markov} would have $W = 1$ and be conjugate to the Normal-Gamma prior on $(m, \tau)$, but the restriction to discrete dwell times requires us to again lower bound the variational objective:
+\begin{equation}
+    \mathbb{E}_q\left[-\log W_{jk} \right] = 
+    \mathbb{E}_q\left[- \log \left( \sum_{d=1}^D p(d|j)\right) \right]
+    \ge -\log \sum_{d = 1}^D \mathbb{E}_q\left[p(d|j)\right]
+\end{equation}
+This correction for trunction must then be added to $\mathbb{E}_q[p(z|\Theta)]$. For inference in this case, we use an extension of the forward-backward algorithm to semi-Markov transitions \cite{Yu2006-bb}, at the expense of time complexity $\mathcal{O}(SDT)$ $(S = 2)$ per latent state, to calculate $q(z_k)$ (see Supplement). For the $4SK$ hyperparameters of the Normal-Gamma distribution, we perform an explicit BFGS optimization on the $4S$ parameters of each chain on each iteration.
+
+\section{Experiments}
+\subsection{Synthetic data}
+We generated synthetic data from the model in Section \ref{model_sec} for $U=100$ neurons for $T=10,000$ time bins of $dt=0.0333s$. Assumed firing rates and effect sizes were realistic for cortical neurons, with mean baseline rates of 10 spikes/s and firing rate effects given by a $\text{Ga}(1, 1)$ distribution for $K_{\text{data}}=3$ latent features. In addition, we included $R=3$ known covariates generated according to Markov dynamics. For this experiment, we assumed that each unit was presented once with the stimulus time series, so that $M = 1$. That is, we tested a case in which inference was driven primarily by variabiliy in population responses across stimuli rather than pooling of data across repetitions of the same stimulus. Moreover, to test the model's ability to parsimoniously infer features, we set $K=5$. That is, we asked the model to recover more features than were present in the data.
+
+As discussed above, we placed hierarchical priors on unit baseline firing rates and sparse hierarchical priors on firing rate effects of latent states. We used 5 random restarts and iterated over parameter updates until the fractional change in $\mathcal{L}$ dropped below $10^{-4}$.
+
+\begin{figure}[ht]
+    \center
+    \includegraphics[width=0.6\linewidth]{figures/synthetic}
+    \caption{\textbf{Top:} Actual and recovered binary features for a subset of stimulus times in the dataset. Note that inferred feature 3 is the inverse of actual feature 0, and that unused features are in gray, indicating a high posterior uncertainty in the model. \textbf{Bottom left:} Population posterior distributions for $\lambda_z$. Features 0 and 1 are effectively point masses around gain 1 (no effect), while features 2--4 approximate the $\text{Ga}(1, 1)$ data-generating model. \textbf{Bottom right:} Normalized mutual information between actual and inferred states.}
+    \label{synthetic}
+\end{figure}
+
+As seen in Figure \ref{synthetic}, the model correctly recovers only the features present in the original data. Superfluous features in the model have high posterior uncertainty for $z_k$ and high posterior confidence for $\lambda_{zk}$ around 1 (no effect). In addition, the model correctly recovers coefficients for the observed covariates, and when limited to fewer features than in the generating model, recovers a subset of the features accurately rather than blending features together (see Supplement).
+
+\subsection{Labeled neural data}
+We applied our model to a well-studied neural data set comprising single neuron recordings from macaque area LIP during the performance of a perceptual discrimination task \cite{roitman2002response}\footnote{Data available at \texttt{https://www.shadlenlab.columbia.edu/resources/RoitmanDataCode.html}}. In the experiment, stimuli consisting of moving dots of different levels of coherence were shown to the animals, whose task it was to report the direction of motion. Moreover, on each trial, one direction was favored, in that the location of the target indicating this direction was placed in the response field of the recorded neuron. Thus, in addition to 5 coherence levels, each trial also varied based on whether the motion direction corresponed to the target in or out of the response field.
+
+We fit a model with $K = 10$ features and $U = 27$ units to neural responses from the 1-second stimulus presentation period of the task. Spike counts corresponded to bins of $dt = 20$ms. In this case, each unit experienced a different number of presentations of each stimulus condition, resulting in a ragged observation matrix.
+
+\begin{figure}[ht]
+    \center
+    \includegraphics[width=0.7\linewidth]{figures/roitman}
+    \caption{\textbf{Top:} Actual and recovered binary features during the stimulus presentation period. Note that model features 5 -- 8 are unused and that feature 0 closely tracks the Out feature of the data, albeit delayed. \textbf{Bottom} Actual and predicted firing rates for the stimulus period. Note that the model infers stimulus categories from the data, including appropriate timing of differences between categories.}
+    \label{roitman}
+\end{figure}
+Figure \ref{roitman} shows the experimental labels from the concatenated stimulus periods, along with labels inferred by our model. Once again, the model has left some features unused, but correctly discerned differences in between stimuli in the unlabeled data. Even more importantly, the model correctly captures the initial 200ms ``dead time'' during the stimulus period in which firing rates remain at pre-stimulus baseline. In addition, the model groups stimuli with similar firing rates together, as well as roughly capturing the time course of stimulus differentiation. As a result, mismatch between the ground truth labels and model-inferred features reflects fundamental ambiguities in the neural data, with the model's latent states taking into account features of spiking response not necessarily known in advance by experimenters.
+
+\section{Movie data}
+
+\section{Discussion}
 
 \section{Submission of papers to NIPS 2015}
 
@@ -462,7 +575,7 @@ final paper.
 \begingroup
 \renewcommand{\section}[2]{}
 \bibliography{pearson_beck}{}
-\bibliographystyle{unsrt}
+\bibliographystyle{ieeetr}
 \endgroup
 
 \end{document}
