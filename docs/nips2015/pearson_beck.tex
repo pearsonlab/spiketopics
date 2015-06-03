@@ -24,14 +24,6 @@ Durham, NC 27708 \\
 \texttt{jeff.beck@duke.edu} \\
 }
 
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to \LaTeX{} to determine where to break
-% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
-% puts 3 of 4 authors names on the first line, and the last on the second
-% line, try using \AND instead of \And before the third author name.
-
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
 
@@ -84,8 +76,8 @@ Note that this is conceptually similar to the generalized linear model for firin
 In addition, to enforce parsimony in the inferred features, we put sparse hierarchical priors with hyperparameters $\gamma = (c, d)$ on the $\lambda_z$ terms:
 \begin{align}
     \label{hierarchy}
-    \lambda_{uk} &\sim \text{Ga}(c_k, c_k d_k) & c_k &\sim \text{Ga}(a_{ck}, b_{ck})
-    & d_k &\sim \text{Ga}(a_{dk}, b_{dk})
+    \lambda_{zuk} &\sim \text{Ga}(c_{zk}, c_{zk} d_{zk}) & c_{zk} &\sim \text{Ga}(a_{ck}, b_{ck})
+    & d_{zk} &\sim \text{Ga}(a_{dk}, b_{dk})
 \end{align}
 That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around 0. And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified covariate responses, $\lambda_{xu}$, we model the unit effects non-hierarchially using independent Gamma priors for each unit.
 
@@ -128,9 +120,11 @@ From \ref{obs_model} and \ref{fr_model} above, we can write the probability of t
             x_{t(m) r} \log \lambda_{xu(m) r}
             \right)
     \right] \\
-    - \sum_m \Lambda_{t(m) u(m)} + \text{constant,}
+    - \sum_m \theta_m \Lambda_{t(m) u(m)} + 
+    \sum_{mk} \log (A_k)_{z_{t(m)+1, k}, z_{t(m), k}} + 
+    \sum_k \log (\pi_k)_{z_{0k}} + \text{constant,}
 \end{multline}
-where again, $m$ indexes observations of (time, unit) pairs. Given that \ref{log_evidence} is of an exponential family form for $\theta$ and $\lambda$ conditioned on all other variables, free-form variational arguments \cite{Blei2006-oh} suggest variational posteriors:
+where again, $m$ indexes observations of (time, unit) pairs and the last two nontrivial terms represent the probability of the Markov sequence given by $z_{tk}$. Given that \ref{log_evidence} is of an exponential family form for $\theta$ and $\lambda$ conditioned on all other variables, free-form variational arguments \cite{Blei2006-oh} suggest variational posteriors:
 \begin{align}
     \lambda_{0u} &\sim \text{Ga}(\alpha_{0u}, \beta_{0u}) &
     \lambda_{zuk} &\sim \text{Ga}(\alpha_{zuk}, \beta_{zuk}) &
