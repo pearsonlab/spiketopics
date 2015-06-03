@@ -109,9 +109,29 @@ while the effective emission probabilities are
 \end{align}
 Given these update rules, we can then alternate between calculating $(\eta, \tilde{A}, \tilde{\pi})$, performing forward-backward to get $(\xi, \Xi, \log Z)$ and recalculating $(\eta, \tilde{A}, \tilde{\pi})$.
 
+\subsection{Overdispersion, firing rate effects}
+Both the case of $p(\theta)$ and $p(\lambda)$ are straightforward. If we ignore subscripts and write $p(y) = \text{Ga}(a, b)$, $q(y) = \text{Ga}(\alpha, \beta)$, then
+\begin{equation}
+    \mathbb{E}_q \left[\log \frac{p(y)}{q(y)} \right] = 
+    (\overline{a} - 1) \overline{\log y} + \overline{b} \overline{y} + \mathcal{H}[q(y)]
+\end{equation}
+where again, $\overline{\log y}$, $\overline{y}$ and $\mathcal{H}[q(y)]$ are straightforward properties of the gamma distribution. For the expectations of the prior parameters, we have
+\begin{align}
+    \overline{a_{\theta u(m)}} &= \overline{s_{u}} & \overline{b_{\theta u(m)}} &= \overline{s_{u}} \\
+    \overline{a_{0 u}} &= \overline{c_{0}} & \overline{b_{0 }} &= \overline{c_{0}}\overline{d_{0}} \\
+    \overline{a_{z uk}} &= \overline{c_{zk}} & \overline{b_{z k}} &= \overline{c_{zu}}\overline{d_{zu}} \\
+    \overline{a_{xur}} &= a_{xur} & \overline{b_{xur}} &= b_{xur}
+\end{align}
+since we assume no hierarchy on the firing rate effects for the covariates $x$. As we will see below, the expectations under the variational posterior of $s$, $c$, and $d$ are straightforward to calculate.
 
+\subsection{Hyperparameters}
+As shown in the main text, the hyperparameters $c$ and $d$, given gamma priors, have conjugate gamma posteriors, so that their contribution to the evidence lower bound, $\mathbb{E}_q \left[\log \frac{p(\gamma)}{q(\gamma)} \right]$ is a sum of terms of the form
+\begin{align}
+    (a_{c} - 1) \overline{\log c} + b_{c} \overline{c} + \mathcal{H}[q(c)] + 
+    (a_{d} - 1) \overline{\log d} + b_{d} \overline{d} + \mathcal{H}[q(d)] 
+\end{align}
+In other words, these are straightforward gamma expectations, functions of the prior parameters $a$ and $b$ for each variable and the corresponding posterior parameters $\alpha$ and $\beta$. Similarly, the overdispersion terms are exactly the same with the substitutions $a \rightarrow s$, $d\rightarrow 1$.
 
-\newpage
 \subsubsection*{References}
 \begingroup
 \renewcommand{\section}[2]{}
