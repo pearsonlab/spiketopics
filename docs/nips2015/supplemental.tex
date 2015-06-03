@@ -1,0 +1,121 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips15submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amssymb,amsmath}
+\usepackage[pdftex]{graphicx}
+%\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
+
+
+\title{Variational Bayesian Inference for Neural Feature Tagging of Unstructured Stimuli\\Supplemental Material}
+
+
+\author{
+John M.~Pearson\\
+Duke Institute for Brain Sciences \\
+Duke University\\
+Durham, NC 27708 \\
+\texttt{john.pearson@duke.edu} \\
+\And
+Jeffrey M.~Beck \\
+Department of Neurobiology \\
+Duke University Medical Center \\
+Durham, NC 27708 \\
+\texttt{jeff.beck@duke.edu} \\
+}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+% \nipsfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+\maketitle
+
+\section{Evidence Lower Bound (ELBO)}
+Here we derive the evidence lower bound (ELBO) used as a variational objective by our inference algorithm. That is, we want to calculate
+\begin{equation}
+    \mathcal{L} \equiv \mathbb{E}_q \left[\log \frac{p(\Theta|N)}{q(\Theta)} \right] = \mathbb{E}_q \left[\log p(\Theta|N) \right] + \mathcal{H}[q(\Theta)]
+\end{equation}
+From \cite{beal2003variational}, this can be written
+\begin{multline}
+    \mathcal{L} = \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] 
+    + \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] 
+    + \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] \\ 
+    + \mathbb{E}_{q(\theta)} \left[\log \frac{p(\theta)}{q(\theta)} \right] 
+    + \mathbb{E}_{q(\lambda)} \left[\log \frac{p(\lambda)}{q(\lambda)} \right] 
+    + \mathbb{E}_{q(\gamma)} \left[\log \frac{p(\gamma)}{q(\gamma)} \right] 
+\end{multline}
+For the first two terms, updates are standard and covered in \cite{beal2003variational}. The rest we do piece-by-piece below:
+
+\subsection{Log evidence}
+We would like to calculate $\mathbb{E}_{q}\left[ \log \frac{p(N, z|x, \Theta)}{q(z)}\right]$. To do this, we make use of expectations calculated via the posteriors returned from the forward-backward algorithm
+\begin{align}
+    \xi_{t} &\equiv p(z_{t}|N, \theta) &
+    \Xi_{t, ij} &\equiv p(z_{t+1} = j, z_{t} = i|N, \theta) &
+    \log Z_{t} &= \log p(N_{t+1}|N_{t}, \Theta) 
+\end{align}
+Here, we have suppressed the latent feature index $k$ and abuse notation by writing the observation index as $t$, but in the case of multiple observations at a given time, we pool across units and presentations: $N_t \equiv \sum_{m; t(m) = t} N_m$. From this, we can write
+\begin{multline}
+     \mathbb{E}_{q}\left[ \log p(N, z|x, \Theta) \right] = 
+     \sum_{mkr} \left[N_m \left( 
+        \overline{\log \theta_m} + \overline{\log \lambda_{0u(m)}} +
+        \xi_{t(m)k}\overline{\log \lambda_{zuk}} + 
+        x_{t(m)r} \overline{\log \lambda_{xu(m)r}}
+     \right) \right] \\ 
+     - \sum_m \overline{\theta_m} \mathbb{E}_q\left[\Lambda_{t(m)u(m)} \right]      + \sum_{tk} \left[ \text{tr}\left(\Xi_{tk} \overline{\log A_k^T} \right)
+     + \xi_{0k}^T \overline{\log \pi_k}
+     \right]
+    + \text{constant}
+ \end{multline} 
+In what follows, we will drop the irrelevant constant. For $\overline{\log y}$, where $y \in \lbrace \theta, \lambda_0, \lambda_z, \lambda_x \rbrace$, the assumption $q(y) = \text{Ga}(\alpha, \beta)$ gives
+\begin{equation}
+    \overline{\log y} = \psi(\alpha) - \log \beta
+\end{equation}
+with $\psi(x)$ the digamma function. Likewise, the expectation $\overline{\theta}$ is straightforward. For the expectation of the rate, we have
+\begin{equation}
+    \mathbb{E}_q\left[
+        \lambda_{0u} \prod_k \lambda_{zuk}^{z_{tk}} \prod_r \lambda_{xur}^{x_{tr}}
+    \right] = \frac{\alpha_{0u}}{\beta_{0u}}
+    \prod_k \left(1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{zuk}}{\beta_{zuk}} \right)
+    \prod_r \frac{1}{\beta_{xur}^{x_{tr}}} \frac{\Gamma(\alpha_{xur} + x_{tr})}{\Gamma(\alpha_{xur})}
+\end{equation}
+However, for $\alpha \gg 1$, we can write $\Gamma(\alpha + x)/\Gamma(\alpha) \approx \alpha^\gamma$, so that we can write 
+\begin{equation}
+    \mathbb{E}_q[\Lambda_{tu}] = H_{0u} F_{tu} G_{tu}
+\end{equation}
+with $G_{tu} \approx \prod_r (\alpha_{xur}/\beta_{xur})^{x_{tr}}$. In addition, it will later be useful to have the expectation over \emph{all except} a particular feature $k$ or $r$, for which we define
+\begin{align}
+    F_{tuk} &\equiv \prod_{k'\neq k} \left(1 - \xi_{tk'} + \xi_{tk'} \frac{\alpha_{zuk'}}{\beta_{zuk'}} \right) \\
+    G_{tur} &\equiv \prod_{r' \neq r} \left(\frac{\alpha_{xur'}}{\beta_{xur'}} \right)^{x_{tr'}}
+\end{align}
+Finally, we want the entropy of the variational posterior over $z$, $\mathbb{E}_q[-\log q(z)]$. We can write this in the form
+\begin{equation}
+    -\sum_{tk} \left[
+        \xi_{tk}^T\eta_{tk} + \text{tr}\left(\Xi_{tk} \tilde{A}_k^T \right)
+        + \xi_{0k}^T\tilde{\pi}_k
+        - \log Z_{tk}
+    \right]
+\end{equation}
+with $(\eta, \tilde{A}, \tilde{\pi})$ the parameters of the variational posterior corresponding to the emission, transition, and initial state probabilities of the Markov chain (interpreted as matrices) and $Z$ the normalization constant. From \cite{beal2003variational}, we have that variational updates should give
+\begin{align}
+    \tilde{A}_k &\leftarrow \overline{\log A_k} &
+    \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
+\end{align}
+while the effective emission probabilities are
+\begin{align}
+    \eta_{tk} &\leftarrow \delta_{z_{tk}, 1}\cdot \sum_{m; t(m) = t} N_m \overline{\log \lambda_{zu(m)k}} - \sum_{m; t(m) = t} \overline{\theta_m} H_{0u(m)} F_{tku(m)} G_{tu(m)}
+\end{align}
+Given these update rules, we can then alternate between calculating $(\eta, \tilde{A}, \tilde{\pi})$, performing forward-backward to get $(\xi, \Xi, \log Z)$ and recalculating $(\eta, \tilde{A}, \tilde{\pi})$.
+
+
+
+\newpage
+\subsubsection*{References}
+\begingroup
+\renewcommand{\section}[2]{}
+\bibliography{pearson_beck}{}
+\bibliographystyle{ieeetr}
+\endgroup
+\end{document}
