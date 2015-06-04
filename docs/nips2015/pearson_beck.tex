@@ -9,8 +9,7 @@
 %\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
 
 
-\title{Variational Bayesian Inference for Neural Feature Tagging of Unstructured Stimuli}
-
+\title{Neuron's Eye View: automated neural tagging of complex stimuli}
 
 \author{
 John M.~Pearson\\
@@ -37,7 +36,7 @@ Durham, NC 27708 \\
 
 \begin{abstract}
 Experiments that study neural encoding of stimuli at the level of individual neurons typically choose a small set of features present in the world --- contrast and luminance for vision, pitch and intensity for sound --- and assemble a stimulus set that systematically (and preferably exhaustively) varies along these dimensions. Neuronal responses in the form of firing rates are then examined for modulation with respect to these features via some form of regression. This approach requires that experimenters know (or guess) in advance the relevant features coded by a given population of neurons. Unfortunately, for domains as complex as social interaction or natural movement, the relevant feature space is poorly understood, and an arbitrary \emph{a priori} choice of feature sets may give rise to confirmation bias. Here, we present a Bayesian model for exploratory data analysis that is capable of automatically identifying the features present in unstructured stimuli based solely on neuronal responses. Our approach is unique within the class of latent state space models of neural activity in
-that it assumes that firing rates of neurons are sensitive to multiple discrete time-varying features tied to the stimulus, each of which has Markov (or semi-Markov) dynamics. That is, we are modeling stimulus dynamics as informed by neural activity rather than neural dynamics.  We derive a fast variational Bayesian inference algorithm and show that it correctly recovers hidden features in synthetic data, as well as ground-truth stimulus features in a prototypical neural dataset. To demonstrate the utility of the algorithm, we also apply it to an exploratory analysis of prefrontal cortex recordings performed while monkeys watched naturalistic videos of primate social activity.
+that it assumes that firing rates of neurons are sensitive to multiple discrete time-varying features tied to the \emph{stimulus}, each of which has Markov (or semi-Markov) dynamics. That is, we are modeling stimulus dynamics as informed by neural activity rather than neural dynamics.  We derive a fast variational Bayesian inference algorithm and show that it correctly recovers hidden features in synthetic data, as well as ground-truth stimulus features in a prototypical neural dataset. To demonstrate the utility of the algorithm, we also apply it to an exploratory analysis of prefrontal cortex recordings performed while monkeys watched naturalistic videos of primate social activity.
 \end{abstract}
 
 \section{Introduction}
