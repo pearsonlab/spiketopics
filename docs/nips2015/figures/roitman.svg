@@ -10,7 +10,7 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="1010"
+   width="1068.6256"
    height="666.92889"
    id="svg5546"
    version="1.1"
@@ -486,8 +486,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="310.4388"
-     inkscape:cy="269.35661"
+     inkscape:cx="370.43881"
+     inkscape:cy="269.35662"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -508,7 +508,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -516,7 +516,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(275.4388,93.781536)">
+     transform="translate(335.4388,93.781536)">
     <g
        id="g11479"
        transform="translate(-11.943045,0)">
@@ -4021,7 +4021,7 @@
     </g>
     <g
        id="axes_1-7"
-       transform="matrix(0.83776013,0,0,0.83776013,-392.00551,-102.97253)">
+       transform="matrix(0.83776013,0,0,0.83776013,-452.00551,-102.97253)">
       <g
          id="patch_2-0">
         <path
