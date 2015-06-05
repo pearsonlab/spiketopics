@@ -186,10 +186,6 @@ if __name__ == '__main__':
     gpm = fitobjs[bestind]
     del fitobjs  # to save memory
 
-    ############## fit model
-    print "Fitting model..."
-    gpm.do_inference(tol=1e-4, verbosity=2)
-
     print "Cleaning up..."
     # need to get rid of externally defined functions for pickling
     # also has the effect of "neutering" object from futher update
