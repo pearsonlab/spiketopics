@@ -215,4 +215,4 @@ if __name__ == '__main__':
     features_outfile = 'data/features.csv'
     xi = gpm.nodes['HMM'].nodes['z'].z[1]
     zdf = pd.DataFrame(xi, columns = ['Z' + str(k) for k in xrange(K)])
-    zdf.to_csv(features_outfile)
+    zdf.to_csv(features_outfile, index=False)
