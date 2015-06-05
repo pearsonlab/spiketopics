@@ -4,8 +4,6 @@
 \usepackage{url}
 \usepackage{amssymb,amsmath}
 \usepackage[pdftex]{graphicx}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
 %\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
 
 
@@ -93,28 +91,6 @@ where we have allowed the dwell time distribution to depend on both the feature 
 
 \section{Inference}
 
-\begin{algorithm}[ht]
-\caption{Iterative update for variational inference}\label{algo}
-\begin{algorithmic}[1]
-\Procedure{Iterate}{}
-    \State Update baselines $\lambda_0$\Comment{conjugate Gamma}
-    \State Update baseline hyperparameters $\gamma_0$\Comment{conjugate Gamma}
-    \For{$k = 1\ldots K$}\Comment{always in the same order}
-        \State Update firing rate effects $\lambda_{zk}$\Comment{conjugate Gamma}
-        \State Update firing rate hyperparameters $\gamma_{zk}$\Comment{conjugate Gamma}
-        \State Update Markov chain parameters $A_k, \pi_k$
-        \State $z_k$ posteriors $\gets$\Call{forward-backward}{}
-        \If{semi-Markov}
-            \State Update duration distribution $p_k(d|j)$\Comment{BFGS optimization}
-            \State Update duration hyperparameters
-        \EndIf
-    \EndFor
-    \State Update covariate firing effects $\lambda_x$\Comment{BFGS optimization}
-    \State Update overdispersion $\theta$\Comment{conjugate Gamma}
-\EndProcedure
-\end{algorithmic}
-\end{algorithm}
-
 We perform variational inference for the posteriors over the model variables $\Theta = (\lambda_0, \lambda_z, \lambda_x, z, A, \pi, \theta, c_0, d_0, c_z, d_z, s)$. In addition, for the semi-Markov case, we include variables $(m, \tau)$, the parameters for the state dwell time distribution. That is, we wish to approximate the joint posterior density, 
 \begin{equation}
     p(\Theta|N) \propto p(N, z|\lambda, A, \pi, \theta, \gamma) 
@@ -191,7 +167,7 @@ For Hidden Markov Models, given the observation model \ref{log_evidence}, infere
 \end{equation}
 This correction for trunction must then be added to $\mathbb{E}_q[p(z|\Theta)]$. For inference in this case, we use an extension of the forward-backward algorithm to semi-Markov transitions \cite{Yu2006-bb}, at the expense of time complexity $\mathcal{O}(SDT)$ $(S = 2)$ per latent state, to calculate $q(z_k)$ (see Supplement). For the $4SK$ hyperparameters of the Normal-Gamma distribution, we perform an explicit BFGS optimization on the $4S$ parameters of each chain on each iteration.
 
-\section{Experiments}
+\section{Experiments}\footnote{Code for all algorithms and analyses is available online at \textbf{redacted}.}
 \subsection{Synthetic data}
 We generated synthetic data from the model in Section \ref{model_sec} for $U=100$ neurons for $T=10,000$ time bins of $dt=0.0333s$ ($\approx 6$min). Assumed firing rates and effect sizes were realistic for cortical neurons, with mean baseline rates of 10 spikes/s and firing rate effects given by a $\text{Ga}(1, 1)$ distribution for $K_{\text{data}}=3$ latent features. In addition, we included $R=3$ known covariates generated according to Markov dynamics. For this experiment, we assumed that each unit was presented once with the stimulus time series, so that $M = 1$. That is, we tested a case in which inference was driven primarily by variabiliy in population responses across stimuli rather than pooling of data across repetitions of the same stimulus. Moreover, to test the model's ability to parsimoniously infer features, we set $K=5$. That is, we asked the model to recover more features than were present in the data.
 
