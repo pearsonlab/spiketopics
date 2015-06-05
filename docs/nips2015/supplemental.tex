@@ -241,7 +241,6 @@ This can be derived either by performing the integral directly or by noting that
         \State $\xi_k, \Xi_k, \log Z_k \gets$\Call{forward-backward}{$\eta_k, \tilde{A}_k, \tilde{\pi}_k$}
         \If{semi-Markov}
             \State Update duration distribution $p_k(d|j)$\Comment{BFGS optimization}
-            \State Update duration hyperparameters
         \EndIf
         \State Update cached $F$
     \EndFor
