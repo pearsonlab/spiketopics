@@ -44,10 +44,6 @@ if __name__ == '__main__':
     D = 500  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
 
-    # set up model object
-    print "Initializing model..."
-    gpm = gp.GammaModel(df, K, D)
-
     #################### priors and initial values
 
     print "Setting priors and inits..."
@@ -170,7 +166,7 @@ if __name__ == '__main__':
     Lvals = []
     for idx in xrange(numstarts):
         # set up model object
-        gpm = gp.GammaModel(df, K)
+        gpm = gp.GammaModel(df, K, D)
         gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
         gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
         gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
@@ -215,3 +211,8 @@ if __name__ == '__main__':
     print "Writing to disk..."
     outfile = 'data/fitted_model_object.pkl'
     pickle.dump(gpm, open(outfile, 'wb'))
+
+    features_outfile = 'data/features.csv'
+    xi = gpm.nodes['HMM'].nodes['z'].z[1]
+    zdf = pd.DataFrame(xi, columns = ['Z' + str(k) for k in xrange(K)])
+    zdf.to_csv(features_outfile)
