@@ -90,9 +90,9 @@ Note that we have allowed the dwell time distribution to depend on both the feat
 
 \section{Inference}
 
-We perform variational inference for the posteriors over the model parameters $\Theta = (\lambda_0, \lambda_z, \lambda_x, A, \pi, c_0, d_0, c_z, d_z, s)$ and latents $Z=(z_{kt},\theta_m)$. In addition, for the semi-Markov case, we include variables $(m, \tau)$, the parameters for the state dwell time distribution. That is, we wish to approximate the joint posterior density, 
+We perform variational inference for the posteriors over the model parameters $\Theta = (\lambda_0, \lambda_z, \lambda_x, A, \pi, c_0, d_0, c_z, d_z, s)$ and latents $Z=(z_{kt},\theta_m)$. In addition, for the semi-Markov case, we include $(m, \tau)$, the parameters for the state dwell time distribution. That is, we wish to approximate the joint posterior density, 
 \begin{equation}
-    p(\Theta,Z|N) \propto p(N, Z, \theta|\lambda, A, \pi, \theta, \gamma) 
+    p(\Theta,Z|N) \propto p(N, Z |\lambda, A, \pi, \theta, \gamma) 
     p(\lambda|\gamma) p(\gamma)
     p(A)p(\pi)p(\theta|s)p(s)
 \end{equation}
@@ -102,7 +102,7 @@ by a variational posterior $q_\Theta(\Theta)q_Z(Z)$ that factorizes over paramet
 \begin{equation}
     \mathcal{L} \equiv \mathbb{E}_q \left[\log \frac{p(\Theta,Z|N)}{q_\Theta(\Theta)q_Z(Z,\theta)} \right] = \mathbb{E}_q \left[\log p(\Theta,Z|N) \right] + \mathcal{H}[q_\Theta(\Theta)] + \mathcal{H}[q_Z(Z)]
 \end{equation}
-where $\mathcal{H}$ the entropy. Following the factoriam HMM work of \cite{ghahramani1997factorial}, we also assume that the posterior factorizes over each latent time series $z_{:k}$ and the over dispersion factor $\theta_m$ as well as the rate parameters $\lambda_(.)$ associated with each Markov process.  This factorization results in a variational posterior of the form:
+where $\mathcal{H}$ the entropy. Following the factoriam HMM work of \cite{ghahramani1997factorial}, we also assume that the posterior factorizes over each latent time series $z_{:k}$ and the over dispersion factor $\theta_m$ as well as the rate parameters $\lambda$ associated with each Markov process, regressor, and baseline firing rate.  This factorization results in a variational posterior of the form:
 
 \begin{multline}
     q(\Theta,Z) = q(c_0)q(d_0)\prod_m q(\theta_m) \prod_u q(s_u) q(\lambda_{0u}) \prod_r q(\lambda_{xur}) \times \\ 
@@ -211,11 +211,11 @@ Because the behaviors of interest in these stimuli potentially span a large rang
 \textbf{Figure 3 about here}
 
 \section{Discussion}
-Here, we have proposed and implemented a method for learning features in stimuli via the responses of populations of spiking neurons. This work addresses a growing trend in systems neuroscience --- the increasing use of rich and unstructured stimulus sets --- without requiring either expert labeling or a metric on the stimulus space. As such, we expect it to be of particular use in disciplines like social neuroscience, olfaction, and other areas in which the real world is complex and strong hypotheses about the forms of the neural code are lacking. By learning features of interest to neural populations directly from data, we stand to generate unexpected, more accurate hypotheses about the brain's relationship to the sensory world.
+Here, we have proposed and implemented a method for learning features in stimuli via the responses of populations of spiking neurons. This work addresses a growing trend in systems neuroscience --- the increasing use of rich and unstructured stimulus sets --- without requiring either expert labeling or a metric on the stimulus space. As such, we expect it to be of particular use in disciplines like social neuroscience, olfaction, and other areas in which the real world is complex and strong hypotheses about the forms of the neural code are lacking. By learning features of interest to neural populations directly from neural data, we stand to generate unexpected, more potentially more accurate (less biased) hypotheses regarding the neural representation of the external world.  
 
-We have shown that our model is capable of parsimoniously and correctly inferring features in the low signal-to-noise regime of cortical activity, even in the case of indpendently recorded neurons. Moreover, by employing a Variational Bayesian approach to inference, we gain three key advantages: First, we gain the advantages of Bayesianism in general: estimates of confidence in inferences, parsimony and regularization via priors, and the ability to do principled model comparison. Second variational methods, particularly those using stochastic gradient approaches, scale well to large datasets. Finally, variational methods are fast, in that they typically converge within only a few tens of iterations and in many case (such as ours) require mostly simple algebraic coordinate updates. Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
+We have shown that our model is capable of parsimoniously and correctly inferring features in the low signal-to-noise regime of cortical activity, even in the case of indpendently recorded neurons. Moreover, by employing a fully Variational Bayesian approach to inference, we gain three key advantages: First, we gain the advantages of Bayesianism in general: estimates of confidence in inferences, parsimony and regularization via priors, and the ability to do principled model comparison. Second variational methods, particularly those using stochastic gradient approaches, scale well to large datasets. Finally, variational methods are fast, in that they typically converge within only a few tens of iterations and in many case (such as ours) require mostly simple algebraic coordinate updates. Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
 
-
+Future directions include augmenting the model of overdispersion via an autoregressive process to take into account slow variations in neural activity that are not driven by the stimulus as well as a non-trivial temporal dependence of neural activity on latents in a manner that is consistent with the temporal kernels typically used with Poisson regression models.  
 
 \subsubsection*{Acknowledgments}
 %This work was supported by an NIH Big Data to Knowledge Career Development Award to JP (K01ES025442).
