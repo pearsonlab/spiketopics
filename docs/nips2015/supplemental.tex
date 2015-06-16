@@ -187,10 +187,10 @@ Because we do not restrict the covariates $x(t)$ to be binary, the expression \r
 \end{equation}
 We also supply the optimizer with the gradient:
 \begin{equation}
-    \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_m x_{t(m)ur} \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)} 
-    e^{-\sum_r \epsilon_{u(m)r} x_{t(m)u(m)r}}
+    \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_{m; u(m) = u} x_{t(m)ur} \overline{\theta}_m H_{0u} F_{t(m)u} 
+    e^{-\sum_r \epsilon_{ur} x_{t(m)ur}}
 \end{equation}
-On each iterate, we then optimze $\mathcal{L}_\epsilon$, initialzing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
+where we sum only over observations with $u(m) = u$. On each iterate, we then optimze $\mathcal{L}_\epsilon$, initialzing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
 
 \subsubsection{Semi-Markov duration distribution}
 If the dwell time distributions of states in the semi-Markov model were truly continuous, the parameters $(m, s^2)$ of a lognormal distribution $p(d|j)$ would have a Normal-Gamma conjugate prior, and updates would be closed-form. However, the requirement that the durations be integers and that there exist a maximal duration, $D$, over which these probability mass functions must normalize results in an extra term in $\mathbb{E}_q[\log p]$ arising from the normalization constant. In this case, we must explicitly optimize for the parameters of the Normal-Gamma prior on $(m, s^2)$. However, unlike the case of \ref{beta_x}, these parameters are only updated for one latent feature at a time. Since the Normal-Gamma distribution has only 4 parameters and the number of states of the latent variable is $S = 2$, this requires updating $4SK$ parameters, but only taken $4S = 8$ at a time, a much more manageable task.
