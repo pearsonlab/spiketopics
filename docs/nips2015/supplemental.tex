@@ -183,12 +183,12 @@ We employ explicit optimization steps for two updates in our iterative Algorithm
 Because we do not restrict the covariates $x(t)$ to be binary, the expression \ref{eff_rate}, no longer yields a conditional log probability for $\lambda_x$ in the exponential family. This leaves us with a transcendental equation to solve for $\beta_{xr}$. However, from Table \ref{conj_updates}, we see that $\alpha_{xr} \gg \sum_t x_{tr}$, allowing us to approximate $G_t \approx \prod_r (\alpha_{xr}/\beta_{xr})^{x_{tr}}$ as we have done above. Moreover, since the sum $\sum_t G_t \sim T\overline{G}$, we expect $\alpha_x / \beta_x \approx 1$ at the optimum for most reasonable datasets. We thus reparameterize $\beta_{xur} = \alpha_{xur}e^{-\epsilon_{ur}}$ and write the relevant $\epsilon$-dependent piece of the objective function $\mathcal{L}$ as
 \begin{equation}
     \mathcal{L}_\epsilon = \sum_{ur} \left[a_{xur}\epsilon_{ur} - b_{xur}e^{-\epsilon_{ur}} \right] - \sum_m \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)} 
-    e^{-\sum_r \epsilon_{u(m)r} x_{t(m)ur}}
+    e^{-\sum_r \epsilon_{u(m)r} x_{t(m)u(m)r}}
 \end{equation}
 We also supply the optimizer with the gradient:
 \begin{equation}
     \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_m x_{t(m)ur} \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)} 
-    e^{-\sum_r \epsilon_{u(m)r} x_{t(m)ur}}
+    e^{-\sum_r \epsilon_{u(m)r} x_{t(m)u(m)r}}
 \end{equation}
 On each iterate, we then optimze $\mathcal{L}_\epsilon$, initialzing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
 
