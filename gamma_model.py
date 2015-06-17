@@ -8,6 +8,7 @@ from numba import autojit, jit
 
 
 class GammaModel:
+
     """
     This class fits a Poisson observation model using a product of Gamma-
     distributed variables to model the rates.
@@ -90,10 +91,10 @@ class GammaModel:
         # test if parameters indicate there's a hierarchy
         if 'prior_shape_shape' in kwargs:
             nodes = nd.initialize_gamma_hierarchy(name, parent_shape,
-                node_shape, **kwargs)
+                                                  node_shape, **kwargs)
         elif 'mapper' in kwargs:
             nodes = nd.initialize_ragged_gamma_hierarchy(name, parent_shape,
-                node_shape, **kwargs)
+                                                         node_shape, **kwargs)
         else:
             nodes = nd.initialize_gamma(name, node_shape, **kwargs)
 
@@ -115,7 +116,7 @@ class GammaModel:
         Set up node for firing rate effects due to latent variables.
         """
         self._initialize_gamma_nodes('fr_latents', (self.U, self.K),
-            (self.K,), **kwargs)
+                                     (self.K,), **kwargs)
 
         return self
 
@@ -124,7 +125,7 @@ class GammaModel:
         Set up node for firing rate effects due to latent variables.
         """
         self._initialize_gamma_nodes('fr_regressors', (self.U, self.R),
-            (self.R,), **kwargs)
+                                     (self.R,), **kwargs)
 
         return self
 
@@ -133,7 +134,7 @@ class GammaModel:
         Set up trial-to-trial overdispersion on firing rates.
         """
         self._initialize_gamma_nodes('overdispersion', (self.M,),
-            (self.U,), **kwargs)
+                                     (self.U,), **kwargs)
 
         return self
 
@@ -160,7 +161,7 @@ class GammaModel:
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
         node.post_shape = (node.prior_shape.expected_x() +
-            nn.groupby(uu).sum().values)
+                           nn.groupby(uu).sum().values)
         node.post_rate = node.prior_rate.expected_x() + eff_rate
 
     def update_fr_latents(self, idx):
@@ -184,7 +185,8 @@ class GammaModel:
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
         lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
-        lam.post_rate[..., idx] = lam.prior_rate.expected_x()[..., idx] + eff_rate
+        lam.post_rate[..., idx] = lam.prior_rate.expected_x(
+        )[..., idx] + eff_rate
         self.F_prod(idx, update=True)
 
     def calc_log_evidence(self, idx):
@@ -276,7 +278,7 @@ class GammaModel:
         NX = nn[:, np.newaxis] * self.Xframe
 
         lam.post_shape = (lam.prior_shape.expected_x().reshape(-1, self.R) +
-            NX.groupby(uu).sum().values)
+                          NX.groupby(uu).sum().values)
 
         # now to find the rates, we have to optimize
         starts = lam.post_rate
@@ -308,8 +310,8 @@ class GammaModel:
         eps_starts = np.log(aa / starts)
 
         res = minimize(minfun, eps_starts,
-            args=(aa, ww, uu, Fblod, self.Xframe.values),
-            jac=True, options={'maxiter': self.maxiter})
+                       args=(aa, ww, uu, Fblod, self.Xframe.values),
+                       jac=True, options={'maxiter': self.maxiter})
 
         if not res.success:
             print "Warning: optimization terminated without success."
@@ -328,7 +330,8 @@ class GammaModel:
 
         if node.has_parents:
             node.post_shape = node.prior_shape.expected_x()[uu] + np.array(nn)
-            node.post_rate = node.prior_rate.expected_x()[uu] + np.array(bl * F * G)
+            node.post_rate = node.prior_rate.expected_x(
+            )[uu] + np.array(bl * F * G)
         else:
             node.post_shape = node.prior_shape + np.array(nn)
             node.post_rate = node.prior_rate + np.array(bl * F * G)
@@ -539,8 +542,8 @@ class GammaModel:
                     assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
-                    print ("chain {}: updated firing rate effects: L = {}"
-                           ).format(k, Lval)
+                    print("chain {}: updated firing rate effects: L = {}"
+                          ).format(k, Lval)
 
                 # E step
                 logpsi = self.calc_log_evidence(k)
@@ -572,11 +575,11 @@ class GammaModel:
                 assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
-                print ("         updated overdispersion effects: L = {}"
-                    ).format(Lval)
+                print("         updated overdispersion effects: L = {}"
+                      ).format(Lval)
 
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False,
-        maxiter=np.inf, delayed_iters=[]):
+                     maxiter=np.inf, delayed_iters=[]):
         """
         Perform variational inference by minimizing free energy.
         delayed_iters is a dict of variable names that should not be
@@ -596,16 +599,17 @@ class GammaModel:
             self.Lvalues.append(self.L())
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) /
-                np.abs(self.Lvalues[-1]))
+                     np.abs(self.Lvalues[-1]))
             assert((delta > 0) | np.isclose(delta, 0))
             idx += 1
 
         # now redo inference, this time including all variables that
         # were delayed
         if len(delayed_iters) > 0:
-            print "Initial optimization done, adding {}".format(', '.join(delayed_iters))
+            print "Initial optimization done, adding {}".format(
+                ', '.join(delayed_iters))
             self.do_inference(verbosity=verbosity, tol=tol, keeplog=keeplog,
-                maxiter=maxiter, delayed_iters=[])
+                              maxiter=maxiter, delayed_iters=[])
 
 
 @autojit
