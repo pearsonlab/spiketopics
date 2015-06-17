@@ -6,6 +6,7 @@ import numexpr as ne
 import spiketopics.nodes as nd
 from numba import autojit, jit
 
+
 class GammaModel:
     """
     This class fits a Poisson observation model using a product of Gamma-
@@ -24,24 +25,24 @@ class GammaModel:
             'unit', 'time', and 'count' (time is stimulus time)
         K: number of latent categories to infer
         D: None for HMM; for HSMM, maximum duration
-        nodedict: dictionary of nodes in the model; node names can be 
+        nodedict: dictionary of nodes in the model; node names can be
             'baseline': baseline firing rates
             'regressor': firing rate effects for each regressor
             'latent': firing rate effects for latent states
             'overdispersion': firing rate effects due to overdispersion
             All of the above nodes are optional. Additional nodes (e.g.,
-            parents of the above) are permitted, and will be updated 
+            parents of the above) are permitted, and will be updated
             appropriately.
         """
         # Infer basic constants
         M = data.shape[0]  # number of observations
         # regressors should be columns other than unit, time, and count
-        R = data.shape[1] - 3  # number of regressor columns 
+        R = data.shape[1] - 3  # number of regressor columns
         T = data['time'].drop_duplicates().shape[0]  # number unique stim times
         U = data['unit'].drop_duplicates().shape[0]  # number unique units
 
         self.M = M
-        self.R = R 
+        self.R = R
         self.T = T
         self.K = K
         self.U = U
@@ -50,7 +51,7 @@ class GammaModel:
         self.nodes = {}  # dict for variable nodes in graphical model
 
         # maximum number of iterations for regressor optimization step
-        self.maxiter = 1000  
+        self.maxiter = 1000
 
         self.log = {'L': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective each iter
@@ -61,7 +62,7 @@ class GammaModel:
         """
         Split input dataframe data into two pieces: one of count observations
         (Nframe), one of regressors (Xframe). Also make two helpful arrays, one
-        of spike counts at each time, one of number of observations of each 
+        of spike counts at each time, one of number of observations of each
         time.
         """
 
@@ -77,10 +78,10 @@ class GammaModel:
 
         return self
 
-    def _initialize_gamma_nodes(self, name, node_shape, parent_shape, 
-        **kwargs):
+    def _initialize_gamma_nodes(self, name, node_shape, parent_shape,
+                                **kwargs):
         """
-        Perform multiple distpatch for initializing gamma nodes based on 
+        Perform multiple distpatch for initializing gamma nodes based on
             parameters in kwargs.
         name: name of the base node
         node_shape: shape of base node
@@ -103,7 +104,7 @@ class GammaModel:
         """
         Set up node for baseline firing rates.
         Assumes the prior is on f * dt, where f is the baseline firing
-        rate and dt is the time bin size. 
+        rate and dt is the time bin size.
         """
         self._initialize_gamma_nodes('baseline', (self.U,), (), **kwargs)
 
@@ -113,7 +114,7 @@ class GammaModel:
         """
         Set up node for firing rate effects due to latent variables.
         """
-        self._initialize_gamma_nodes('fr_latents', (self.U, self.K), 
+        self._initialize_gamma_nodes('fr_latents', (self.U, self.K),
             (self.K,), **kwargs)
 
         return self
@@ -122,7 +123,7 @@ class GammaModel:
         """
         Set up node for firing rate effects due to latent variables.
         """
-        self._initialize_gamma_nodes('fr_regressors', (self.U, self.R), 
+        self._initialize_gamma_nodes('fr_regressors', (self.U, self.R),
             (self.R,), **kwargs)
 
         return self
@@ -131,7 +132,7 @@ class GammaModel:
         """
         Set up trial-to-trial overdispersion on firing rates.
         """
-        self._initialize_gamma_nodes('overdispersion', (self.M,), 
+        self._initialize_gamma_nodes('overdispersion', (self.M,),
             (self.U,), **kwargs)
 
         return self
@@ -158,7 +159,7 @@ class GammaModel:
         allprod = od * F * G
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
-        node.post_shape = (node.prior_shape.expected_x() + 
+        node.post_shape = (node.prior_shape.expected_x() +
             nn.groupby(uu).sum().values)
         node.post_rate = node.prior_rate.expected_x() + eff_rate
 
@@ -190,7 +191,7 @@ class GammaModel:
         """
         Calculate p(N|z, rest) for use in updating HMM. Need only be
         correct up to an overall constant.
-        """ 
+        """
         logpsi = np.empty((self.T, 2))
 
         N = self.Nframe
@@ -204,18 +205,18 @@ class GammaModel:
         bl = self.nodes['baseline'].expected_x()[uu]
         Fk = self.F_prod(idx)
         G = self.G_prod()
-        allprod = bl * od * Fk * G 
+        allprod = bl * od * Fk * G
 
         lam = self.nodes['fr_latents']
         bar_log_lam = lam.expected_log_x()[uu, idx]
         bar_lam = lam.expected_x()[uu, idx]
 
         N['lam0'] = -allprod
-        N['lam1'] = -(allprod * bar_lam) + (nn *  bar_log_lam)
+        N['lam1'] = -(allprod * bar_lam) + (nn * bar_log_lam)
 
         logpsi = N.groupby('time').sum()[['lam0', 'lam1']].values
 
-        return logpsi 
+        return logpsi
 
     @autojit
     def expected_log_evidence(self):
@@ -265,7 +266,7 @@ class GammaModel:
             eff_rate *= bar_lam
 
         Elogp += -np.sum(eff_rate)
-        
+
         return Elogp
 
     def update_fr_regressors(self):
@@ -274,7 +275,7 @@ class GammaModel:
         uu = self.Nframe['unit']
         NX = nn[:, np.newaxis] * self.Xframe
 
-        lam.post_shape = (lam.prior_shape.expected_x().reshape(-1, self.R) + 
+        lam.post_shape = (lam.prior_shape.expected_x().reshape(-1, self.R) +
             NX.groupby(uu).sum().values)
 
         # now to find the rates, we have to optimize
@@ -284,7 +285,7 @@ class GammaModel:
 
     def optimize_regressor_rates(self, starts):
         """
-        Solve for log(prior_rate) via black-box optimization. 
+        Solve for log(prior_rate) via black-box optimization.
         Use log(b) since this is the natural parameter.
         Updater is the name of a factory function that returns a function
         to be minimized based on current parameter values.
@@ -306,8 +307,8 @@ class GammaModel:
 
         eps_starts = np.log(aa / starts)
 
-        res = minimize(minfun, eps_starts, 
-            args = (aa, ww, uu, Fblod, self.Xframe.values),
+        res = minimize(minfun, eps_starts,
+            args=(aa, ww, uu, Fblod, self.Xframe.values),
             jac=True, options={'maxiter': self.maxiter})
 
         if not res.success:
@@ -369,9 +370,9 @@ class GammaModel:
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
-        If k is specified, return F_{mk} (product over all but k), 
-        else return F_{m} (product over all k). If update=True, 
-        recalculate F before returning the result and cache the new 
+        If k is specified, return F_{mk} (product over all but k),
+        else return F_{m} (product over all k). If update=True,
+        recalculate F before returning the result and cache the new
         matrix. Returned array is one row per observation.
         """
         if not self.latents:
@@ -414,12 +415,12 @@ class GammaModel:
         Return the value of the G product.
         If k is specified, return G_{mk} (product over all but k),
         else return G_{m} (product over all k). If update=True,
-        recalculate G before returning the result and cache the new 
+        recalculate G before returning the result and cache the new
         matrix.
-        
-        NOTE: Because the regressors may vary by *presentation* and not 
+
+        NOTE: Because the regressors may vary by *presentation* and not
         simply by movie time, the regressors are in a "melted" dataframe
-        with each (unit, presentation) pair in a row by itself. As a 
+        with each (unit, presentation) pair in a row by itself. As a
         result, X is (M, J), G_{tu} is (M,), and G_{tku} is (M, J).
         """
         if not self.regressors:
@@ -463,7 +464,7 @@ class GammaModel:
         """
         Calculate E[log p - log q] in the variational approximation.
         This result is only valid immediately after the E-step (i.e, updating
-        E[z] in forward-backward). For a discussion of cancellations that 
+        E[z] in forward-backward). For a discussion of cancellations that
         occur in this context, cf. Beal (2003) ~ (3.79).
         """
         Elogp = self.expected_log_evidence()  # observation model
@@ -504,7 +505,7 @@ class GammaModel:
         keeplog = True does internal logging for debugging; values are kept in
             the dict self.log
         """
-        doprint = verbosity > 1 
+        doprint = verbosity > 1
         print_pieces = verbosity > 2
         calc_L = doprint or keeplog
 
@@ -512,14 +513,14 @@ class GammaModel:
             lastL = self.Lvalues[-1]
         else:
             lastL = -np.inf
-        
+
         # M step
         if self.baseline:
             self.nodes['baseline'].update()
             if self.nodes['baseline'].has_parents:
                 self.nodes['baseline'].update_parents()
             if calc_L:
-                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                 assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
@@ -534,18 +535,18 @@ class GammaModel:
                 if self.nodes['fr_latents'].has_parents:
                     self.nodes['fr_latents'].update_parents(k)
                 if calc_L:
-                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                     assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
                     print ("chain {}: updated firing rate effects: L = {}"
-                        ).format(k, Lval)
+                           ).format(k, Lval)
 
-                # E step        
+                # E step
                 logpsi = self.calc_log_evidence(k)
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
-                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                    Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                     assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
@@ -556,7 +557,7 @@ class GammaModel:
             if self.nodes['fr_regressors'].has_parents:
                 self.nodes['fr_regressors'].update_parents()
             if calc_L:
-                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                 assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
@@ -567,14 +568,14 @@ class GammaModel:
             if self.nodes['overdispersion'].has_parents:
                 self.nodes['overdispersion'].update_parents()
             if calc_L:
-                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces) 
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                 assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print ("         updated overdispersion effects: L = {}"
                     ).format(Lval)
 
-    def do_inference(self, verbosity=0, tol=1e-3, keeplog=False, 
+    def do_inference(self, verbosity=0, tol=1e-3, keeplog=False,
         maxiter=np.inf, delayed_iters=[]):
         """
         Perform variational inference by minimizing free energy.
@@ -594,12 +595,12 @@ class GammaModel:
             self.iterate(verbosity=verbosity, keeplog=keeplog)
             self.Lvalues.append(self.L())
 
-            delta = ((self.Lvalues[-1] - self.Lvalues[-2]) / 
+            delta = ((self.Lvalues[-1] - self.Lvalues[-2]) /
                 np.abs(self.Lvalues[-1]))
             assert((delta > 0) | np.isclose(delta, 0))
-            idx += 1 
+            idx += 1
 
-        # now redo inference, this time including all variables that 
+        # now redo inference, this time including all variables that
         # were delayed
         if len(delayed_iters) > 0:
             print "Initial optimization done, adding {}".format(', '.join(delayed_iters))
@@ -620,6 +621,7 @@ def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     assert(np.isfinite(np.log(-elbo)))
 
     return np.log(-elbo), grad.ravel() / elbo
+
 
 @autojit(nopython=True, nogil=True)
 def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
