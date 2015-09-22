@@ -6,10 +6,22 @@ Inferring binary features for neural populations.
 This code implements a version of the Gamma-Poisson model on a pseudopopulation of independently recorded neurons. Details of the model and inference are in `gamma_poisson_notes.tex`.
 
 ## Model fitting:
-- `gamma_poisson.py` is a module containing an implementation of the Forward-Backward algorithm and a class definition for the `GPModel` class
-- There are also several IPython notebooks:
-    - `gpm_sanity_check` and `gamma_poisson_scratch` fit the model to synthetic data generated from the model. These illustrate both the underlying generative model and the steps used to set up inference.
-    - `explore_inferred_etho` loads the results of model fitting and attempts to correlate inferred binary features with those in the hand-coded ethogram.
+
+### Integration tests:
+- `gamma_poisson_scratch.ipynb`: Uses the Gamma-Poisson model to fit synthetic data and successfully infer the underlying Markov chain.
+- `gpm_sanity_check.ipynb`: Another integration test of inference in the Gamma-Poisson model, this time with hierarchical priors on firing rates for each feature to induce parsimony.
+- `lognormal_model_integration_test.ipynb`: Similar to the integration tests above, but using a semi-Markov model defined by a lognormal prior on dwell-time in each state.
+
+### Model Code
+- `gamma_model.py`: Implements the Gamma model for firing rates with HMM state space dynamics.
+- `lognormal_model.py`: Implements the LogNormal model with HSMM state space dynamics.
+- `gamma_poisson.py`: Old (deprecated?) version of `gamma_model.py`
+- `helpers.py`: miscellaneous functions useful for setting up the model and evaulating outputs.
+
+#### Markov inference
+- `fbi.py`: Forward-Backward algorithm implemented in pure Python.
+- `forward_backward.py`: Forward-Backward algorithm implemented using Numba's JIT facilities to provide much faster inference.
+- `hsmm_forward_backward.py`: Forward-Backward inference for the hidden semi-Markov model. Again uses Numba to provide just-in-time compilation.
 
 ## Nodes:
 The algorithm is defined by a graphical model with nodes in a directed graph corresponding to each variable. The `nodes` folder contains code defining odes for several common distribution types.
