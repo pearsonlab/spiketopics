@@ -15,9 +15,9 @@ This folder contains code used to extract the spike counts data from the MySQL d
 ## Other files:
 
 ### Notebooks
-    - `db_extraction_scratch.ipynb`: gist for connecting to SQL server and extracting data using sqlalchemy and pandas packages.
-    -  `extract_etho_data.ipynb`: same idea, but for ethogram data
+- `db_extraction_scratch.ipynb`: gist for connecting to SQL server and extracting data using sqlalchemy and pandas packages.
+-  `extract_etho_data.ipynb`: same idea, but for ethogram data
 
 ### SQL files
-    - `get_presentations.sql`: currently the only file called in data extraction
-    - `get_unit_run.sql`, `get_spikes_for_unit_run.sql`, `get_all_runs_for_units.sql`: these appear to have been subsumed and hard-coded into `extract_spike_data.py`
+- `get_presentations.sql`: currently the only file called in data extraction
+- `get_unit_run.sql`, `get_spikes_for_unit_run.sql`, `get_all_runs_for_units.sql`: these appear to have been subsumed and hard-coded into `extract_spike_data.py`
