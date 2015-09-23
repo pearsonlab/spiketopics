@@ -29,7 +29,10 @@ This folder contains outputs from the fitted models.
 # Running the model
 
 ## Before the model is run
-Prior to running the model, `prepare_regressors.py` takes the raw data and prepares externally specified regressors (the $X$ dataframe) for use in fitting the model. By default, these outputs are in `data/spikes_plus_minimal_regressors.csv`.
+Prior to running the model, `prepare_regressors.py` takes the raw data and prepares externally specified regressors (the $X$ dataframe) for use in fitting the model. By default, these outputs are in `data/spikes_plus_minimal_regressors.csv`. Output can be csv or json. For simplest csv case use
+```
+python prepare_regressors.py --conver-times
+```
 
 ## Running inference
 `discover_topics.py` performs model fitting. Command line options specify input and output files.

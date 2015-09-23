@@ -12,6 +12,9 @@ import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Prepare regressors for running VB model')
     parser.add_argument('collection', help='collection of regressors to use', nargs='?', choices=['mean', 'full'], default='mean')
+    parser.add_argument('format', help='data output format',
+        nargs='?', choices=['csv', 'json'], default='csv')
+    parser.add_argument('--convert-times', help='convert frames to unique times', action='store_true')
 
     args = parser.parse_args()
     print 'Preparing {} collection of regressors'.format(args.collection)
@@ -25,24 +28,25 @@ if __name__ == '__main__':
     print 'Processing data...'
     df = df.drop(['trialId'], axis=1)
     df = df.sort(['movieId', 'frameNumber', 'unitId'])
-    df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame', 
+    df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame',
         'movieId': 'movie', 'frameClipNumber': 'frame_in_clip'})
     M = df.shape[0]
 
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 
-    print 'Converting (movie, frame) pairs to unique times...'
-    df = frames_to_times(df)
+    if args.convert_times:
+        print 'Converting (movie, frame) pairs to unique times...'
+        df = frames_to_times(df)
 
     if args.collection == 'mean':
         umean = df.groupby(['unit', 'frame_in_clip']).mean().reset_index()
-        Xmean = pd.pivot_table(umean, index='frame_in_clip', 
+        Xmean = pd.pivot_table(umean, index='frame_in_clip',
             columns='unit', values='count')
-        Xsm = Xmean.apply(pd.rolling_window, window=10, win_type='gaussian', 
+        Xsm = Xmean.apply(pd.rolling_window, window=10, win_type='gaussian',
             std=3, center=True)
 
-        # put Xmean on log scale 
+        # put Xmean on log scale
         Xreg = regularize_zeros(Xsm)
         X0 = np.log(Xreg)
         X0 -= X0.min()
@@ -57,14 +61,14 @@ if __name__ == '__main__':
 
         # append to data frame
         uu = df['unit']
-        fic = df['frame_in_clip'] 
+        fic = df['frame_in_clip']
         df['X0'] = X0.values[fic, uu]
         # df['X1'] = X1.values[fic, uu]
         # df['X2'] = X2.values[fic, uu]
 
         R = 1
         allframe = df
-        outfile = 'data/spikes_plus_minimal_regressors.csv'
+        outfile = 'data/spikes_plus_minimal_regressors'
 
     elif args.collection == 'full':
         # set up regressors
@@ -72,7 +76,7 @@ if __name__ == '__main__':
         print 'Pivoting to form X...'
         X = sp.coo_matrix((np.ones(M), (xrange(M), df['frame_in_clip'])))
 
-        outfile = 'data/spikes_plus_regressors.csv'
+        outfile = 'data/spikes_plus_regressors'
 
         print 'Merging df and X...'
         R = X.shape[1]
@@ -84,4 +88,7 @@ if __name__ == '__main__':
     allframe = allframe.drop('frame_in_clip', axis=1)
 
     print 'Saving data...'
-    allframe.to_csv(outfile, index=False)
+    if args.format == 'csv':
+        allframe.to_csv(outfile + '.csv', index=False)
+    elif args.format == 'json':
+        allframe.to_json(outfile + '.json', orient='records')
