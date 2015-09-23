@@ -42,12 +42,12 @@ Here we derive the evidence lower bound (ELBO) used as a variational objective b
 \end{equation}
 From \cite{beal2003variational}, this can be written
 \begin{multline}
-    \mathcal{L} = \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] 
-    + \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] 
-    + \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] \\ 
-    + \mathbb{E}_{q(\theta)} \left[\log \frac{p(\theta)}{q(\theta)} \right] 
-    + \mathbb{E}_{q(\lambda)} \left[\log \frac{p(\lambda)}{q(\lambda)} \right] 
-    + \mathbb{E}_{q(\gamma)} \left[\log \frac{p(\gamma)}{q(\gamma)} \right] 
+    \mathcal{L} = \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right]
+    + \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right]
+    + \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] \\
+    + \mathbb{E}_{q(\theta)} \left[\log \frac{p(\theta)}{q(\theta)} \right]
+    + \mathbb{E}_{q(\lambda)} \left[\log \frac{p(\lambda)}{q(\lambda)} \right]
+    + \mathbb{E}_{q(\gamma)} \left[\log \frac{p(\gamma)}{q(\gamma)} \right]
 \end{multline}
 For the first two terms, updates are standard and covered in \cite{beal2003variational}. The rest we do piece-by-piece below:
 
@@ -56,21 +56,21 @@ We would like to calculate $\mathbb{E}_{q}\left[ \log \frac{p(N, z|x, \Theta)}{q
 \begin{align}
     \xi_{t} &\equiv p(z_{t}|N, \theta) &
     \Xi_{t, ij} &\equiv p(z_{t+1} = j, z_{t} = i|N, \theta) &
-    \log Z_{t} &= \log p(N_{t+1}|N_{t}, \Theta) 
+    \log Z_{t} &= \log p(N_{t+1}|N_{t}, \Theta)
 \end{align}
 Here, we have suppressed the latent feature index $k$ and abuse notation by writing the observation index as $t$, but in the case of multiple observations at a given time, we pool across units and presentations: $N_t \equiv \sum_{m; t(m) = t} N_m$. From this, we can write
 \begin{multline}
-     \mathbb{E}_{q}\left[ \log p(N, z|x, \Theta) \right] = 
-     \sum_{mkr} \left[N_m \left( 
+     \mathbb{E}_{q}\left[ \log p(N, z|x, \Theta) \right] =
+     \sum_{mkr} \left[N_m \left(
         \overline{\log \theta_m} + \overline{\log \lambda_{0u(m)}} +
-        \xi_{t(m)k}\overline{\log \lambda_{zuk}} + 
+        \xi_{t(m)k}\overline{\log \lambda_{zuk}} +
         x_{t(m)r} \overline{\log \lambda_{xu(m)r}}
-     \right) \right] \\ 
+     \right) \right] \\
      - \sum_m \overline{\theta_m} \mathbb{E}_q\left[\Lambda_{t(m)u(m)} \right]      + \sum_{tk} \left[ \text{tr}\left(\Xi_{tk} \overline{\log A_k^T} \right)
      + \xi_{0k}^T \overline{\log \pi_k}
      \right]
     + \text{constant}
- \end{multline} 
+ \end{multline}
 In what follows, we will drop the irrelevant constant. For $\overline{\log y}$, where $y \in \lbrace \theta, \lambda_0, \lambda_z, \lambda_x \rbrace$, the assumption $q(y) = \text{Ga}(\alpha, \beta)$ gives
 \begin{equation}
     \overline{\log y} = \psi(\alpha) - \log \beta
@@ -84,7 +84,7 @@ with $\psi(x)$ the digamma function. Likewise, the expectation $\overline{\theta
     \prod_k \left(1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{zuk}}{\beta_{zuk}} \right)
     \prod_r \frac{1}{\beta_{xur}^{x_{tr}}} \frac{\Gamma(\alpha_{xur} + x_{tr})}{\Gamma(\alpha_{xur})}
 \end{equation}
-However, for $\alpha \gg x$, we have $\Gamma(\alpha + x)/\Gamma(\alpha) \approx \alpha^x$, so that we can write 
+However, for $\alpha \gg x$, we have $\Gamma(\alpha + x)/\Gamma(\alpha) \approx \alpha^x$, so that we can write
 \begin{equation}
     \label{HFG}
     \mathbb{E}_q[\Lambda_{tu}] = H_{0u} F_{tu} G_{tu}
@@ -118,7 +118,7 @@ Given these update rules, we can then alternate between calculating $(\eta, \til
 \subsection{Overdispersion, firing rate effects}
 Both the case of $p(\theta)$ and $p(\lambda)$ are straightforward. If we ignore subscripts and write $p(y) = \text{Ga}(a, b)$, $q(y) = \text{Ga}(\alpha, \beta)$, then
 \begin{equation}
-    \mathbb{E}_q \left[\log \frac{p(y)}{q(y)} \right] = 
+    \mathbb{E}_q \left[\log \frac{p(y)}{q(y)} \right] =
     (\overline{a} - 1) \overline{\log y} + \overline{b} \overline{y} + \mathcal{H}[q(y)]
 \end{equation}
 where again, $\overline{\log y}$, $\overline{y}$ and $\mathcal{H}[q(y)]$ are straightforward properties of the gamma distribution. Expectations of the prior parameters are listed in Table \ref{expectation_table}. Note in the last line that there is no expectation, since we have not assumed a hierarchy over firing rate effects for the covariates, $x$.
@@ -128,7 +128,7 @@ where again, $\overline{\log y}$, $\overline{y}$ and $\mathcal{H}[q(y)]$ are str
 \begin{center}
 \begin{tabular}{lcc}
 \multicolumn{1}{c}{\bf Variable}  &\multicolumn{1}{c}{\bf $\mathbb{E}_q[a]$} &\multicolumn{1}{c}{\bf $\mathbb{E}_q[b]$}
-\\ \hline 
+\\ \hline
 $\theta$ &$\overline{s}$ &$\overline{s}$ \\
 $\lambda_0$ &$\overline{c_0}$ &$\overline{c_0 d_0}$ \\
 $\lambda_z$ &$\overline{c_z}$ &$\overline{c_z d_z}$ \\
@@ -141,8 +141,8 @@ As we will see below, the expectations under the variational posterior of $s$, $
 \subsection{Hyperparameters}
 As shown in the main text, the hyperparameters $c$ and $d$, given gamma priors, have conjugate gamma posteriors, so that their contribution to the evidence lower bound, $\mathbb{E}_q \left[\log \frac{p(\gamma)}{q(\gamma)} \right]$ is a sum of terms of the form
 \begin{align}
-    (a_{c} - 1) \overline{\log c} + b_{c} \overline{c} + \mathcal{H}[q(c)] + 
-    (a_{d} - 1) \overline{\log d} + b_{d} \overline{d} + \mathcal{H}[q(d)] 
+    (a_{c} - 1) \overline{\log c} + b_{c} \overline{c} + \mathcal{H}[q(c)] +
+    (a_{d} - 1) \overline{\log d} + b_{d} \overline{d} + \mathcal{H}[q(d)]
 \end{align}
 In other words, these are straightforward gamma expectations, functions of the prior parameters $a$ and $b$ for each variable and the corresponding posterior parameters $\alpha$ and $\beta$. Similarly, the overdispersion terms are exactly the same with the substitutions $a \rightarrow s$, $d\rightarrow 1$.
 
@@ -156,10 +156,10 @@ For updates on the overdispersion, firing rate, and hyperparameter variables, we
 \begin{center}
 \begin{tabular}{lcc}
 \multicolumn{1}{c}{\bf Variable}  &\multicolumn{1}{c}{\bf $\alpha - a$} &\multicolumn{1}{c}{\bf $\beta - b$}
-\\ \hline 
+\\ \hline
 $\theta_m$         &$N_m$  &$H_{0u(m)}F_{t(m)u(m)}G_{t(m)u(m)}$ \\
 $s_u$         &$\frac{1}{2}\sum_m \delta_{u(m), u}$  &$\sum_m \delta_{u(m), u} [\overline{\theta_m} - \overline{\log \theta_m} - 1]$ \\
-$\lambda_{0u}$         &$\sum_{tu} N_{tu}$  &$\overline{\theta}_u H_{0u}\sum_t F_{tu}G_{tu}$ \\
+$\lambda_{0u}$         &$\sum_{t} N_{tu}$  &$\overline{\theta}_u H_{0u}\sum_t F_{tu}G_{tu}$ \\
 $\lambda_{zuk}$         &$\sum_t N_{tu} \xi_{tk}$  &$\overline{\theta}_u H_{0u}\sum_t F_{tuk}G_{tu}$ \\
 $\lambda_{xur}$         &$\sum_t N_{tu} x_{tr}$  &cf. Section \ref{non-conj} \\
 $c_{0}$         &$U/2$  &$\sum_u\mathbb{E}_q \left[d_{0} \lambda_{0u} - \log \lambda_{0u} - \log d_{0} - 1\right]$ \\
@@ -175,19 +175,19 @@ $d_{xr}$         &$U\mathbb{E}_q[c_{xr}]$  &$\sum_u\mathbb{E}_q \left[c_{xr}\lam
 Here, we overload notation to write $N_{tu} = \sum_m \delta_{u(m), u} \delta_{t(m), t}\, N_m$, $\overline{\theta}_u = \sum_m \delta_{u(m), u}\overline{\theta}_m$, and make use of $H$, $G$, and $F$ as defined in \ref{HFG} - \ref{G}. Indeed, our implementation caches $F$ and $G$ for a substantial speedup (at the cost of additional memory requirements).
 
 \subsection{Non-conjugate updates}
-\label{non-conj} 
+\label{non-conj}
 We employ explicit optimization steps for two updates in our iterative Algorithm \ref{algo}. In each case, we employ an off-the-shelf optimization routine, though more efficient alternatives are likely possible.
 
 \subsubsection{Covariate firing rate effects}
 \label{beta_x}
 Because we do not restrict the covariates $x(t)$ to be binary, the expression \ref{eff_rate}, no longer yields a conditional log probability for $\lambda_x$ in the exponential family. This leaves us with a transcendental equation to solve for $\beta_{xr}$. However, from Table \ref{conj_updates}, we see that $\alpha_{xr} \gg \sum_t x_{tr}$, allowing us to approximate $G_t \approx \prod_r (\alpha_{xr}/\beta_{xr})^{x_{tr}}$ as we have done above. Moreover, since the sum $\sum_t G_t \sim T\overline{G}$, we expect $\alpha_x / \beta_x \approx 1$ at the optimum for most reasonable datasets. We thus reparameterize $\beta_{xur} = \alpha_{xur}e^{-\epsilon_{ur}}$ and write the relevant $\epsilon$-dependent piece of the objective function $\mathcal{L}$ as
 \begin{equation}
-    \mathcal{L}_\epsilon = \sum_{ur} \left[a_{xur}\epsilon_{ur} - b_{xur}e^{-\epsilon_{ur}} \right] - \sum_m \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)} 
+    \mathcal{L}_\epsilon = \sum_{ur} \left[a_{xur}\epsilon_{ur} - b_{xur}e^{-\epsilon_{ur}} \right] - \sum_m \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)}
     e^{-\sum_r \epsilon_{u(m)r} x_{t(m)u(m)r}}
 \end{equation}
 We also supply the optimizer with the gradient:
 \begin{equation}
-    \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_{m; u(m) = u} x_{t(m)ur} \overline{\theta}_m H_{0u} F_{t(m)u} 
+    \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_{m; u(m) = u} x_{t(m)ur} \overline{\theta}_m H_{0u} F_{t(m)u}
     e^{-\sum_r \epsilon_{ur} x_{t(m)ur}}
 \end{equation}
 where we sum only over observations with $u(m) = u$. On each iterate, we then optimze $\mathcal{L}_\epsilon$, initialzing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
@@ -208,21 +208,21 @@ We also note that, just as the emission, transition, and initial state probabili
 \end{equation}
 implying that there are cancellations between $\log p(N, z|\Theta)$ and $\log q(z)$ in $\mathcal{L}$ and care must be taken when calculating it\cite{beal2003variational}.}
 
-Thus the objective to be optimized is 
+Thus the objective to be optimized is
 \begin{equation}
-    \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right] 
+    \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
 \end{equation}
 
 For the case of $p(d|m, s^2)$ lognormal and $(m, \tau = s^{-2})$ Normal-Gamma, the terms $\mathbb{E}_q[\log p(d)]$ involve only routine expectations of natural parameters of the Normal-Gamma, and similarly for the expected log prior and entropy in the last term. Only slightly more complicated is the term arising from the normalization constant, which in the standard $(\mu, \lambda, \alpha, \beta)$ parameterization of the Normal-Gamma takes the form
 \begin{equation}
-    \mathbb{E}_q[p(d|m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau) 
-    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}} 
-    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)} 
-    \frac{\beta^{-\frac{1}{2}}}{\hat{\beta}^{\alpha + \frac{1}{2}}}      
-\end{equation}  
+    \mathbb{E}_q[p(d|m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau)
+    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}}
+    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)}
+    \frac{\beta^{-\frac{1}{2}}}{\hat{\beta}^{\alpha + \frac{1}{2}}}
+\end{equation}
 with
 \begin{equation}
-    \hat{\beta} \equiv 1 + \frac{1}{2\beta} \frac{\lambda}{1 + \lambda} 
+    \hat{\beta} \equiv 1 + \frac{1}{2\beta} \frac{\lambda}{1 + \lambda}
     (\log d - \mu)^2
 \end{equation}
 This can be derived either by performing the integral directly or by noting that the result should be proportional to the posterior (Normal-Gamma, by conjugacy) of $(m, \tau)$ after having observed a single data point, $\log d$.
