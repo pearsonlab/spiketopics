@@ -129,12 +129,12 @@ However, in the above derivation of $\mathcal{C}_*$, we have assumed that this t
 
 Alternately, we might have considered a harsher penalty on the number of changepoints
 \begin{equation}
-    p(z) = \frac{e^{-m\alpha}}{1 - e^{-\alpha}}
+    p(z) = e^{-m\alpha}(1 - e^{-\alpha})
     \prod_{k = 1}^m \theta^{z_k} (1 - \theta)^{1 - z_k}
 \end{equation}
 In this case, again assuming $\theta = \frac{1}{2}$, we conclude
 \begin{equation}
-    \mathcal{P} = m(\alpha + \log 2) + \log (1 - e^{-\alpha}) = m\beta + \text{const}
+    \mathcal{P} = m(\alpha + \log 2) - \log (1 - e^{-\alpha}) = m\beta + \text{const}
 \end{equation}
 Thus we arrive back at the setup in Killick et al., who consider a constant per-changepoint cost $\beta$.\footnote{Note that in this case, the number of changepoints is not assumed to increase in time unless $\beta \propto T^{-1}$. We might additionally consider the more complex setup of Killick et al.'s Section 3.2, which covers concave penalties, including exponential family forms like the Poisson.}
 
