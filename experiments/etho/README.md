@@ -31,7 +31,7 @@ This folder contains outputs from the fitted models.
 ## Before the model is run
 Prior to running the model, `prepare_regressors.py` takes the raw data and prepares externally specified regressors (the $X$ dataframe) for use in fitting the model. By default, these outputs are in `data/spikes_plus_minimal_regressors.csv`. Output can be csv or json. For simplest csv case use
 ```
-python prepare_regressors.py --conver-times
+python prepare_regressors.py --convert-times
 ```
 
 ## Running inference
