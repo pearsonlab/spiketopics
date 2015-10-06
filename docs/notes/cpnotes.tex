@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage{amssymb,amsmath}
+
+\begin{document}
+\title{Changepoint gas}
+\author{John Pearson}
+\maketitle
+
+\section{Problem}
+We would like to perform rapid inference for discrete latent variables in long time series. For Hidden Markov Models, forward-backward inference is $\mathcal{O}(TM^2)$ with $M$ the number of latent states and $T$ the time. However, for hidden semi-Markov models, the run time is $\mathcal{O}(TM^2 D)$ with $D$ the maximum duration of a state.
+
+However, in many cases where semi-Markov models would naturally be applied, transitions are sparse, and posteriors for the state variables approximately alternate between periods of high posterior certainty punctuated by uncertain transition regions of disparate length scales.
+
+\section{Example: Poisson firing}
+Here, we consider the example of a Poisson process driven by such a binary latent state. That is, we observe in successive time bins of size $\Delta t$ event counts $N_t$ with instantaneous rate
+\begin{equation}
+    r(t) = \lambda \nu^{z(t)}
+\end{equation}
+Thus, if we write $t = k\Delta t$, we have
+\begin{equation}
+    N_k \sim \text{Pois}\left(\lambda \int_{(k - 1)\Delta t}^{k\Delta t} \nu^{z(t)} dt\right)
+\end{equation}
+
+\section{Linear time approach}
+Here, we relax our formulation of the problem to allow for an approach that computes a segmentation in time complexity $\mathcal{O}(T)$. As we show below, our approach falls under the requirements of the pruned exact linear time (PELT) algorithm (Killick, Fearnhead, Eckley, JASA, 2012).
+
+First, consider the same setup as above:
+\begin{align}
+    N(t) &\sim \mathrm{Pois}(r(t)) \\
+    r(t) &= \lambda \nu^{z(t)}
+\end{align}
+We would again like to maximize the evidence lower bound. For the moment, we will not assume any form for $p(\ell|z)$, writing $\mathcal{P} = -\log p(\ell|z)$ as a penalty term for unlikely splittings of the data. As a result, we can then write the objective function as
+\begin{equation}
+    \mathbb{E}_q \left[\log p(N|z) \right] + \mathcal{H}[q(z)] - \mathcal{P}
+\end{equation}
+Now, however, we would like to choose a posterior approximation $q(z)$ consisting of the set of binary, piecewise-constant functions with fixed changepoints. That is, we will approximate the posterior over $z(t)$ as a sequence of Bernoulli posteriors, with the changepoints taken as \emph{variational parameters}. As a result, we do not need posteriors over the changepoint locations, but each segment will have a full posterior over $z$.
+
+Given this set of assumptions, we can then write the objective function as a sum over segments:
+\begin{equation}
+    \mathcal{L} = \sum_k \left[
+    \mathbb{E}[LL_k] + H(\pi_k)
+    - \mathcal{P}_k
+    \right]
+\end{equation}
+with
+\begin{align}
+    \mathbb{E}[LL] &= \sum_{l = 1}^\ell [N_l \log \lambda + \pi N_l \log \nu - \lambda (1 - \pi + \nu \pi) - \log N_l! ]\\
+    &= \sum_l \log p(N_l|\lambda) + \pi [N\log \nu - \lambda (\nu - 1) \ell] \\
+    &= \sum_l \log p(N_l|\lambda) + \pi \kappa \\
+    H(\pi) &= -\pi \log \pi - (1 - \pi) \log (1 - \pi)
+\end{align}
+with $\kappa \equiv N\log \nu - \lambda (\nu - 1)\ell$, $N = \sum_l N_l$ and $H \ge 0$, the differential entropy of the Bernoulli distribution. This objective clearly has the form of a sum over ``maximum likelihoods" for each segment, as well as a changepoint ``penalty'' term. As shown in the PELT paper, the necessary condition for the pruning to work is a guarantee on the benefit of adding an additional changepoint:
+\begin{equation}
+    \label{pelt_condition}
+    \mathcal{C}_1 + \mathcal{C}_2 + K \le \mathcal{C}_{1 \cup 2}
+\end{equation}
+for some $K \ge 0$ with $\mathcal{C} = -\mathcal{L} - \mathcal{P}$. With this guarantee, it then becomes possible to prune the potential changepoint locations in the recursive dynamic program, achieving linear running time.
+
+We can easily derive the optimal value of $\pi$ in each segment:
+\begin{align}
+    \frac{\partial \mathcal{C}}{\partial \pi} &= -N\log \nu + \lambda (\nu - 1)\ell + \log \frac{\pi}{1-\pi} = 0 \\
+    \Rightarrow \quad \pi &= \frac{1}{1 + e^{-\kappa}}
+\end{align}
+This then gives a maximal objective/minimal cost value for a segment defined by $N, \ell$ of
+\begin{equation}
+    \mathcal{C}_* = -\sum_l \log p(N_l|\lambda) -\kappa - \log (1 + e^{-\kappa})
+\end{equation}
+This leads us to
+
+\subsection*{Theorem:} The cost function $\mathcal{C}_*$ satisfies (\ref{pelt_condition}) with $K = 0$.
+
+\emph{Proof}: Consider splitting a section of data in two. We wish to show
+\begin{equation}
+    \mathcal{C}_*(N_1, \ell_1) + \mathcal{C}_*(N_2, \ell_2) \le \mathcal{C}_*(N, \ell)
+\end{equation}
+In this equation, we consider $\lambda$, $\nu$, $N$, $\ell$, $N_i$, and $\ell_i$ as given, with $\pi$ chosen in each segment to maximize $\mathcal{C}$. We begin by noting that our division of the data will result in a $\kappa_i$ with each new segment satisfying $\kappa_1 + \kappa_2 = \kappa$. As a result, we rewrite $\kappa_1 \equiv \alpha \kappa$, note that the ``base rate'' log likelihood terms are purely additive, and look for bounds of the form
+\begin{equation}
+    \alpha \kappa + \log(1 + e^{-\alpha \kappa}) +
+    (1 - \alpha) \kappa + \log(1 + e^{-(1 - \alpha) \kappa})
+    -K \ge
+    \kappa + \log (1 + e^{-\kappa})
+\end{equation}
+which can be reduced:
+\begin{align}
+    \log(1 + e^{-\alpha \kappa}) +
+    \log(1 + e^{-(1 - \alpha) \kappa})
+    -K &\ge
+    \log (1 + e^{-\kappa}) \\
+    (1 + e^{-\alpha \kappa})
+    (1 + e^{-(1 - \alpha) \kappa})
+    e^{-K} &\ge
+    (1 + e^{-\kappa}) \\
+    \frac{1 + e^{-\kappa} + e^{-\alpha\kappa} + e^{-(1 - \alpha)\kappa}}{1 + e^{-\kappa}} &\ge e^K \\
+    1 + \frac{e^{-\alpha\kappa} + e^{-(1 - \alpha)\kappa}}{1 + e^{-\kappa}} &\ge e^K
+\end{align}
+which is clearly satisfied if $K = 0$.
+
+As a result, at each step of the PELT algorithm, the calculation
+\begin{equation}
+    F(\tau^*) = \min_{\tau \in R_{\tau^*}} [F(\tau) + \mathcal{C}_*(\tau + 1:\tau^*) + \mathcal{P}]
+\end{equation}
+is a single straightforward function evaluation at each $\tau$, which implies that the feasible set for the subsequent iteration is given by
+\begin{equation}
+    R_{\tau^* + 1} = \lbrace \tau^* \cup
+    \lbrace
+    \tau \in R_{\tau^*} \vert F(\tau) + \mathcal{C}_*(\tau + 1:\tau^*) <
+    F(\tau^*)
+    \rbrace \rbrace
+\end{equation}
+
+\subsection{Penalty term}
+The total penalty for observing a sequence of changepoints in the model above is given by the negative log likelihood of observing the entire sequence:
+\begin{equation}
+    \mathcal{P}_\mathrm{tot} = -\sum_k \log p(\ell_k|z_k)
+\end{equation}
+However, we might wish to consider an alternative formulation, in which the prior is over the number of changepoints, not the length of each sequence. In this case, for $m$ changepoints, we have
+\begin{equation}
+    \mathcal{P}_\mathrm{tot} = -\log p(m)
+\end{equation}
+Now, if we assume a simple model in which the number of changepoints is exponentially distributed, we have
+\begin{equation}
+    \mathcal{P} = m\beta
+\end{equation}
+for some ``rate'' $\beta$. In this case, we arrive back at the setup in Killick et al., who consider a constant per-changepoint cost $\beta$.\footnote{Note that in this case, the number of changepoints is not assumed to increase in time unless $\beta \propto T^{-1}$. We might additionally consider the more complex setup of Killick et al.'s Section 3.2, which covers concave penalties, including exponential family forms like the Poisson.}
+
+In addition, we may note the following interpretation of $\beta$ in the case that the cost $\mathcal{C}$ of a segment is equal to the negative log likelihood of the data in that segment:
+
+Consider a case in which we are just indifferent between inserting a changepoint. In that case,
+\begin{equation}
+    \mathcal{C}(N_1, \ell_1) + \mathcal{C}(N_2, \ell_2) + \beta = \mathcal{C}(N, \ell)
+\end{equation}
+However, writing the cost as $\mathcal{C} = -\log \mathcal{L}$ gives
+\begin{equation}
+    \beta = \log \frac{\mathcal{L}(N_1, \ell_1)\mathcal{L}(N_2, \ell_2)}{\mathcal{L}(N, \ell)}
+\end{equation}
+That is, $\beta$ is the value of the log likelihood ratio of the two models at which we are indifferent to splitting. Thus, for example a value $\beta = 2$ requires that the data be twice as likely under the model with the changepoint as under the model without.
+
+\end{document}
