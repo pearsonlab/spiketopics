@@ -29,7 +29,7 @@ First, consider the same setup as above:
     N(t) &\sim \mathrm{Pois}(r(t)) \\
     r(t) &= \lambda \nu^{z(t)}
 \end{align}
-We would again like to maximize the evidence lower bound. For the moment, we will not assume any form for $p(\ell|z)$, writing $\mathcal{P} = -\log p(\ell|z)$ as a penalty term for unlikely splittings of the data. As a result, we can then write the objective function as
+We would again like to maximize the evidence lower bound. For the moment, we will not assume any form for $p(z)$, writing $\mathcal{P} = \mathbb{E}_q[-\log p(z)]$ as a penalty term for unlikely splittings of the data. As a result, we can then write the objective function as
 \begin{equation}
     \mathbb{E}_q \left[\log p(N|z) \right] + \mathcal{H}[q(z)] - \mathcal{P}
 \end{equation}
@@ -111,17 +111,32 @@ is a single straightforward function evaluation at each $\tau$, which implies th
 \subsection{Penalty term}
 The total penalty for observing a sequence of changepoints in the model above is given by the negative log likelihood of observing the entire sequence:
 \begin{equation}
-    \mathcal{P}_\mathrm{tot} = -\sum_k \log p(\ell_k|z_k)
+    \mathcal{P}_\mathrm{tot} = -\mathbb{E}_q[\log p(z)]
 \end{equation}
-However, we might wish to consider an alternative formulation, in which the prior is over the number of changepoints, not the length of each sequence. In this case, for $m$ changepoints, we have
+Now consider a very simple prior on $p(z)$: the Bernoulli values $z_k$ in each run are independent and identically distributed with parameter $\theta$. Thus
 \begin{equation}
-    \mathcal{P}_\mathrm{tot} = -\log p(m)
+    p(z) = \prod_{k = 1}^m \theta^{z_k} (1 - \theta)^{1 - z_k}
 \end{equation}
-Now, if we assume a simple model in which the number of changepoints is exponentially distributed, we have
+which gives
 \begin{equation}
-    \mathcal{P} = m\beta
+    \mathbb{E}_q[\log p(z)] = \sum_k \pi_k \log \theta
+    + (m - \sum_k \pi_k)\log (1 - \theta)
 \end{equation}
-for some ``rate'' $\beta$. In this case, we arrive back at the setup in Killick et al., who consider a constant per-changepoint cost $\beta$.\footnote{Note that in this case, the number of changepoints is not assumed to increase in time unless $\beta \propto T^{-1}$. We might additionally consider the more complex setup of Killick et al.'s Section 3.2, which covers concave penalties, including exponential family forms like the Poisson.}
+However, in the above derivation of $\mathcal{C}_*$, we have assumed that this term is independent of $\pi_k$, which requires $\theta = \frac{1}{2}$, i.e., a uniform prior on the value of $z$ in each segment. In this case, we then conclude
+\begin{equation}
+    \mathcal{P} = m \log 2
+\end{equation}
+
+Alternately, we might have considered a harsher penalty on the number of changepoints
+\begin{equation}
+    p(z) = \frac{e^{-m\alpha}}{1 - e^{-\alpha}}
+    \prod_{k = 1}^m \theta^{z_k} (1 - \theta)^{1 - z_k}
+\end{equation}
+In this case, again assuming $\theta = \frac{1}{2}$, we conclude
+\begin{equation}
+    \mathcal{P} = m(\alpha + \log 2) + \log (1 - e^{-\alpha}) = m\beta + \text{const}
+\end{equation}
+Thus we arrive back at the setup in Killick et al., who consider a constant per-changepoint cost $\beta$.\footnote{Note that in this case, the number of changepoints is not assumed to increase in time unless $\beta \propto T^{-1}$. We might additionally consider the more complex setup of Killick et al.'s Section 3.2, which covers concave penalties, including exponential family forms like the Poisson.}
 
 In addition, we may note the following interpretation of $\beta$ in the case that the cost $\mathcal{C}$ of a segment is equal to the negative log likelihood of the data in that segment:
 
