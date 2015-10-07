@@ -7,26 +7,15 @@ import scipy.stats as stats
 from scipy.special import gammaln, logit
 from numba import jit
 
-# Define some helper functions
-# @jit(nopython=True)
-def grab_ss(counts, t1, t2):
-    """
-    Given start and end times, get sufficient statistics for data in the
-    closed interval [t1, t2] from counts.
-    """
-    this_counts = counts[t1:(t2 + 1)]
-    return np.sum(this_counts), len(this_counts)
-
-# @jit("float64(int64[:], int64, int64, float64, float64)")
+@jit("float64(float64[:, :], float64, int64, int64)", nopython=True)
 def base_LL(LL, theta, t1, t2):
     """
     For the closed interval [t1, t2], calculate the log likelihood of the
     data for z = 0.
     """
-    Psi0 = np.sum(LL[t1:(t2 + 1), 0])
-    return Psi0 + np.log(1 - theta)
+    return np.sum(LL[t1:(t2 + 1), 0])
 
-# @jit("float64(int64, float64, float64, float64, float64)", nopython=True)
+@jit("float64(float64[:, :], float64, int64, int64)", nopython=True)
 def kappa(LL, theta, t1, t2):
     """
     Calculate the differential log likelihood for assigning count data to
@@ -35,12 +24,12 @@ def kappa(LL, theta, t1, t2):
     of data observed in each time bin for z = 0 or 1, depending on column.
     theta is the prior parameter: p(z = 1) = theta
     """
-    Psi0 = np.sum(LL[t1:(t2 + 1), 0])
-    Psi1 = np.sum(LL[t1:(t2 + 1), 1])
-    LLdiff = Psi1 - Psi0
-    return LLdiff + logit(theta)
+    LLdiff = 0
+    for t in xrange(t1, t2 + 1):
+        LLdiff += LL[t, 1] - LL[t, 0]
+    return LLdiff + np.log(theta / (1 - theta))
 
-# @jit("float64(int64[:], int64, int64, float64, float64, float64)")
+@jit("float64(float64[:, :], float64, int64, int64)", nopython=True)
 def C(LL, theta, t1, t2):
     """
     Calculate the cost function for data in the closed interval [t1, t2].
@@ -48,7 +37,7 @@ def C(LL, theta, t1, t2):
     kap = kappa(LL, theta, t1, t2)
     return -(base_LL(LL, theta, t1, t2) + kap + np.logaddexp(0, -kap))
 
-# @jit
+@jit
 def find_changepoints(LL, theta, alpha):
     """
     Given the an array of log likelihoods at each time (row = time,
@@ -82,17 +71,18 @@ def find_changepoints(LL, theta, alpha):
         F[tau] = mincost
 
         CP.add(new_tau)
-        R = set({})
+        Rnext = set({})
         for r in R:
             if F[r] + C(LL, theta, r + 1, tau) + K < F[tau]:
-                R.add(r)
+                Rnext.add(r)
 
-        R.add(tau)
+        Rnext.add(tau)
+        R = Rnext
 
     # extract changepoints
     return sorted(list(CP))
 
-# @jit
+@jit
 def calc_state_probs(LL, theta, cplist):
     """
     Given a sorted iterable of changepoints (bin locations) and a maximum
