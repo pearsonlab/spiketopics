@@ -37,6 +37,7 @@ Now, however, we would like to choose a posterior approximation $q(z)$ consistin
 
 Given this set of assumptions, we can then write the objective function as a sum over segments:
 \begin{equation}
+    \label{objective}
     \mathcal{L} = \sum_k \left[
     \mathbb{E}[LL_k] + H(\pi_k)
     - \mathcal{P}_k
@@ -122,13 +123,14 @@ which gives
     \mathbb{E}_q[\log p(z)] = \sum_k \pi_k \log \theta
     + (m - \sum_k \pi_k)\log (1 - \theta)
 \end{equation}
-However, in the above derivation of $\mathcal{C}_*$, we have assumed that this term is independent of $\pi_k$, which requires $\theta = \frac{1}{2}$, i.e., a uniform prior on the value of $z$ in each segment. In this case, we then conclude
+However, in the above derivation of $\mathcal{C}_*$, we have assumed that this term is independent of $\pi_k$, which requires $\theta = \frac{1}{2}$, i.e., a uniform prior on the value of $z$ in each segment.\footnote{However, this is not required. See \ref{generic_derivation} below.} In this case, we then conclude
 \begin{equation}
     \mathcal{P} = m \log 2
 \end{equation}
 
 Alternately, we might have considered a harsher penalty on the number of changepoints
 \begin{equation}
+    \label{prior}
     p(z) = e^{-m\alpha}(1 - e^{-\alpha})
     \prod_{k = 1}^m \theta^{z_k} (1 - \theta)^{1 - z_k}
 \end{equation}
@@ -149,5 +151,25 @@ However, writing the cost as $\mathcal{C} = -\log \mathcal{L}$ gives
     \beta = \log \frac{\mathcal{L}(N_1, \ell_1)\mathcal{L}(N_2, \ell_2)}{\mathcal{L}(N, \ell)}
 \end{equation}
 That is, $\beta$ is the value of the log likelihood ratio of the two models at which we are indifferent to splitting. Thus, for example a value $\beta = 2$ requires that the data be twice as likely under the model with the changepoint as under the model without.
+
+\subsection{Other likelihood models}
+\label{generic_derivation}
+Without much trouble, we can extend the likelihood model above to the case of time-varying likelihood models and more generic priors.\footnote{In fact, this will allow us to set a general bias parameter $\theta$ in the prior, whereas we were restricted to $\theta = \frac{1}{2}$ above.} To do this, consider the same objective (\ref{objective}) as above, but assume that we are only given a log likelihood for the observation in each bin under the two possible values of $z$: $\psi_t(z) = \log p(x_t|z)$ with $x_t$ the observed data point at time $t$. We also assume a form (\ref{prior}) for the prior. From this, we conclude
+\begin{equation}
+    \mathcal{L} = \pi \Psi(1) + (1 - \pi) \Psi(0) + \mathcal{H}[\pi] +
+    \pi \log \theta + (1 - \pi) \log (1 - \theta) - m\alpha + \log (1 - e^{-\alpha})
+\end{equation}
+in each data segment, where we have defined $\Psi(z) = \sum_t \psi_t(z)$.
+
+It is then straightforward to find the objective-maximizing value of $\pi_k$ in each segment:
+\begin{equation}
+    \log \frac{\pi}{1 - \pi} = \kappa = \Psi(1) - \Psi(0) + \log \frac{\theta}{1 - \theta}
+\end{equation}
+and the value of the objective function at this value of $\pi$
+\begin{equation}
+    \mathcal{L}_* = \sum_k [\Psi_k(0) +  \kappa_k +
+    \log (1 + e^{-\kappa_k})] - m [\alpha - \log (1 - \theta)] + \log (1 - e^{-\alpha})
+\end{equation}
+Clearly, this takes the same form as above: a sum over segments of a negative cost function related to the log likelihood, minus a constant penalty per segment $\beta = \alpha - \log (1 - \theta)$. Moreover, the arguments given in the theorem above again hold, implying a bound constant $K = 0$ on the cost function. As a result, segmentation can easily be implemented given a pair of vectors, each containing the log likelihood of observations for each time bin for a given value of $z$.
 
 \end{document}
