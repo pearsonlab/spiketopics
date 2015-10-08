@@ -14,7 +14,7 @@ class ZNode:
 
     As with MarkovChainNode, this is only a wrapper for the values z.
     """
-    def __init__(self, z_init, theta, alpha, name='markov'):
+    def __init__(self, z_init, theta, alpha, name='znode'):
         if len(z_init.shape) < 2:
             raise ValueError(
                 'State variable must have at least two dimensions')
