@@ -137,7 +137,7 @@ class GammaModel:
         return self
 
     def initialize_latents(self, **kwargs):
-        nodes = nd.initialize_HMM(self.K, 2, self.T, self.D, **kwargs)
+        nodes = nd.initialize_segmodel(self.K, 2, self.T, **kwargs)
 
         self.nodes.update({n.name: n for n in nodes})
 
@@ -168,7 +168,7 @@ class GammaModel:
         nn = self.Nframe['count']
 
         lam = self.nodes['fr_latents']
-        xi = self.nodes['HMM'].nodes['z'].z[1, :, idx]
+        xi = self.nodes['segmodel'].nodes['z'].z[1, :, idx]
         Nz = (xi[tt] * nn).groupby(uu).sum().values
 
         if self.overdispersion:
@@ -189,8 +189,8 @@ class GammaModel:
 
     def calc_log_evidence(self, idx):
         """
-        Calculate p(N|z, rest) for use in updating HMM. Need only be
-        correct up to an overall constant.
+        Calculate p(N|z, rest) for use in updating segmentation model. 
+        Need only be correct up to an overall constant.
         """
         logpsi = np.empty((self.T, 2))
 
@@ -241,13 +241,13 @@ class GammaModel:
         if self.latents:
             node = self.nodes['fr_latents']
             bar_log_lam = node.expected_log_x()
-            xi = self.nodes['HMM'].nodes['z'].z[1]
+            xi = self.nodes['segmodel'].nodes['z'].z[1]
 
             Elogp += np.sum(nn[:, np.newaxis] * xi[tt] * bar_log_lam[uu])
             eff_rate *= self.F_prod()
 
             # pieces for A and pi
-            Elogp += self.nodes['HMM'].expected_log_state_sequence()
+            # Elogp += self.nodes['HMM'].expected_log_state_sequence()
 
         if self.regressors:
             node = self.nodes['fr_regressors']
@@ -342,12 +342,12 @@ class GammaModel:
             self.baseline = True
             self.nodes['baseline'].update = self.update_baseline
 
-        if {'HMM', 'fr_latents'}.issubset(self.nodes):
+        if {'segmodel', 'fr_latents'}.issubset(self.nodes):
             self.latents = True
             self.F_prod(update=True)
             self.nodes['fr_latents'].update = self.update_fr_latents
 
-            self.nodes['HMM'].update_finalizer = (
+            self.nodes['segmodel'].update_finalizer = (
                 lambda idx: self.F_prod(idx, update=True))
         else:
             self.latents = False
@@ -383,7 +383,7 @@ class GammaModel:
             uu = self.Nframe['unit']
             tt = self.Nframe['time']
 
-            xi = self.nodes['HMM'].nodes['z'].z[1]
+            xi = self.nodes['segmodel'].nodes['z'].z[1]
             lam = self.nodes['fr_latents'].expected_x()
             if k is not None:
                 zz = xi[tt, k]
@@ -545,7 +545,7 @@ class GammaModel:
 
                 # E step
                 logpsi = self.calc_log_evidence(k)
-                self.nodes['HMM'].update(k, logpsi)
+                self.nodes['segmodel'].update(k, logpsi)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                     assert((Lval >= lastL) | np.isclose(Lval, lastL))
