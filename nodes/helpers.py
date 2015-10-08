@@ -10,6 +10,7 @@ from .GaussianNode import GaussianNode
 from .DirichletNode import DirichletNode
 from .NormalGammaNode import NormalGammaNode
 from .HMM import MarkovChainNode, HMMNode, DurationNode
+from .SegmentNode import ZNode, SegmentNode
 from .utility_nodes import ProductNode
 
 def check_shapes(par_shapes, pars):
@@ -258,6 +259,29 @@ def initialize_HMM(n_chains, n_states, n_times, n_durations=None, **kwargs):
 
     return (node,)
 
+def initialize_segmodel(n_chains, n_states, n_times, **kwargs):
+    """
+    Initialize nodes that compose a Segmentation Model. 
+    Nodes are:
+        z: latent states (taking values 0...n_states-1 x n_times times; 
+            0...n_chains-1 copies)
+    Returns a tuple of nodes (z,)
+    """
+    K = n_chains
+    M = n_states
+    T = n_times
+
+    par_shapes = {'z_init': (M, T, K)}
+
+    check_shapes(par_shapes, kwargs)
+
+    z = ZNode(kwargs['z_init'], kwargs['theta'], kwargs['alpha'], 
+        name='z')
+
+    node = SegmentNode(z)
+
+    return (node,)
+    
 def initialize_gaussian(name, node_shape, prior_shape, **kwargs):
     """
     Initialize a gaussian variable.
