@@ -2,30 +2,29 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
-import numexpr as ne
 import spiketopics.nodes as nd
-from numba import autojit, jit
+from numba import jit
 
 
 class GammaModel:
 
     """
     This class fits a Poisson observation model using a product of Gamma-
-    distributed variables to model the rates.
+    distributed variables to model the rates. Unlike gamma_model.py, uses
+    a segmentation model instead of an HMM.
 
     N ~ Poiss(\mu)
     \mu = prod \lambda
     \lambda ~ Gamma
     """
 
-    def __init__(self, data, K, D=None):
+    def __init__(self, data, K):
         """
         Construct model object.
 
         data: Pandas DataFrame with one row per observation and columns
             'unit', 'time', and 'count' (time is stimulus time)
         K: number of latent categories to infer
-        D: None for HMM; for HSMM, maximum duration
         nodedict: dictionary of nodes in the model; node names can be
             'baseline': baseline firing rates
             'regressor': firing rate effects for each regressor
@@ -47,7 +46,6 @@ class GammaModel:
         self.T = T
         self.K = K
         self.U = U
-        self.D = D
 
         self.nodes = {}  # dict for variable nodes in graphical model
 
@@ -220,7 +218,7 @@ class GammaModel:
 
         return logpsi
 
-    @autojit
+    @jit
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
@@ -369,7 +367,7 @@ class GammaModel:
 
         return self
 
-    @autojit
+    @jit
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
@@ -412,7 +410,7 @@ class GammaModel:
         else:
             return self._F
 
-    @autojit
+    @jit
     def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
@@ -612,7 +610,7 @@ class GammaModel:
                               maxiter=maxiter, delayed_iters=[])
 
 
-@autojit
+@jit
 def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
@@ -627,7 +625,7 @@ def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     return np.log(-elbo), grad.ravel() / elbo
 
 
-@autojit(nopython=True, nogil=True)
+@jit(nopython=True, nogil=True)
 def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]

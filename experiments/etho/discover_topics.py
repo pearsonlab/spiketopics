@@ -27,10 +27,10 @@ if __name__ == '__main__':
     df = pd.read_csv(datfile)
 
     # ####### for testing only ################
-    # print "Subsetting for testing..."
-    # df = df.query('time <= 1e5')
-    # # and renumber units consecutively (starting at 0)
-    # df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
+    print "Subsetting for testing..."
+    df = df.query('time <= 1e5')
+    # and renumber units consecutively (starting at 0)
+    df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
     # ####### for testing only ################
 
     # set up params 
