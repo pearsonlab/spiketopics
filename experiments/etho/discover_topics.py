@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # ####### for testing only ################
     print "Subsetting for testing..."
-    df = df.query('time <= 1e4')
+    df = df.query('time <= 1e3')
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
     # ####### for testing only ################
@@ -181,7 +181,7 @@ if __name__ == '__main__':
         gpm.finalize()
         
         print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-4, verbosity=2)
+        gpm.do_inference(tol=1e-4, verbosity=3)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
@@ -201,20 +201,11 @@ if __name__ == '__main__':
         for a in to_delete:
             delattr(node, a)
 
-    # for semi-Markov, more stuff to delete
-    try:
-        dnode = gpm.nodes['HMM'].nodes['d']
-        to_delete = ['logpd', 'calc_ess', 'update']
-        for fn in to_delete:
-            delattr(dnode, fn)
-    except:
-        pass
-
     print "Writing to disk..."
     outfile = 'data/fitted_model_object.pkl'
     pickle.dump(gpm, open(outfile, 'wb'))
 
     features_outfile = 'data/features.csv'
-    xi = gpm.nodes['HMM'].nodes['z'].z[1]
+    xi = gpm.nodes['segmodel'].nodes['z'].z[1]
     zdf = pd.DataFrame(xi, columns = ['Z' + str(k) for k in xrange(K)])
     zdf.to_csv(features_outfile, index=False)

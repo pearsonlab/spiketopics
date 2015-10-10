@@ -6,6 +6,7 @@ import numpy as np
 
 from ..pelt import find_changepoints, calc_state_probs
 from scipy.stats import bernoulli
+from scipy.special import logit
 
 class ZNode:
     """
@@ -78,7 +79,7 @@ class SegmentNode:
 
         ########### update chains
         # (T, M)
-        psi = log_evidence - np.amax(log_evidence, axis=1, keepdims=True) 
+        psi = log_evidence #- np.amax(log_evidence, axis=1, keepdims=True) 
         xi = np.zeros_like(psi)
         theta = self.nodes['z'].theta
         alpha = self.nodes['z'].alpha
@@ -86,25 +87,24 @@ class SegmentNode:
         cplist = find_changepoints(psi, theta, alpha)
         xi[:, 1] = calc_state_probs(psi, theta, cplist)
         xi[:, 0] = 1 - xi[:, 1]
-        Ez = xi[cplist, 1]  # posterior probabilities in each segment
+        run_starts = [t + 1 for t in cplist]
+        Ez = xi[run_starts, 1]  # posterior probabilities in each segment
 
         xi = xi.T  # now (M, T)
         self.nodes['z'].update(idx, xi) 
 
         ########### calculate entropy pieces
-        emission_piece = np.sum(xi.T * psi)
-        states_piece = np.sum(bernoulli.entropy(Ez))
-        logq = emission_piece + states_piece
-        self.Hz[idx] = -logq 
+        self.Hz[idx] = np.sum(bernoulli.entropy(Ez))
 
         assert(np.all(self.Hz >= 0))
 
         ########### calculate expected log prior
         pi = np.sum(Ez)
-        m = len(cplist)
-        elp = (pi * np.log(theta) + (1 - pi) * np.log(1 - theta) 
-            -m * alpha + np.log1p(-np.exp(-alpha)))
+        m = len(Ez)
+        print pi, m
+        elp = pi * logit(theta) - m * (alpha - np.log1p(-theta))
         self.elp[idx] = elp
+        print self.elp
 
         if self.update_finalizer is not None:
             self.update_finalizer(idx)
