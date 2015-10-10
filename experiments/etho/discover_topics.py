@@ -4,7 +4,7 @@ Fit Gamma-Poisson topic model to movie/ethogram dataset.
 from __future__ import division
 import numpy as np
 import pandas as pd
-import spiketopics.gamma_model as gp
+import spiketopics.gamma_segment_model as gp
 from spiketopics.helpers import jitter_inits
 import argparse
 import cPickle as pickle
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # ####### for testing only ################
     print "Subsetting for testing..."
-    df = df.query('time <= 1e5')
+    df = df.query('time <= 1e4')
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
     # ####### for testing only ################
@@ -40,8 +40,7 @@ if __name__ == '__main__':
     T = df['time'].drop_duplicates().shape[0]
     U = df['unit'].drop_duplicates().shape[0]
     R = df.shape[1] - len(['time', 'unit', 'count'])
-    K = 10
-    D = 500  # maximum semi-Markov duration
+    K = 5
     Mz = 2  # number of levels of each latent state
 
     #################### priors and initial values
@@ -93,26 +92,26 @@ if __name__ == '__main__':
     # A_on = 1.
     # Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
     # A_prior = np.tile(Avec, (1, 2, K))
-    A_cat = (10 * np.eye(2) + 1).reshape(2, 2, 1)
-    A_prior = np.tile(A_cat, (1, 1, K))
+    # A_cat = (10 * np.eye(2) + 1).reshape(2, 2, 1)
+    # A_prior = np.tile(A_cat, (1, 1, K))
 
-    ###### pi ###############
-    pi_off = 15.
-    pi_on = 1.
-    pi_prior = np.tile(np.r_[pi_off, pi_on].reshape(2, 1), (1, K))
+    # ###### pi ###############
+    # pi_off = 15.
+    # pi_on = 1.
+    # pi_prior = np.tile(np.r_[pi_off, pi_on].reshape(2, 1), (1, K))
 
-    ###### p(d) #############
-    d_hypers = (2.5, 4., 2., 40.)
-    d_pars = ({'d_prior_mean': d_hypers[0] * np.ones((Mz, K)), 
-              'd_prior_scaling': d_hypers[1] * np.ones((Mz, K)),
-              'd_prior_shape': d_hypers[2] * np.ones((Mz, K)),
-              'd_prior_rate': d_hypers[3] * np.ones((Mz, K))})
-    d_inits = (3., 1., 1., 1.)
+    # ###### p(d) #############
+    # d_hypers = (2.5, 4., 2., 40.)
+    # d_pars = ({'d_prior_mean': d_hypers[0] * np.ones((Mz, K)), 
+    #           'd_prior_scaling': d_hypers[1] * np.ones((Mz, K)),
+    #           'd_prior_shape': d_hypers[2] * np.ones((Mz, K)),
+    #           'd_prior_rate': d_hypers[3] * np.ones((Mz, K))})
+    # d_inits = (3., 1., 1., 1.)
 
-    d_post_pars = ({'d_post_mean': d_inits[0] * np.ones((Mz, K)), 
-                    'd_post_scaling': d_inits[1] * np.ones((Mz, K)),
-                    'd_post_shape': d_inits[2] * np.ones((Mz, K)),
-                    'd_post_rate': d_inits[3] * np.ones((Mz, K))})
+    # d_post_pars = ({'d_post_mean': d_inits[0] * np.ones((Mz, K)), 
+    #                 'd_post_scaling': d_inits[1] * np.ones((Mz, K)),
+    #                 'd_post_shape': d_inits[2] * np.ones((Mz, K)),
+    #                 'd_post_rate': d_inits[3] * np.ones((Mz, K))})
 
 
     # E[z]
@@ -123,16 +122,23 @@ if __name__ == '__main__':
     z_prior = np.dstack([1 - xi_mat, xi_mat]).transpose((2, 0, 1))
 
     # E[zz]
-    Xi_mat = np.random.rand(2, 2, T - 1, K)
-    Xi_mat = Xi_mat.astype('float')
+    # Xi_mat = np.random.rand(2, 2, T - 1, K)
+    # Xi_mat = Xi_mat.astype('float')
 
-    latent_dict = ({'A_prior': A_prior, 'pi_prior': pi_prior,
-                    'A_post': A_prior, 'pi_post': pi_prior, 
-                    'z_init': z_prior, 'zz_init': Xi_mat, 
-                    'logZ_init': np.zeros((K,))
-                    })
-    latent_dict.update(d_pars)
-    latent_dict.update(d_post_pars)
+    # latent_dict = ({'A_prior': A_prior, 'pi_prior': pi_prior,
+    #                 'A_post': A_prior, 'pi_post': pi_prior, 
+    #                 'z_init': z_prior, 'zz_init': Xi_mat, 
+    #                 'logZ_init': np.zeros((K,))
+    #                 })
+    
+    # prior params
+    theta = 0.5  # prior on E[z] for each segment
+    beta = 2.  # desired value for changepoint penalty
+    alpha = beta + np.log(1 - theta)  # penalty on number of changepoints
+
+    latent_dict = ({'z_init': z_prior, 'theta': theta, 'alpha': alpha})
+    # latent_dict.update(d_pars)
+    # latent_dict.update(d_post_pars)
     ############ regression coefficients ####################
     ups_shape = 11.
     ups_rate = 10.
@@ -166,7 +172,7 @@ if __name__ == '__main__':
     Lvals = []
     for idx in xrange(numstarts):
         # set up model object
-        gpm = gp.GammaModel(df, K, D)
+        gpm = gp.GammaModel(df, K)
         gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
         gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
         gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
