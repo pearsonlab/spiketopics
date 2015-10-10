@@ -37,7 +37,7 @@ def C(LL, theta, t1, t2):
     kap = kappa(LL, theta, t1, t2)
     return -(base_LL(LL, theta, t1, t2) + kap + np.logaddexp(0, -kap))
 
-@jit
+# @jit
 def find_changepoints(LL, theta, alpha):
     """
     Given the an array of log likelihoods at each time (row = time,
@@ -55,31 +55,32 @@ def find_changepoints(LL, theta, alpha):
 
     # initialize
     beta = alpha - np.log1p(-theta)
-    R.add(0)
+    R.add(-1)
     F[0] = -beta
 
     # iterate
-    for tau in xrange(1, T + 1):
+    for tau in xrange(T):
         mincost = np.inf
         new_tau = 0
         for t in R:
-            cost = F[t] + C(LL, theta, t + 1, tau) + beta
+            cost = F[t + 1] + C(LL, theta, t + 1, tau) + beta
             if cost < mincost:
                 mincost = cost
                 new_tau = t
 
-        F[tau] = mincost
+        F[tau + 1] = mincost
 
         CP.add(new_tau)
         Rnext = set({})
         for r in R:
-            if F[r] + C(LL, theta, r + 1, tau) + K < F[tau]:
+            if F[r + 1] + C(LL, theta, r + 1, tau) + K < F[tau + 1]:
                 Rnext.add(r)
 
         Rnext.add(tau)
         R = Rnext
 
     # extract changepoints
+    # return sorted(list(CP))
     return sorted(list(CP))
 
 @jit
@@ -94,10 +95,10 @@ def calc_state_probs(LL, theta, cplist):
     inferred = np.zeros(T)
 
     for tau in xrange(Ncp):
-        if cplist[tau] > 0:
-            run_start = cplist[tau] + 1
-        else:
-            run_start = 0
+        # if cplist[tau] > 0:
+        run_start = cplist[tau] + 1
+        # else:
+        #     run_start = 0
 
         if tau == Ncp - 1:
             run_end = T
