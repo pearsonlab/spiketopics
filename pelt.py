@@ -91,10 +91,14 @@ def calc_state_probs(LL, theta, cplist):
     """
     Ncp = len(cplist)
     T = LL.shape[0]
-    inferred = np.empty(T)
+    inferred = np.zeros(T)
 
     for tau in xrange(Ncp):
-        run_start = cplist[tau] + 1
+        if cplist[tau] > 0:
+            run_start = cplist[tau] + 1
+        else:
+            run_start = 0
+
         if tau == Ncp - 1:
             run_end = T
         else:
