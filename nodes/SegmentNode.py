@@ -5,6 +5,7 @@ from __future__ import division
 import numpy as np
 
 from ..pelt import find_changepoints, calc_state_probs
+from scipy.stats import bernoulli
 
 class ZNode:
     """
@@ -92,7 +93,7 @@ class SegmentNode:
 
         ########### calculate entropy pieces
         emission_piece = np.sum(xi.T * psi)
-        states_piece = np.sum(Ez * np.log(Ez) + (1 - Ez) * np.log(1 - Ez))
+        states_piece = np.sum(bernoulli.entropy(Ez))
         logq = emission_piece + states_piece
         self.Hz[idx] = -logq 
 
