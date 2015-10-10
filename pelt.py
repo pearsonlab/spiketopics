@@ -80,7 +80,6 @@ def find_changepoints(LL, theta, alpha):
         R = Rnext
 
     # extract changepoints
-    # return sorted(list(CP))
     return sorted(list(CP))
 
 @jit
@@ -95,10 +94,7 @@ def calc_state_probs(LL, theta, cplist):
     inferred = np.zeros(T)
 
     for tau in xrange(Ncp):
-        # if cplist[tau] > 0:
         run_start = cplist[tau] + 1
-        # else:
-        #     run_start = 0
 
         if tau == Ncp - 1:
             run_end = T
