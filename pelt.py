@@ -35,7 +35,7 @@ def C(LL, theta, t1, t2):
     Calculate the cost function for data in the closed interval [t1, t2].
     """
     kap = kappa(LL, theta, t1, t2)
-    return -(base_LL(LL, theta, t1, t2) + kap + np.logaddexp(0, -kap))
+    return -(base_LL(LL, theta, t1, t2) + np.logaddexp(0, kap))
 
 @jit
 def find_changepoints(LL, theta, alpha):
@@ -61,7 +61,7 @@ def find_changepoints(LL, theta, alpha):
     # iterate
     for tau in xrange(T):
         mincost = np.inf
-        new_tau = 0
+        new_tau = -1
         for t in R:
             cost = F[t + 1] + C(LL, theta, t + 1, tau) + beta
             if cost < mincost:

@@ -167,8 +167,8 @@ It is then straightforward to find the objective-maximizing value of $\pi_k$ in 
 \end{equation}
 and the value of the objective function at this value of $\pi$
 \begin{equation}
-    \mathcal{L}_* = \sum_k [\Psi_k(0) +  \kappa_k +
-    \log (1 + e^{-\kappa_k})] - m [\alpha - \log (1 - \theta)] + \text{const}
+    \mathcal{L}_* = \sum_k [\Psi_k(0) +
+    \log (1 + e^{\kappa_k})] - m [\alpha - \log (1 - \theta)] + \text{const}
 \end{equation}
 Clearly, this takes the same form as above: a sum over segments of a negative cost function related to the log likelihood, minus a constant penalty per segment $\beta = \alpha - \log (1 - \theta)$. Moreover, the arguments given in the theorem above again hold, implying a bound constant $K = 0$ on the cost function. As a result, segmentation can easily be implemented given a pair of vectors, each containing the log likelihood of observations for each time bin for a given value of $z$.
 
