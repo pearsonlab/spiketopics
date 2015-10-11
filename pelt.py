@@ -97,7 +97,7 @@ def calc_state_probs(LL, theta, cplist):
         run_start = cplist[tau] + 1
 
         if tau == Ncp - 1:
-            run_end = T
+            run_end = T - 1
         else:
             run_end = cplist[tau + 1]
 
