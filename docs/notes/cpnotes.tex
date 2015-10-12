@@ -157,9 +157,9 @@ That is, $\beta$ is the value of the log likelihood ratio of the two models at w
 Without much trouble, we can extend the likelihood model above to the case of time-varying likelihood models and more generic priors.\footnote{In fact, this will allow us to set a general bias parameter $\theta$ in the prior, whereas we were restricted to $\theta = \frac{1}{2}$ above.} To do this, consider the same objective (\ref{objective}) as above, but assume that we are only given a log likelihood for the observation in each bin under the two possible values of $z$: $\psi_t(z) = \log p(x_t|z)$ with $x_t$ the observed data point at time $t$. We also assume a form (\ref{prior}) for the prior. From this, we conclude
 \begin{equation}
     \mathcal{L} = \pi \Psi(1) + (1 - \pi) \Psi(0) + \mathcal{H}[\pi] +
-    \pi \log \theta + (1 - \pi) \log (1 - \theta) - \alpha 
+    \pi \log \theta + (1 - \pi) \log (1 - \theta) - \alpha
 \end{equation}
-in each data segment, where we have defined $\Psi(z) = \sum_t \psi_t(z)$ and we omit a globably normalization constant from the prior $p(z)$.
+in each data segment, where we have defined $\Psi(z) = \sum_t \psi_t(z)$ and we omit a global normalization constant from the prior $p(z)$.
 
 It is then straightforward to find the objective-maximizing value of $\pi_k$ in each segment:
 \begin{equation}
