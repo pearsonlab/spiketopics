@@ -101,10 +101,8 @@ class SegmentNode:
         ########### calculate expected log prior
         pi = np.sum(Ez)
         m = len(Ez)
-        print pi, m
         elp = pi * logit(theta) - m * (alpha - np.log1p(-theta))
         self.elp[idx] = elp
-        print self.elp
 
         if self.update_finalizer is not None:
             self.update_finalizer(idx)
