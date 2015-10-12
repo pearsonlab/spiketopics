@@ -189,7 +189,7 @@ class GammaModel:
 
     def calc_log_evidence(self, idx):
         """
-        Calculate p(N|z, rest) for use in updating segmentation model. 
+        Calculate p(N|z, rest) for use in updating segmentation model.
         Need only be correct up to an overall constant.
         """
         logpsi = np.empty((self.T, 2))
@@ -545,7 +545,23 @@ class GammaModel:
 
                 # E step
                 logpsi = self.calc_log_evidence(k)
+                xi = self.nodes['segmodel'].nodes['z'].z[:, :, k].T
+                Elogp = np.sum(logpsi * xi)
+                H = self.nodes['segmodel'].Hz[k]
+                Elp = self.nodes['segmodel'].elp[k]
+                print "Elogp initial = {}".format(Elogp)
+                print "Elogprior initial = {}".format(Elp)
+                print "H initial = {}".format(H)
+                print "objective initial = {}".format(Elogp + Elp + H)
                 self.nodes['segmodel'].update(k, logpsi)
+                xi = self.nodes['segmodel'].nodes['z'].z[:, :, k].T
+                Elogp = np.sum(logpsi * xi)
+                H = self.nodes['segmodel'].Hz[k]
+                Elp = self.nodes['segmodel'].elp[k]
+                print "Elogp final = {}".format(np.sum(logpsi * xi))
+                print "Elogprior final = {}".format(Elp)
+                print "H final = {}".format(H)
+                print "objective final = {}".format(Elogp + Elp + H)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                     assert((Lval >= lastL) | np.isclose(Lval, lastL))

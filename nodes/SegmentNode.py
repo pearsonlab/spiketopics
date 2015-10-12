@@ -61,7 +61,7 @@ class SegmentNode:
         self.name = name
         self.update_finalizer = None
 
-        self.nodes = {'z': z} 
+        self.nodes = {'z': z}
 
         self.Hz = np.zeros(K)
         self.elp = np.zeros(K)
@@ -72,14 +72,14 @@ class SegmentNode:
         idx needs to be an object capable of indexing the relevant Markov
             Chain (i.e., z after the first two (M, T) indices, A after the
             first two (M, M) indices, etc.)
-        log_evidence is log p(y|z, theta) (T, M) where y is the 
-            observed data, z is the latent state variable(s), 
+        log_evidence is log p(y|z, theta) (T, M) where y is the
+            observed data, z is the latent state variable(s),
             and theta are the other parameters of the model.
         """
 
         ########### update chains
         # (T, M)
-        psi = log_evidence #- np.amax(log_evidence, axis=1, keepdims=True) 
+        psi = log_evidence #- np.amax(log_evidence, axis=1, keepdims=True)
         xi = np.zeros_like(psi)
         theta = self.nodes['z'].theta
         alpha = self.nodes['z'].alpha
@@ -91,7 +91,7 @@ class SegmentNode:
         Ez = xi[run_starts, 1]  # posterior probabilities in each segment
 
         xi = xi.T  # now (M, T)
-        self.nodes['z'].update(idx, xi) 
+        self.nodes['z'].update(idx, xi)
 
         ########### calculate entropy pieces
         self.Hz[idx] = np.sum(bernoulli.entropy(Ez))
@@ -110,7 +110,7 @@ class SegmentNode:
         return self
 
     def entropy(self):
-        return np.sum(self.Hz) 
+        return np.sum(self.Hz)
 
     def expected_log_prior(self):
         return np.sum(self.elp)

@@ -2,9 +2,11 @@
 pelt.py: a simple implementation of the PELT algorithm.
 """
 
+from __future__ import division
 import numpy as np
 import scipy.stats as stats
-from scipy.special import gammaln, logit
+from scipy.special import logit, expit
+from scipy.stats import bernoulli
 from numba import jit
 
 @jit("float64(float64[:, :], float64, int64, int64)", nopython=True)
@@ -13,7 +15,10 @@ def base_LL(LL, theta, t1, t2):
     For the closed interval [t1, t2], calculate the log likelihood of the
     data for z = 0.
     """
-    return np.sum(LL[t1:(t2 + 1), 0])
+    bLL = 0
+    for t in xrange(t1, t2 + 1):
+        bLL += LL[t, 0]
+    return bLL
 
 @jit("float64(float64[:, :], float64, int64, int64)", nopython=True)
 def kappa(LL, theta, t1, t2):
@@ -24,7 +29,7 @@ def kappa(LL, theta, t1, t2):
     of data observed in each time bin for z = 0 or 1, depending on column.
     theta is the prior parameter: p(z = 1) = theta
     """
-    LLdiff = 0
+    LLdiff = 0.
     for t in xrange(t1, t2 + 1):
         LLdiff += LL[t, 1] - LL[t, 0]
     return LLdiff + np.log(theta / (1 - theta))
@@ -61,16 +66,16 @@ def find_changepoints(LL, theta, alpha):
     # iterate
     for tau in xrange(T):
         mincost = np.inf
-        new_tau = -1
         for t in R:
             cost = F[t + 1] + C(LL, theta, t + 1, tau) + beta
             if cost < mincost:
                 mincost = cost
-                new_tau = t
+                new_cp = t
 
         F[tau + 1] = mincost
 
-        CP.add(new_tau)
+        CP.add(new_cp)
+
         Rnext = set({})
         for r in R:
             if F[r + 1] + C(LL, theta, r + 1, tau) + K < F[tau + 1]:
@@ -80,6 +85,7 @@ def find_changepoints(LL, theta, alpha):
         R = Rnext
 
     # extract changepoints
+    print "F_tot = {}".format(F[-1])
     return sorted(list(CP))
 
 @jit
@@ -92,6 +98,8 @@ def calc_state_probs(LL, theta, cplist):
     Ncp = len(cplist)
     T = LL.shape[0]
     inferred = np.zeros(T)
+    Ctot = 0
+    Htot = 0
 
     for tau in xrange(Ncp):
         run_start = cplist[tau] + 1
@@ -102,7 +110,22 @@ def calc_state_probs(LL, theta, cplist):
             run_end = cplist[tau + 1]
 
         kap = kappa(LL, theta, run_start, run_end)
-        Ez = stats.logistic.cdf(kap)
-        inferred[run_start:(run_end + 1)] = Ez
+        Ez = expit(kap)
+        for t in xrange(run_start, run_end + 1):
+            inferred[t] = Ez
+        # inferred[run_start:(run_end + 1)] = Ez
+        Ctot += C(LL, theta, run_start, run_end)
+        Htot += bernoulli.entropy(Ez)
+
+    print "(pelt): C = {}".format(Ctot)
+    xi = np.empty((T, 2))
+    xi[:, 1] = inferred
+    xi[:, 0] = 1 - xi[:, 1]
+    L = np.sum(LL * xi)
+    beta = 2.0
+    print "(pelt): Ncp = {}".format(Ncp)
+    print "(pelt): LL = {}".format(L)
+    print "(pelt): H = {}".format(Htot)
+    print "(pelt): objective = {}".format(L + Htot - Ncp * beta)
 
     return inferred
