@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # ####### for testing only ################
     print "Subsetting for testing..."
-    df = df.query('time <= 1e3')
+    df = df.query('time <= 1e4')
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
     # ####### for testing only ################
@@ -181,7 +181,7 @@ if __name__ == '__main__':
         gpm.finalize()
         
         print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-4, verbosity=3)
+        gpm.do_inference(tol=1e-4, verbosity=2)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
