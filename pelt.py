@@ -42,7 +42,7 @@ def C(LL, theta, t1, t2):
     kap = kappa(LL, theta, t1, t2)
     return -(base_LL(LL, theta, t1, t2) + np.logaddexp(0, kap))
 
-@jit
+# @jit
 def find_changepoints(LL, theta, alpha):
     """
     Given the an array of log likelihoods at each time (row = time,
@@ -60,9 +60,14 @@ def find_changepoints(LL, theta, alpha):
     # initialize
     beta = alpha - np.log1p(-theta)
     R.add(-1)
-    CP = [set({})]
     F[0] = -beta
     F[1:] = np.nan
+
+    # CP will be an array indexed by times (tau)
+    # each entry will be the changepoint added at that time (t' = new_cp)
+    # we will recover the final CP list by recursing back up the tree,
+    # since CP(tau) = CP(t') U {t'}
+    CP = np.zeros(T).astype('int64')  # one entry
 
     # iterate
     for tau in xrange(T):
@@ -75,9 +80,7 @@ def find_changepoints(LL, theta, alpha):
 
         F[tau + 1] = mincost
 
-        new_cpset = CP[new_cp + 1].copy()
-        new_cpset.add(new_cp)
-        CP.append(new_cpset)
+        CP[tau] = new_cp
 
         Rnext = set({})
         for r in R:
@@ -88,7 +91,15 @@ def find_changepoints(LL, theta, alpha):
         R = Rnext
 
     # extract changepoints
-    return sorted(CP[-1])
+    # return sorted(CP[-1])
+    cpset = set({})
+    t = T - 1
+    while t > 0:
+        tprime = CP[t]
+        cpset.add(tprime)
+        t = tprime
+
+    return sorted(cpset)
 
 @jit
 def calc_state_probs(LL, theta, cplist):
