@@ -42,7 +42,7 @@ def C(LL, theta, t1, t2):
     kap = kappa(LL, theta, t1, t2)
     return -(base_LL(LL, theta, t1, t2) + np.logaddexp(0, kap))
 
-# @jit
+@jit
 def find_changepoints(LL, theta, alpha):
     """
     Given the an array of log likelihoods at each time (row = time,
