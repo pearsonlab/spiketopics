@@ -55,13 +55,14 @@ def find_changepoints(LL, theta, alpha):
     T = LL.shape[0]  # number of time points
     F = np.empty(T + 1)  # F(t) = minimum cost for all data up to time t
     R = set({})  # set of times over which to search
-    CP = set({})  # list of changepoints (ordered)
     K = 0.0  # bound constant for objective gain on changepoint insertion
 
     # initialize
     beta = alpha - np.log1p(-theta)
     R.add(-1)
+    CP = [set({})]
     F[0] = -beta
+    F[1:] = np.nan
 
     # iterate
     for tau in xrange(T):
@@ -74,7 +75,9 @@ def find_changepoints(LL, theta, alpha):
 
         F[tau + 1] = mincost
 
-        CP.add(new_cp)
+        new_cpset = CP[new_cp + 1].copy()
+        new_cpset.add(new_cp)
+        CP.append(new_cpset)
 
         Rnext = set({})
         for r in R:
@@ -85,8 +88,7 @@ def find_changepoints(LL, theta, alpha):
         R = Rnext
 
     # extract changepoints
-    print "F_tot = {}".format(F[-1])
-    return sorted(list(CP))
+    return sorted(CP[-1])
 
 @jit
 def calc_state_probs(LL, theta, cplist):
@@ -116,16 +118,5 @@ def calc_state_probs(LL, theta, cplist):
         # inferred[run_start:(run_end + 1)] = Ez
         Ctot += C(LL, theta, run_start, run_end)
         Htot += bernoulli.entropy(Ez)
-
-    print "(pelt): C = {}".format(Ctot)
-    xi = np.empty((T, 2))
-    xi[:, 1] = inferred
-    xi[:, 0] = 1 - xi[:, 1]
-    L = np.sum(LL * xi)
-    beta = 2.0
-    print "(pelt): Ncp = {}".format(Ncp)
-    print "(pelt): LL = {}".format(L)
-    print "(pelt): H = {}".format(Htot)
-    print "(pelt): objective = {}".format(L + Htot - Ncp * beta)
 
     return inferred

@@ -246,9 +246,6 @@ class GammaModel:
             Elogp += np.sum(nn[:, np.newaxis] * xi[tt] * bar_log_lam[uu])
             eff_rate *= self.F_prod()
 
-            # pieces for A and pi
-            # Elogp += self.nodes['HMM'].expected_log_state_sequence()
-
         if self.regressors:
             node = self.nodes['fr_regressors']
             bar_log_lam = node.expected_log_x()
@@ -545,23 +542,7 @@ class GammaModel:
 
                 # E step
                 logpsi = self.calc_log_evidence(k)
-                xi = self.nodes['segmodel'].nodes['z'].z[:, :, k].T
-                Elogp = np.sum(logpsi * xi)
-                H = self.nodes['segmodel'].Hz[k]
-                Elp = self.nodes['segmodel'].elp[k]
-                print "Elogp initial = {}".format(Elogp)
-                print "Elogprior initial = {}".format(Elp)
-                print "H initial = {}".format(H)
-                print "objective initial = {}".format(Elogp + Elp + H)
                 self.nodes['segmodel'].update(k, logpsi)
-                xi = self.nodes['segmodel'].nodes['z'].z[:, :, k].T
-                Elogp = np.sum(logpsi * xi)
-                H = self.nodes['segmodel'].Hz[k]
-                Elp = self.nodes['segmodel'].elp[k]
-                print "Elogp final = {}".format(np.sum(logpsi * xi))
-                print "Elogprior final = {}".format(Elp)
-                print "H final = {}".format(H)
-                print "objective final = {}".format(Elogp + Elp + H)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
                     assert((Lval >= lastL) | np.isclose(Lval, lastL))
