@@ -28,8 +28,8 @@ def rle(x):
 def mutual_information_matrix(X, Z):
     """
     Given X, an observations x variables array of observed binary variables and
-    Z, variables x probabilities, p(z = 1), construct a matrix of 
-    (normalized) mutual information scores. Output shape is 
+    Z, variables x probabilities, p(z = 1), construct a matrix of
+    (normalized) mutual information scores. Output shape is
     X.shape[1] x Z.shape[1]
     """
     Nx = X.shape[1]
@@ -43,9 +43,9 @@ def mutual_information_matrix(X, Z):
 
 def mi(x, z):
     """
-    Calculate mutual information (normalized between 0 and 1) between 
+    Calculate mutual information (normalized between 0 and 1) between
     an observed binary sequence x and a sequence of posterior probabilities
-    z. 
+    z.
     WARNING: Not particularly careful: can produce negative results.
     """
     zm = np.mean(z)
@@ -56,11 +56,11 @@ def mi(x, z):
     x1 = x == 1
     p1 = np.mean(x)
     p0 = 1 - p1
-    pz0 = np.mean(z[x0]) 
+    pz0 = np.mean(z[x0])
     pz1 = np.mean(z[x1])
     Hzx = -p0 * (pz0 * np.log(pz0) + (1 - pz0) * np.log(1 - pz0))
     Hzx += -p1 * (pz1 * np.log(pz1) + (1 - pz1) * np.log(1 - pz1))
-    
+
     return (Hz - Hzx) / np.sqrt(Hz * Hx)
 
 def frames_to_times(df):
@@ -80,9 +80,27 @@ def frames_to_times(df):
 
     return allframe
 
+def get_movie_partition(df):
+    """
+    Get beginning and ending row numbers corresponding to each movie. Return
+    a dataframe with columns (start, end).
+    """
+    # make sure sort is right
+    tmpdf = df.sort(['movie', 'frame', 'unit'])
+
+    # get rid of old index, make a column of new, consecutive index
+    tmpdf = tmpdf.reset_index(drop=True).reset_index()
+
+    grp = tmpdf.groupby('movie')
+
+    starts = grp.first()['index']
+    ends = grp.last()['index']
+
+    return pd.DataFrame({'start': starts, 'end': ends})
+
 def regularize_zeros(df):
     """
-    Given a DataFrame with 0s and NAs, regularize it so that it can be 
+    Given a DataFrame with 0s and NAs, regularize it so that it can be
     put on a log scale.
     """
     new_df = df.copy()
@@ -99,16 +117,16 @@ def gamma_from_hypers(mean_hyps, var_hyps, N=1e4):
     """
     th = stats.gamma.rvs(a=mean_hyps[0], scale=1./mean_hyps[1], size=N)
     cc = stats.gamma.rvs(a=var_hyps[0], scale=1./var_hyps[1], size=N)
-    
+
     aa = cc
     bb = cc * th
-    
+
     return stats.gamma.rvs(a=aa, scale=1./bb)
 
 def lognormal_from_hypers(mu, scale, shape, rate, N=1e4):
     """
     Draw N samples from a lognormal distribution whose (m, s) parameters
-    are drawn from a normal-gamma hyperprior with parameters 
+    are drawn from a normal-gamma hyperprior with parameters
     (mu, scale, shape, rate)
     """
     tau = stats.gamma.rvs(a=shape, scale=1./rate, size=N)
@@ -116,12 +134,12 @@ def lognormal_from_hypers(mu, scale, shape, rate, N=1e4):
     s = 1. / np.sqrt(scale * tau)
     m = stats.norm.rvs(loc=mu, scale=s, size=N)
     x = stats.lognorm.rvs(scale=np.exp(m), s=sig, size=N)
-    
+
     return x
 
 def jitter_array(arr, percent):
     """
-    Given an array, arr, return same array with each entry scaled by a 
+    Given an array, arr, return same array with each entry scaled by a
     uniform percentage between +/- percent.
     """
     arr = np.array(arr)
@@ -145,7 +163,7 @@ def jitter_inits(init_dict, percent_jitter):
             inits['zz_init'] = np.random.rand(*init_dict['zz_init'].shape)
         else:
             inits[key] = jitter_array(init_dict[key], percent_jitter)
-            
+
     # hack this for now
     new_inits = copy.deepcopy(init_dict)
     new_inits.update(inits)

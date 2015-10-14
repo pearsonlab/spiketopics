@@ -6,7 +6,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-from spiketopics.helpers import frames_to_times, regularize_zeros
+from spiketopics.helpers import frames_to_times, regularize_zeros, get_movie_partition
 import argparse
 
 if __name__ == '__main__':
@@ -25,24 +25,28 @@ if __name__ == '__main__':
     print 'Processing data...'
     df = df.drop(['trialId'], axis=1)
     df = df.sort(['movieId', 'frameNumber', 'unitId'])
-    df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame', 
+    df = df.rename(columns={'unitId': 'unit', 'frameNumber': 'frame',
         'movieId': 'movie', 'frameClipNumber': 'frame_in_clip'})
     M = df.shape[0]
 
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
 
+    print 'Getting movie start/stop times...'
+    part_frame = get_movie_partition(df)
+    part_frame.to_csv('data/movie_start_end_times.csv', index=False)
+
     print 'Converting (movie, frame) pairs to unique times...'
     df = frames_to_times(df)
 
     if args.collection == 'mean':
         umean = df.groupby(['unit', 'frame_in_clip']).mean().reset_index()
-        Xmean = pd.pivot_table(umean, index='frame_in_clip', 
+        Xmean = pd.pivot_table(umean, index='frame_in_clip',
             columns='unit', values='count')
-        Xsm = Xmean.apply(pd.rolling_window, window=10, win_type='gaussian', 
+        Xsm = Xmean.apply(pd.rolling_window, window=10, win_type='gaussian',
             std=3, center=True)
 
-        # put Xmean on log scale 
+        # put Xmean on log scale
         Xreg = regularize_zeros(Xsm)
         X0 = np.log(Xreg)
         X0 -= X0.min()
@@ -57,7 +61,7 @@ if __name__ == '__main__':
 
         # append to data frame
         uu = df['unit']
-        fic = df['frame_in_clip'] 
+        fic = df['frame_in_clip']
         df['X0'] = X0.values[fic, uu]
         # df['X1'] = X1.values[fic, uu]
         # df['X2'] = X2.values[fic, uu]
