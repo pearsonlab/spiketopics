@@ -6,7 +6,14 @@ import numpy as np
 import multiprocessing as mp
 
 def mapfun(args):
-    return Worker._mapfun(args)
+    """
+    Function to be mapped over things.
+    """
+    start, end = args
+    print start, end
+    mn = np.mean(inarr[start:end])
+    outarr[start:end] = mn * np.ones(end - start)
+    return mn
 
 class Worker():
     """
@@ -14,17 +21,6 @@ class Worker():
     """
     def __init__(self, tuplist):
         self.slices = tuplist
-
-    @staticmethod
-    def _mapfun(args):
-        """
-        Function to be mapped over things.
-        """
-        start, end = args
-        print start, end
-        mn = np.mean(inarr[start:end])
-        outarr[start:end] = mn * np.ones(end - start)
-        return mn
 
     def calc_to_do(self, indata):
         """
