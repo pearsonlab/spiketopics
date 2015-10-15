@@ -10,7 +10,7 @@ import argparse
 import cPickle as pickle
 
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser(description="Run latent topic discovery using a Gamma-Poisson model")
     parser.add_argument("input", help="name of input file")
     parser.add_argument("-s", "--seed", help="random number seed",
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
     # ####### for testing only ################
 
-    # set up params 
+    # set up params
     print "Calculating parameters..."
     dt = 1. / 30  # duration of movie frame
     M = df.shape[0]
@@ -55,16 +55,16 @@ if __name__ == '__main__':
 
 
     baseline_dict = ({
-                'prior_shape_shape': bl_shape_shape, 
-                'prior_shape_rate': bl_shape_rate, 
-                'prior_mean_shape': bl_mean_shape, 
+                'prior_shape_shape': bl_shape_shape,
+                'prior_shape_rate': bl_shape_rate,
+                'prior_mean_shape': bl_mean_shape,
                 'prior_mean_rate': bl_mean_rate,
-                'post_shape_shape': bl_shape_shape, 
-                'post_shape_rate': bl_shape_rate, 
-                'post_mean_shape': bl_mean_shape, 
+                'post_shape_shape': bl_shape_shape,
+                'post_shape_rate': bl_shape_rate,
+                'post_mean_shape': bl_mean_shape,
                 'post_mean_rate': bl_mean_rate,
-                'post_child_shape': np.ones((U,)), 
-                'post_child_rate': np.ones((U,)) 
+                'post_child_shape': np.ones((U,)),
+                'post_child_rate': np.ones((U,))
                 })
 
     ############ firing rate latents ####################
@@ -74,15 +74,15 @@ if __name__ == '__main__':
     fr_mean_rate = 1000 * np.ones((K,))
 
     fr_latent_dict = ({
-                'prior_shape_shape': fr_shape_shape, 
-                'prior_shape_rate': fr_shape_rate, 
-                'prior_mean_shape': fr_mean_shape, 
+                'prior_shape_shape': fr_shape_shape,
+                'prior_shape_rate': fr_shape_rate,
+                'prior_mean_shape': fr_mean_shape,
                 'prior_mean_rate': fr_mean_rate,
-                'post_shape_shape': fr_shape_shape, 
-                'post_shape_rate': fr_shape_rate, 
-                'post_mean_shape': fr_mean_shape, 
+                'post_shape_shape': fr_shape_shape,
+                'post_shape_rate': fr_shape_rate,
+                'post_mean_shape': fr_mean_shape,
                 'post_mean_rate': fr_mean_rate,
-                'post_child_shape': np.ones((U, K)), 
+                'post_child_shape': np.ones((U, K)),
                 'post_child_rate': np.ones((U, K))
                 })
 
@@ -102,13 +102,13 @@ if __name__ == '__main__':
 
     # ###### p(d) #############
     # d_hypers = (2.5, 4., 2., 40.)
-    # d_pars = ({'d_prior_mean': d_hypers[0] * np.ones((Mz, K)), 
+    # d_pars = ({'d_prior_mean': d_hypers[0] * np.ones((Mz, K)),
     #           'd_prior_scaling': d_hypers[1] * np.ones((Mz, K)),
     #           'd_prior_shape': d_hypers[2] * np.ones((Mz, K)),
     #           'd_prior_rate': d_hypers[3] * np.ones((Mz, K))})
     # d_inits = (3., 1., 1., 1.)
 
-    # d_post_pars = ({'d_post_mean': d_inits[0] * np.ones((Mz, K)), 
+    # d_post_pars = ({'d_post_mean': d_inits[0] * np.ones((Mz, K)),
     #                 'd_post_scaling': d_inits[1] * np.ones((Mz, K)),
     #                 'd_post_shape': d_inits[2] * np.ones((Mz, K)),
     #                 'd_post_rate': d_inits[3] * np.ones((Mz, K))})
@@ -126,17 +126,23 @@ if __name__ == '__main__':
     # Xi_mat = Xi_mat.astype('float')
 
     # latent_dict = ({'A_prior': A_prior, 'pi_prior': pi_prior,
-    #                 'A_post': A_prior, 'pi_post': pi_prior, 
-    #                 'z_init': z_prior, 'zz_init': Xi_mat, 
+    #                 'A_post': A_prior, 'pi_post': pi_prior,
+    #                 'z_init': z_prior, 'zz_init': Xi_mat,
     #                 'logZ_init': np.zeros((K,))
     #                 })
-    
+
     # prior params
     theta = 0.5  # prior on E[z] for each segment
     beta = 2.  # desired value for changepoint penalty
     alpha = beta + np.log(1 - theta)  # penalty on number of changepoints
 
-    latent_dict = ({'z_init': z_prior, 'theta': theta, 'alpha': alpha})
+    # for parallel processing, we need a list of tuples defining start and
+    # end times of chunks
+    movie_df = pd.read_csv('data/movie_start_end_times.csv')
+    chunklist = zip(movie_df['start'], movie_df['end'])
+
+    latent_dict = ({'z_init': z_prior, 'theta': theta, 'alpha': alpha,
+        'chunklist': chunklist})
     # latent_dict.update(d_pars)
     # latent_dict.update(d_post_pars)
     ############ regression coefficients ####################
@@ -160,9 +166,9 @@ if __name__ == '__main__':
     ############ overdispersion ####################
     od_shape = 6.
     od_rate = 5.
-    od_dict = ({'prior_shape': od_shape * np.ones((M,)), 
-                'prior_rate': od_rate * np.ones((M,)), 
-                'post_shape': np.ones((M,)), 
+    od_dict = ({'prior_shape': od_shape * np.ones((M,)),
+                'prior_rate': od_rate * np.ones((M,)),
+                'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
 
@@ -179,7 +185,7 @@ if __name__ == '__main__':
         gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
         gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
         gpm.finalize()
-        
+
         print "Start {} -----------------------".format(idx)
         gpm.do_inference(tol=1e-4, verbosity=2)
         print "Final L = {}".format(gpm.L())

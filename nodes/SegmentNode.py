@@ -7,6 +7,20 @@ import numpy as np
 from ..pelt import find_changepoints, calc_state_probs
 from scipy.stats import bernoulli
 from scipy.special import logit
+import multiprocessing as mp
+
+
+def find_cp(args):
+    """
+    Find changepoints for a given range of data in psi and write out
+    state probabilities to xi. Called by SegmentNode.update(). Needs
+    to be in module scope for pickling by multiprocessing.
+    """
+    start, stop, theta, alpha = args
+    cplist = find_changepoints(psi[start:stop], theta, alpha)
+    xi[start:stop, 1] = calc_state_probs(psi[start:stop], theta, cplist)
+    xi[start:stop, 0] = 1 - xi[start:stop, 1]
+    return cplist
 
 class ZNode:
     """
@@ -46,7 +60,12 @@ class SegmentNode:
     Node representing a changepoint segmentation model. Comprises a ZNode
     containing the expected value of the state in each segment.
     """
-    def __init__(self, z, name='segmodel'):
+    def __init__(self, z, chunklist, name='segmodel'):
+        """
+        z: mean value of the state in each time bin
+        chunklist: iterable of [start, end) tuples for each subset that
+            can be parallelized over
+        """
         M = z.shape[0]
         T = z.shape[1]
         if len(z.shape) > 2:
@@ -58,6 +77,7 @@ class SegmentNode:
         self.T = T
         self.K = K
         self.shape = z.shape
+        self.chunklist = chunklist
         self.name = name
         self.update_finalizer = None
 
@@ -78,15 +98,36 @@ class SegmentNode:
         """
 
         ########### update chains
-        # (T, M)
-        psi = log_evidence #- np.amax(log_evidence, axis=1, keepdims=True)
-        xi = np.zeros_like(psi)
+        # dimension of log_evidence = (T, M)
+
+        # create global variables psi, x
+        global psi, xi
+
+        # make shared memory buffer, cast as numpy array
+        psi = np.frombuffer(mp.Array('d', log_evidence.ravel(), lock=False))
+        psi = psi.reshape(log_evidence.shape)
+        # psi = log_evidence #- np.amax(log_evidence, axis=1, keepdims=True)
+
+        xi = np.frombuffer(mp.Array('d', psi.size, lock=False))
+        xi = xi.reshape(psi.shape)
+        # xi = np.zeros_like(psi)
+
+        # get needed parameters
         theta = self.nodes['z'].theta
         alpha = self.nodes['z'].alpha
 
-        cplist = find_changepoints(psi, theta, alpha)
-        xi[:, 1] = calc_state_probs(psi, theta, cplist)
-        xi[:, 0] = 1 - xi[:, 1]
+        # pack everything needed for worker function into tuples
+        arglist = [t + (theta, alpha) for t in self.chunklist]
+
+        # initialize pool
+        pool = mp.Pool()
+
+        # map and reduce to get list of all changepoints
+        allcp = pool.map(find_cp, arglist)
+        cplist = sorted([cp for l in allcp for cp in l])
+        pool.close()
+
+        # get run starts
         run_starts = [t + 1 for t in cplist]
         Ez = xi[run_starts, 1]  # posterior probabilities in each segment
 
