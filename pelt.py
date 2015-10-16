@@ -131,3 +131,56 @@ def calc_state_probs(LL, theta, cplist):
         Htot += bernoulli.entropy(Ez)
 
     return inferred
+
+@jit
+def find_changepoints_bs(LL, theta, alpha):
+    """
+    Find changepoints via binary segmentation. Same conventions as in
+    find_changepoints.
+    """
+    T = LL.shape[0]  # number of time points
+    segments = {(0, T)}  # initialize with a single segment
+    CP = []  # list of changepoints
+    beta = alpha - np.log1p(-theta)
+    # import pdb; pdb.set_trace()
+
+    while len(segments):
+        start, stop = segments.pop()
+        # print "scanning ({}, {})".format(start, stop)
+        new_cp = _find_cp_bs(LL[start:stop], beta, theta)
+
+        if new_cp > 0:
+            new_cp += start  # get cp relative to whole data set
+            CP.append(new_cp)
+
+            # New segments to search are [start, new_cp) and (new_cp, stop)
+            # equivalent to slices [start, new_cp) and [new_cp + 1, stop)
+            if new_cp - start > 2:
+                segments.add((start, new_cp))
+            if stop - new_cp > 3:
+                segments.add((new_cp + 1, stop))
+
+    return sorted(CP)
+
+@jit("int64(float64[:, :], float64, float64)", nopython=True)
+def _find_cp_bs(LL, beta, theta):
+    """
+    Find the best changepoint for bisecting the data range between start
+    and stop.
+    """
+    T = LL.shape[0]
+
+    # search all times, comparing cost of changepoint sequence to cost of
+    # sequence taken as a whole
+
+    C_nosplit = C(LL, theta, 0, T - 1)
+    mincost = C_nosplit
+    cp = -1
+
+    for t in xrange(T):
+        cost = C(LL, theta, 0, t) + C(LL, theta, t + 1, T - 1) + beta
+        if cost < mincost:
+            mincost = cost
+            cp = t
+
+    return cp
