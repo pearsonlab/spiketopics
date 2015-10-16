@@ -128,7 +128,7 @@ class SegmentNode:
         pool.close()
 
         # get run starts
-        run_starts = [t + 1 for t in cplist]
+        run_starts = [t + 1 for t in cplist if t + 1 < xi.shape[0]]
         Ez = xi[run_starts, 1]  # posterior probabilities in each segment
 
         xi = xi.T  # now (M, T)
