@@ -142,11 +142,9 @@ def find_changepoints_bs(LL, theta, alpha):
     segments = {(0, T)}  # initialize with a single segment
     CP = []  # list of changepoints
     beta = alpha - np.log1p(-theta)
-    # import pdb; pdb.set_trace()
 
     while len(segments):
         start, stop = segments.pop()
-        # print "scanning ({}, {})".format(start, stop)
         new_cp = _find_cp_bs(LL[start:stop], beta, theta)
 
         if new_cp > 0:
