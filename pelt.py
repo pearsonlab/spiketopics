@@ -140,7 +140,7 @@ def find_changepoints_bs(LL, theta, alpha):
     """
     T = LL.shape[0]  # number of time points
     segments = {(0, T)}  # initialize with a single segment
-    CP = []  # list of changepoints
+    CP = [0]  # list of changepoints
     beta = alpha - np.log1p(-theta)
 
     while len(segments):
