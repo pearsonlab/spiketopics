@@ -317,5 +317,86 @@ Because the structure of the observation model is a sum over (independent)observ
 \end{align}
 to be continued...
 
+\section{Bottleneck model}
+Consider a log-linear Poisson model with a matrix of count observations of $U$ units at $T$ times.
+\begin{equation}
+    N_{tu} \sim \mathrm{Poisson}(e^{\eta_{tu}})
+\end{equation}
+Furthermore, assume that the variable $\eta$ is Gaussian:
+\begin{equation}
+    \eta_{tu} \sim \mathcal{N}\left(a_{u} + \sum_{r=1}^R x_{tr} b_{ru} + 
+    \sum_{k=1}^K z_{tk} c_{ku}, \sigma^2\right)
+\end{equation}
+where $z \in \{0, 1\}$ and the variables $x$ are known regressors. We can then write the observation model as 
+\begin{equation}
+    p(N) = p(N|\eta) p(\eta|a, b, c, z, \sigma^2) p(a) p(b) p(c) p(z) p(\sigma^2)
+\end{equation}
+We will assume the following priors for the parameters:
+\begin{align}
+    a_u &\sim \mathcal{N}(m_a, s_a^2) \\
+    b_{\cdot u} &\sim \mathcal{N}(m_b, S_b) \\
+    c_{\cdot u} &\sim \mathcal{N}(m_c, S_c) \\
+    z_{\cdot k} &\sim \mathrm{HMM}(A_k, \pi_k) \\
+    \sigma^2 &\sim \text{Inv-Gamma}
+\end{align}
+That is, the coefficients $a$, $b$, and $c$ for each unit are drawn from population normal distributions (perhaps with nontrivial covariance), while the hidden binary variables $z$ are drawn from separate hidden Markov models.
+
+Now, the variational posterior $q$ can be chosen as a product of the following:
+\begin{align}
+    \eta_{t\cdot} &\sim \mathcal{N}(\mu^t_\eta, \Sigma^t_\eta) \\
+    a_u &\sim \mathcal{N}(\mu^u_a, (\sigma^u_a)^2) \\
+    b_{\cdot u} &\sim \mathcal{N}(\mu^u_b, \Sigma^u_b) \\
+    c_{\cdot u} &\sim \mathcal{N}(\mu^u_c, \Sigma^u_c) \\
+    z_{\cdot k} &\sim \mathrm{HMM}(\tilde{A}_k, \tilde{\pi}_k) \\
+    \sigma^2 &\sim \text{Inv-Gamma}
+\end{align}
+
+Some notes:
+\begin{itemize}
+    \item Because of the linear-Gaussian form of the model for $\eta$, the Gaussian variational posteriors of $a$, $b$, and $c$ can make use of conjugacy for rapid, exact coordinate ascent.
+    \item For the priors, we specified a single population prior for each unit, but for the posteriors, we clearly need a posterior over \emph{each} unit. The same holds for the posteriors for $\eta$ at distinct times.\footnote{In this case, we might want a posterior that incorporates autocorrlation in time. File under future work.}
+    \item The HMM inference can be performed exactly by the forward-backward algorithm. Our only approximation is to assume that the posterior $q(z)$ takes the form of a product over \emph{independent} chains. This is only approximate because these chains are coupled through the observations (and intermediately through $\eta$) in the true posterior.
+    \item The only non-conjugacy in the model is in $\eta$, since we assume a Gaussian posterior and a Poisson observation model for the counts.
+\end{itemize}
+
+\subsection{Inference on log firing rate}
+If we write the evidence lower bound as
+\begin{equation}
+    \mathcal{L} = \mathbb{E}_q \left[ \frac{\log p}{\log q}\right] = 
+    \mathbb{E}_q[\log p] + \mathcal{H}[q]
+\end{equation}
+Then the only non-conjugate terms, as noted above, are related to $\eta$:
+\begin{align}
+    \mathcal{L}_\eta &= 
+    \sum_{tu} \mathbb{E}_q[N_{tu} \eta_{tu} - e^{\eta_{tu}}]
+    - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[ \frac{(\eta - \overline{\eta})^2}{\sigma^2} \right]
+    + \frac{1}{2} \log |\Sigma_\eta| \\
+    &= \left[ \sum_{tu} N_{tu} \mu_{\eta tu} - 
+    \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
+    &- \frac{\tau}{2} \sum_{tu} 
+    \left[ \Sigma_{\eta tuu} + (\mu_{\eta tu} - \mathbb{E}_q[\overline{\eta}_{tu}])^2 
+    + \mathrm{var}[\overline{\eta}]_{tuu}\right] \\
+    &+ \frac{1}{2} \log |\Sigma_\eta| + const
+\end{align}
+with $\overline{\eta} \equiv a + bx + cz$ and $\tau \equiv \mathbb{E}_q[1/\sigma^2]$ the mean noise precision.
+
+We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
+\begin{align}
+    \frac{\partial \mathcal{L}}{\partial \mu_{tu}} &= 
+    N_{tu} - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{tuu} \right) 
+    - \tau(\mu_{tu} - \mathbb{E}_q[\overline{\eta}_{tu}]) \\
+    \frac{\partial \mathcal{L}}{\partial \Sigma_{tu \neq v}} &= 
+    \frac{1}{2} \left(\Sigma^{-1} \right)_{tuv} \\
+    \frac{\partial \mathcal{L}}{\partial \Sigma_{tuu}} &= 
+    -\frac{1}{2} \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{tuu} \right)
+    - \frac{\tau}{2}
+    + \frac{1}{2} \left(\Sigma^{-1} \right)_{tuu} \\
+\end{align}
+and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{tuv} = 0$ for $u\neq v$ --- that is, the precision matrix $\Sigma^{-1}_t$ is diagonal, and we can rewrite the maximization equations as 
+\begin{align}
+    \mu_{tu} + \frac{1}{\tau}\exp\left(\mu_{tu} + \frac{1}{2} \sigma^2_{tu} \right)&= \mathbb{E}_q[\overline{\eta}_{tu}] + \frac{1}{\tau} N_{tu} \\
+    \frac{1}{\sigma^2_{tu}} &= \exp\left(\mu_{tu} + \frac{1}{2}\sigma^2_{tu}\right) + \tau
+\end{align}
+
 
 \end{document}
