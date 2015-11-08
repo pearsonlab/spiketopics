@@ -398,5 +398,33 @@ and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{tuv} = 
     \frac{1}{\sigma^2_{tu}} &= \exp\left(\mu_{tu} + \frac{1}{2}\sigma^2_{tu}\right) + \tau
 \end{align}
 
+\subsubsection{Solving for $\mu$}
+The above transcendental equation for $\mu$ can be solved by using the Lambert W function, which satisfiex $z = W(z)e^{W(z)}$. That is, $y = W(z)$ is the solution to $ye^y = z$. Moreover, the equation
+\begin{equation}
+    p^{ax + b} = cx + d
+\end{equation}
+has the solution
+\begin{equation}
+    x = \frac{-W\left(-\frac{a \log p}{c} 
+    p^{b - \frac{ad}{c}} \right)}{a \log p} - \frac{d}{c}
+\end{equation}
+Thus, we can substitute
+\begin{align}
+    p &= e \\
+    a &= 1 \\
+    b &= \frac{1}{2} \sigma^2 \\
+    c &= -\tau \\
+    d &= N + \tau \mathbb{E}_q[\overline{\eta}]
+\end{align}
+into the above to yield
+\begin{equation}
+    \mu = N\tau^{-1} + \mathbb{E}_q[\overline{\eta}] - 
+    W\left(\tau^{-1} \exp \left( 
+    \frac{1}{2}\sigma^2 + N\tau^{-1} + \mathbb{E}_q[\overline{\eta}]
+    \right)\right)
+\end{equation}
+Moreover, we note that when $x \gg 1$, $W(x) \approx \log x - \log \log x + o(1)$.
+
+\subsubsection{Solving for $\sigma^2$}
 
 \end{document}
