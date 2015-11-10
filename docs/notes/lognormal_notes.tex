@@ -426,5 +426,10 @@ into the above to yield
 Moreover, we note that when $x \gg 1$, $W(x) \approx \log x - \log \log x + o(1)$.
 
 \subsubsection{Solving for $\sigma^2$}
+For $\sigma^2$, we have the condition
+\begin{equation}
+    \sigma^2 = \frac{1}{\tau + \exp\left(\mu + \frac{1}{2}\sigma^2 \right)}
+\end{equation}
+Solving this is similar to solving the fixed point equation $x = f(x)$ with $f$ the ($x$-reversed) logistic function. This equation can potentially solved by iteration, but one must be careful of the constants involved (so the approximation converges).
 
 \end{document}
