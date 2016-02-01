@@ -70,7 +70,7 @@ def frames_to_times(df):
     """
 
     # make a dataframe of unique (movie, frame) pairs
-    t_index = df[['movie', 'frame']].drop_duplicates().sort(['movie', 'frame'])
+    t_index = df[['movie', 'frame']].drop_duplicates().sort_values(by=['movie', 'frame'])
     t_index = t_index.reset_index(drop=True)  # get rid of original index
     t_index.index.name = 'time'  # name integer index
     t_index = t_index.reset_index()  # make time a column
@@ -86,7 +86,7 @@ def get_movie_partition(df):
     a dataframe with columns (start, end).
     """
     # make sure sort is right
-    tmpdf = df.sort(['movie', 'frame', 'unit'])
+    tmpdf = df.sort_values(by=['movie', 'frame', 'unit'])
 
     # get rid of old index, make a column of new, consecutive index
     tmpdf = tmpdf.reset_index(drop=True).reset_index()
