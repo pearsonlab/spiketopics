@@ -4,6 +4,7 @@ import scipy.io as sio
 import pandas as pd
 import os
 from collections import namedtuple
+from spiketopics.helpers import frames_to_times, get_movie_partition
 
 datadir = 'data'
 fname = 'toroid20120718a.mat'
@@ -28,7 +29,9 @@ spk = datmat['s'][0][0]
 Nt, _, Nu = spk.shape
 
 # create a named tuple of observations
-names = ['trial', 'time', 'unit', 'count', 'stim']
+# movie is the stimulus and frame the time within that trial
+# these conventions are to match the ethogram data and for use below
+names = ['trial', 'frame', 'unit', 'count', 'movie']
 Obs = namedtuple('Obs', names)
 
 # now loop over trials, then units within trial, counting spikes
@@ -48,6 +51,14 @@ for t in evt.itertuples():
 
 # concatenate into dataframe
 df = pd.DataFrame.from_records(tuplist, columns=names)
+
+print('Getting movie start/stop times...')
+part_frame = get_movie_partition(df)
+part_frame.to_csv('data/trial_start_end_times.csv', index=False)
+
+# now transform (stimulus, time) pairs to unique times
+print('Converting (stimulus, epoch) pairs to unique times...')
+df = frames_to_times(df)
 
 outname = os.path.join(datadir, 'prepped_data.csv')
 df.to_csv(outname, index=False)
