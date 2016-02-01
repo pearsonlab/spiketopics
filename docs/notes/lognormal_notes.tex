@@ -365,13 +365,13 @@ If we write the evidence lower bound as
     \mathcal{L} = \mathbb{E}_q \left[ \frac{\log p}{\log q}\right] = 
     \mathbb{E}_q[\log p] + \mathcal{H}[q]
 \end{equation}
-Then the only non-conjugate terms, as noted above, are related to $\eta$:
+Then the only non-conjugate terms, as noted above, are related to $\eta$\footnote{Recall that $p(N|\lambda)p(\lambda) d\lambda = p(N|e^\eta)\lvert\frac{d\lambda}{d\eta}\rvert p(\eta) d\eta$, so that we need an extra factor $e^\eta$ implying $N \rightarrow N + 1$ in the sufficient statistics. This is equivalent, of course, to noting that $\lambda = e^\eta$ should be log-normally distributed, in which case the extra factor is just the extra measure factor in the log-normal.}:
 \begin{align}
     \mathcal{L}_\eta &= 
-    \sum_{tu} \mathbb{E}_q[N_{tu} \eta_{tu} - e^{\eta_{tu}}]
+    \sum_{tu} \mathbb{E}_q[(N_{tu} + 1) \eta_{tu} - e^{\eta_{tu}}]
     - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[ \frac{(\eta - \overline{\eta})^2}{\sigma^2} \right]
     + \frac{1}{2} \log |\Sigma_\eta| \\
-    &= \left[ \sum_{tu} N_{tu} \mu_{\eta tu} - 
+    &= \left[ \sum_{tu} (N_{tu} + 1) \mu_{\eta tu} - 
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
     &- \frac{\tau}{2} \sum_{tu} 
     \left[ \Sigma_{\eta tuu} + (\mu_{\eta tu} - \mathbb{E}_q[\overline{\eta}_{tu}])^2 
@@ -383,7 +383,7 @@ with $\overline{\eta} \equiv a + bx + cz$ and $\tau \equiv \mathbb{E}_q[1/\sigma
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
 \begin{align}
     \frac{\partial \mathcal{L}}{\partial \mu_{tu}} &= 
-    N_{tu} - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{tuu} \right) 
+    N_{tu} + 1 - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{tuu} \right) 
     - \tau(\mu_{tu} - \mathbb{E}_q[\overline{\eta}_{tu}]) \\
     \frac{\partial \mathcal{L}}{\partial \Sigma_{tu \neq v}} &= 
     \frac{1}{2} \left(\Sigma^{-1} \right)_{tuv} \\
@@ -394,7 +394,7 @@ We can then ask what happens when we look for local minima of this objective wit
 \end{align}
 and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{tuv} = 0$ for $u\neq v$ --- that is, the precision matrix $\Sigma^{-1}_t$ is diagonal, and we can rewrite the maximization equations as 
 \begin{align}
-    \mu_{tu} + \frac{1}{\tau}\exp\left(\mu_{tu} + \frac{1}{2} \sigma^2_{tu} \right)&= \mathbb{E}_q[\overline{\eta}_{tu}] + \frac{1}{\tau} N_{tu} \\
+    \mu_{tu} + \frac{1}{\tau}\exp\left(\mu_{tu} + \frac{1}{2} \sigma^2_{tu} \right)&= \mathbb{E}_q[\overline{\eta}_{tu}] + \frac{1}{\tau} (N_{tu} + 1) \\
     \frac{1}{\sigma^2_{tu}} &= \exp\left(\mu_{tu} + \frac{1}{2}\sigma^2_{tu}\right) + \tau
 \end{align}
 
@@ -414,7 +414,7 @@ Thus, we can substitute
     a &= 1 \\
     b &= \frac{1}{2} \sigma^2 \\
     c &= -\tau \\
-    d &= N + \tau \mathbb{E}_q[\overline{\eta}]
+    d &= N + 1 + \tau \mathbb{E}_q[\overline{\eta}]
 \end{align}
 into the above to yield
 \begin{equation}
