@@ -11,18 +11,18 @@ from ..hsmm_forward_backward import fb_infer as hsmm_fb_infer
 
 class MarkovChainNode:
     """
-    Distribution for a set of Markov chains, the variables in each taking on 
-    discrete states defined by a Dirichlet distribution. 
+    Distribution for a set of Markov chains, the variables in each taking on
+    discrete states defined by a Dirichlet distribution.
     Variables are:
         z: Markov chain (states x times x copies)
-        zz: two-slice marginals for transitions (states x states x 
+        zz: two-slice marginals for transitions (states x states x
             times - 1, copies)
         logZ: log partition function for posterior (copies)
 
-    Note that this is not a normal node, since it does not parameterize the 
-        full joint distribution over z. Rather, it is only a container for 
-        the expected values of the marginals z and zz, and the log 
-        partition function, logZ. 
+    Note that this is not a normal node, since it does not parameterize the
+        full joint distribution over z. Rather, it is only a container for
+        the expected values of the marginals z and zz, and the log
+        partition function, logZ.
     """
     def __init__(self, z_init, zz_init, logZ_init, name='markov'):
         if len(z_init.shape) < 2:
@@ -67,7 +67,7 @@ class DurationNode:
     model. Requires a vector of duration values and a parent node specifying
     parameters for the distribution.
     """
-    def __init__(self, num_states, duration_vals, parent_node, 
+    def __init__(self, num_states, duration_vals, parent_node,
         name='duration'):
         D = duration_vals.shape[0]
         K = duration_vals.shape[1:]
@@ -89,7 +89,7 @@ class DurationNode:
     def get_durations(self):
         """
         Return an array (D x ...) of possible hidden state durations.
-        M is the number of levels of each hidden state, D the number of 
+        M is the number of levels of each hidden state, D the number of
         durations, and other indices denote replicates.
         """
         return self.dvec
@@ -97,7 +97,7 @@ class DurationNode:
     def update(self, idx, C):
         """
         Given sufficient statistics C from the forward-backward algorithm,
-        convert to expected sufficient statistics suitable for the parent 
+        convert to expected sufficient statistics suitable for the parent
         node and update the distribution.
         """
         self.C[..., idx] = C
@@ -108,8 +108,8 @@ class DurationNode:
 
     def calc_ess(self, idx):
         """
-        Calculate expected sufficient statistics in a form suitable for 
-        updating parent node. Return a dict of named arguments for 
+        Calculate expected sufficient statistics in a form suitable for
+        updating parent node. Return a dict of named arguments for
         passing to parent node's update method.
         """
         raise NotImplementedError('Instances must supply this method.')
@@ -123,13 +123,13 @@ class DurationNode:
 
     def expected_log_prior(self):
         """
-        Expected value of log prior under the posterior. 
+        Expected value of log prior under the posterior.
         """
         return self.parent.expected_log_prior()
 
     def expected_log_duration_prob(self):
         """
-        Expected value of the piece of log state sequence depending upon 
+        Expected value of the piece of log state sequence depending upon
         p(d|z).
         """
         C = self.C
@@ -137,8 +137,8 @@ class DurationNode:
 
 class HMMNode:
     """
-    Node representing a Hidden Markov Model. Comprises a MarkovChainNode for 
-    the latent states, a DirichletNode for the transition matrix, and a 
+    Node representing a Hidden Markov Model. Comprises a MarkovChainNode for
+    the latent states, a DirichletNode for the transition matrix, and a
     DirichletNode for the initial state probabilities.
     If a d (=duration) node of type DurationNode is supplied, the model is a
     Hidden Semi-Markov Model (HSMM).
@@ -166,7 +166,7 @@ class HMMNode:
         self.name = name
         self.update_finalizer = None
 
-        self.nodes = {'z': z, 'A': A, 'pi': pi} 
+        self.nodes = {'z': z, 'A': A, 'pi': pi}
         if self.hsmm:
             self.nodes.update({'d': d})
 
@@ -178,8 +178,8 @@ class HMMNode:
         idx needs to be an object capable of indexing the relevant Markov
             Chain (i.e., z after the first two (M, T) indices, A after the
             first two (M, M) indices, etc.)
-        log_evidence is log p(y|z, theta) (T, M) where y is the 
-            observed data from the HMM, z is the latent state variable(s), 
+        log_evidence is log p(y|z, theta) (T, M) where y is the
+            observed data from the HMM, z is the latent state variable(s),
             and theta are the other parameters of the HMM
         """
 
@@ -194,9 +194,9 @@ class HMMNode:
 
         ########### update chains
         # (T, M)
-        psi = log_evidence - np.amax(log_evidence, axis=1, keepdims=True) 
+        psi = log_evidence - np.amax(log_evidence, axis=1, keepdims=True)
 
-        # calculate variational parameters in z posterior 
+        # calculate variational parameters in z posterior
         A_par = self.nodes['A'].expected_log_x()[..., idx]
         pi_par = self.nodes['pi'].expected_log_x()[..., idx]
 
@@ -205,14 +205,14 @@ class HMMNode:
         else:
             dvec = self.nodes['d'].get_durations()[..., idx]
             logpd = self.nodes['d'].logpd()[..., idx]
-            xi, logZ, Xi, C = hsmm_fb_infer(A_par, pi_par, 
+            xi, logZ, Xi, C = hsmm_fb_infer(A_par, pi_par,
                 psi, dvec, logpd)
             C = np.sum(C, axis=0)
             self.nodes['d'].update(idx, C)
 
         xi = xi.T  # now (M, T)
         Xi = Xi.transpose((1, 2, 0))  # now (M, M, T - 1)
-        self.nodes['z'].update(idx, xi, Xi, logZ) 
+        self.nodes['z'].update(idx, xi, Xi, logZ)
 
         ########### calculate entropy pieces
         emission_piece = np.sum(xi.T * psi)
@@ -225,7 +225,7 @@ class HMMNode:
             duration_piece = np.sum(C * logpd)
             self.Hz[idx] += -duration_piece
 
-        assert(np.all(self.Hz >= 0))
+        assert(np.all((self.Hz >= 0) | np.isclose(self.Hz, 0)))
 
         if self.update_finalizer is not None:
             self.update_finalizer(idx)
@@ -233,7 +233,7 @@ class HMMNode:
         return self
 
     def entropy(self):
-        H = (np.sum(self.Hz) + self.nodes['A'].entropy() + 
+        H = (np.sum(self.Hz) + self.nodes['A'].entropy() +
             self.nodes['pi'].entropy())
         if self.hsmm:
             H += self.nodes['d'].entropy()
@@ -241,7 +241,7 @@ class HMMNode:
         return H
 
     def expected_log_prior(self):
-        elp = (self.nodes['A'].expected_log_prior() + 
+        elp = (self.nodes['A'].expected_log_prior() +
             self.nodes['pi'].expected_log_prior())
         if self.hsmm:
             elp += self.nodes['d'].expected_log_prior()
