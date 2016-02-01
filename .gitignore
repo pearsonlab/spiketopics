@@ -12,6 +12,7 @@
 **/*.bbl
 **/*.blg
 **/*.svg
+**/*.docx
 !**/figures/*.svg
 /data
 /output
