@@ -36,13 +36,14 @@ Obs = namedtuple('Obs', names)
 
 # now loop over trials, then units within trial, counting spikes
 # we count spikes in three intervals:
-#   -300:0  pre-trial baseline
-#   0:300  within-trial baseline (300 < T_STIMON)
-#   T_STIMON:T_STIMOFF  image display
+#   T_PRE:T_STIMON  pre-trial baseline
+#   T_STIMON:T_STIMOFF  stimulus presentation
+#   T_STIMOFF:T_POST  post-stimulus
 tuplist = []  # accumulate observations here
 for t in evt.itertuples():
     trial = int(t.Index)
-    epochs = [(-300, 0), (0, 300), (t.T_STIMON, t.T_STIMOFF)]
+    epochs = [(t.T_PRE, t.T_STIMON), (t.T_STIMON, t.T_STIMOFF),
+    (t.T_STIMOFF, t.T_POST)]
     for unit in range(Nu):
         for epnum, ep in enumerate(epochs):
             t_spk = spk[trial - 1, :, unit]
@@ -51,6 +52,7 @@ for t in evt.itertuples():
 
 # concatenate into dataframe
 df = pd.DataFrame.from_records(tuplist, columns=names)
+df = df.sort_values(by=['movie', 'frame', 'trial', 'unit'])
 
 print('Getting movie start/stop times...')
 part_frame = get_movie_partition(df)
@@ -58,7 +60,7 @@ part_frame.to_csv('data/trial_start_end_times.csv', index=False)
 
 # now transform (stimulus, time) pairs to unique times
 print('Converting (stimulus, epoch) pairs to unique times...')
-df = frames_to_times(df)
+df_utimes = frames_to_times(df)
 
 outname = os.path.join(datadir, 'prepped_data.csv')
-df.to_csv(outname, index=False)
+df_utimes.to_csv(outname, index=False)
