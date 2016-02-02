@@ -132,10 +132,21 @@ if __name__ == '__main__':
     Xi_mat = np.random.rand(2, 2, T - 1, K)
     Xi_mat = Xi_mat.astype('float')
 
+    # for parallel processing, we need a list of tuples defining start and
+    # end times of chunks
+    movie_df = pd.read_csv('data/trial_start_end_times.csv')
+    chunklist = zip(movie_df['start'], movie_df['end'])
+
+    # now make sure entries in Xi corresponding to p(z_start, z_previous_stim) don't count in Xi
+    start_list = [s for s, _ in chunklist if s > 0]
+    for t in start_list:
+        Xi_mat[:, :, t - 1] = 0
+
     latent_dict = ({'A_prior': A_prior, 'pi_prior': pi_prior,
                     'A_post': A_prior, 'pi_post': pi_prior,
                     'z_init': z_prior, 'zz_init': Xi_mat,
-                    'logZ_init': np.zeros((K,))
+                    'logZ_init': np.zeros((K,)),
+                    'chunklist': chunklist
                     })
     # latent_dict.update(d_pars)
     # latent_dict.update(d_post_pars)

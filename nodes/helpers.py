@@ -10,6 +10,7 @@ from .GaussianNode import GaussianNode
 from .DirichletNode import DirichletNode
 from .NormalGammaNode import NormalGammaNode
 from .HMM import MarkovChainNode, HMMNode, DurationNode
+from .parHMM import parHMMNode
 from .SegmentNode import ZNode, SegmentNode
 from .utility_nodes import ProductNode
 
@@ -254,6 +255,8 @@ def initialize_HMM(n_chains, n_states, n_times, n_durations=None, **kwargs):
 
     if hsmm:
         node = HMMNode(z, A, pi, d)
+    elif 'chunklist' in kwargs:
+        node = parHMMNode(z, A, pi, kwargs['chunklist'])
     else:
         node = HMMNode(z, A, pi)
 

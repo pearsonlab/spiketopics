@@ -55,7 +55,11 @@ df = pd.DataFrame.from_records(tuplist, columns=names)
 df = df.sort_values(by=['movie', 'frame', 'trial', 'unit'])
 
 print('Getting movie start/stop times...')
-part_frame = get_movie_partition(df)
+Nstim = len(np.unique(df.movie))
+N_uniq_times = 3 * Nstim
+# every stim is 3 epochs
+part_frame = pd.DataFrame({'start': range(0, N_uniq_times, 3),
+                           'end': range(2, N_uniq_times, 3)}) 
 part_frame.to_csv('data/trial_start_end_times.csv', index=False)
 
 # now transform (stimulus, time) pairs to unique times
