@@ -28,10 +28,13 @@ evt = evt.set_index('TR')
 spk = datmat['s'][0][0]
 Nt, _, Nu = spk.shape
 
+# make a list of categories for the stims:
+categories = ['Faces', 'Animals', 'Bodies', 'Fruit', 'Natural', 'Manmade', 'Scene', 'Pattern']
+
 # create a named tuple of observations
 # movie is the stimulus and frame the time within that trial
 # these conventions are to match the ethogram data and for use below
-names = ['trial', 'frame', 'unit', 'count', 'movie']
+names = ['trial', 'frame', 'unit', 'count', 'movie', 'category']
 Obs = namedtuple('Obs', names)
 
 # now loop over trials, then units within trial, counting spikes
@@ -48,7 +51,10 @@ for t in evt.itertuples():
         for epnum, ep in enumerate(epochs):
             t_spk = spk[trial - 1, :, unit]
             Nspk = np.sum((t_spk >= ep[0]) & (t_spk <= ep[1]))
-            tuplist.append(Obs(trial, epnum, unit, Nspk, int(t.STIM)))
+            cat = categories[(int(t.STIM) - 1) // 12]
+            if epnum == 0:  # baseline has no category
+                cat = 'Baseline'
+            tuplist.append(Obs(trial, epnum, unit, Nspk, int(t.STIM), cat))
 
 # concatenate into dataframe
 df = pd.DataFrame.from_records(tuplist, columns=names)
@@ -59,7 +65,7 @@ Nstim = len(np.unique(df.movie))
 N_uniq_times = 3 * Nstim
 # every stim is 3 epochs
 part_frame = pd.DataFrame({'start': range(0, N_uniq_times, 3),
-                           'end': range(2, N_uniq_times, 3)}) 
+                           'end': range(2, N_uniq_times, 3)})
 part_frame.to_csv('data/trial_start_end_times.csv', index=False)
 
 # now transform (stimulus, time) pairs to unique times
