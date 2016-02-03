@@ -43,5 +43,5 @@ The `experiments` folder contains case studies for the application of the algori
 The `docs` folder contains notes, papers, and other documentation for the algorithm.
 
 ## TODO:
-[ ] Correlated noise across neurons (log-Normal model does this)
-[ ] Response sparsity within populations, not just features
+- [ ] Correlated noise across neurons (log-Normal model does this)
+- [ ] Response sparsity within populations, not just features
