@@ -7,18 +7,18 @@
 \maketitle
 
 \section{Observation Model}
-We assume a Poisson process with $T$ observation times, $N$ observation units, and $K$ latent states. The counts for each unit at each time are then given by 
+We assume a Poisson process with $T$ observation times, $N$ observation units, and $K$ latent states. The counts for each unit at each time are then given by
 
 \begin{equation}
-    N_{tu} \sim \mathrm{Poisson}(\mu_{tu})    
+    N_{tu} \sim \mathrm{Poisson}(\mu_{tu})
 \end{equation}
-with 
+with
 \begin{equation}
-   \mu_{tu} = (ZB)_{tu} = \sum_k z_{tk} b_{ku} 
+   \mu_{tu} = (ZB)_{tu} = \sum_k z_{tk} b_{ku}
 \end{equation}
 wit $z$ the time series of latent states (assumed binary) and $b$ the regression coefficients. In addition, we assume the $z_t$ have independent Markov transition dynamics within each latent state (see below).
 
-In addition, it will be more convenient for our purposes to rewrite the above expression using $b_{ku} = \log \lambda_{ku}$, so that 
+In addition, it will be more convenient for our purposes to rewrite the above expression using $b_{ku} = \log \lambda_{ku}$, so that
 \begin{equation}
     p(N_{tu}|\lambda, z) = \frac{\prod_k \lambda_{ku}^{N_{tu} z_{tk}}}{N_{tu}!} e^{-\prod_k \lambda_{ku}^{z_{tk}}}
 \end{equation}
@@ -67,9 +67,9 @@ We would like to approximate the joint posterior density
 with a structured mean field form that factorizes over chains:
 \begin{equation}
      q(\lambda, z, A, \pi) = \prod_{ku} q(\lambda_{ku}) q(z_k) q(A_k) q(\pi_k)
-\end{equation} 
+\end{equation}
 Given the form taken by the model above, we can readily write down the ansatz
-\begin{align} 
+\begin{align}
     \lambda_{ku} &\sim \mathrm{Gamma}(\alpha_{ku}, \beta_{ku}) \\
     z_{1:T, k} &\sim \mathrm{HMM}(\eta_k, \tilde{A}_k, \tilde{\pi}_k) \\
     A_{k1i} &\sim \mathrm{Beta}(\gamma_{ki1}, \gamma_{ki2}) \\
@@ -88,21 +88,21 @@ Given parameters $\theta \equiv (\lambda, A, \pi)$, the well-known Forward-Backw
     \Xi_{t, ij} \equiv p(z_{t+1} = j, z_{t} = i|N, \theta) \qquad &\text{two-slice marginals}\\
     \log Z_{t} = \log p(N_{t+1, \bullet}|N_{t\bullet}, \theta) \qquad &\text{partition function}
 \end{align}
-The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z = \sum_t \log Z_{t} = \log p(N_{1:T}|\theta)$. 
+The first two will be helpful in calculating expections with respect to $q(z)$, while the last gives us the normalization for the joint posterior over all $z$: $\log Z = \sum_t \log Z_{t} = \log p(N_{1:T}|\theta)$.
 
 \section{Evidence Lower Bound (ELBO)}
 We begin by writing the joint distribution of the data:
 \begin{multline}
     \log p(N, \lambda, z, A,\pi) = \sum_{ktu}\left[ N_{tu} z_{tk} \log \lambda_{ku} - \prod_k \lambda_{ku}^{z_{tk}} - \log N_{tu}!\right] \\
     + \sum_{tk} \log (A_k)_{z_{t+1, k} z_{t, k}} + \log (\pi_k)_{z_{0k}} \\
-    + \log p(\lambda) + \log p(A) + \log p(\pi) 
+    + \log p(\lambda) + \log p(A) + \log p(\pi)
 \end{multline}
 
-We would like to calculate 
+We would like to calculate
 \begin{multline}
-    \mathcal{L} = \mathbb{E}_q\left[\log \frac{p}{q}\right] = \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] + \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] + \mathbb{E}_{q(\lambda)} \left[\log \frac{p(\lambda)}{q(\lambda)} \right] \\ + \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] 
+    \mathcal{L} = \mathbb{E}_q\left[\log \frac{p}{q}\right] = \mathbb{E}_{q(\pi)} \left[\log \frac{p(\pi)}{q(\pi)} \right] + \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] + \mathbb{E}_{q(\lambda)} \left[\log \frac{p(\lambda)}{q(\lambda)} \right] \\ + \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right]
 \end{multline}
-which we will do in pieces. 
+which we will do in pieces.
 
 \subsection{$\pi$}
 First, we have
@@ -114,7 +114,7 @@ with
     \overline{\log \pi_{k1}} &= \psi(\delta_{k1}) - \psi(\delta_{k1} + \delta_{k2}) \\
     \overline{\log \pi_{k0}} &= \psi(\delta_{k2}) - \psi(\delta_{k1} + \delta_{k2})
 \end{align}
-with $\psi$ the digamma function and 
+with $\psi$ the digamma function and
 \begin{equation}
     H(\pi_k) = H_b(\delta_{k1}, \delta_{k2})
 \end{equation}
@@ -123,13 +123,13 @@ with $H_b$ the entropy of the beta distribution:
     H_b(\alpha, \beta) = \log B(\alpha, \beta) - (\alpha - 1) \psi(\alpha) - (\beta - 1) \psi(\beta) + (\alpha + \beta - 2)\psi(\alpha + \beta)
 \end{equation}
 
-\subsection{$A$} 
+\subsection{$A$}
 Similarly,
 \begin{equation}
-    \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
+    \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] =
 \sum_{ik} \left[ (\nu_{ki1} - 1) \overline{\log A_{k1i}} + (\nu_{ki2} - 1) \overline{\log A_{k0i}} - \log B(\nu_{ki1}, \nu_{ki2}) + H(A_{k1i}) \right]
 \end{equation}
-where 
+where
 \begin{align}
     \overline{\log A_{k1i}} &= \psi(\gamma_{ki1}) - \psi(\gamma_{ki1} + \gamma_{ki2}) \\
     \overline{\log A_{k0i}} &= \psi(\gamma_{ki2}) - \psi(\gamma_{ki1} + \gamma_{ki2})
@@ -144,7 +144,7 @@ Next, we want to calculate terms involving $\lambda$, for which we will use some
 \begin{align}
    \mathbb{E}[\lambda] &= \frac{\alpha}{\beta} \\
    \mathbb{E}[\log \lambda] &= \psi(\alpha) - \log \beta \\
-   H_g(\alpha, \beta) &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha)\psi(\alpha) 
+   H_g(\alpha, \beta) &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha)\psi(\alpha)
 \end{align}
 to write
 \begin{equation}
@@ -159,22 +159,22 @@ with
 Finally, we would like to calculate
 \begin{multline}
     \label{KLobs}
-    \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] = \sum_{ktu} N_{tu}\xi_{tk}\overline{\log \lambda_{ku}} - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) 
+    \mathbb{E}_{q}\left[ \log \frac{p(N, z|\lambda, A, \pi)}{q(z)}\right] = \sum_{ktu} N_{tu}\xi_{tk}\overline{\log \lambda_{ku}} - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
     \\
     + \sum_{kt} \left[\mathrm{tr}\left(\Xi_{kt} \overline{\log A_k^T}\right) + \xi_{0k}^T \overline{\log \pi_k} \right]
     \\
     - \sum_{kt} \left[ \xi_{tk}^T \eta_{tk} + \mathrm{tr}\left(\Xi_{kt} \tilde{A}_k^T\right) + \xi_{0k}^T \tilde{\pi}_k - \log Z_{kt} \right]
 \end{multline}
-where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\eta$, $\xi$, and $\Xi$. 
+where we make use of the outputs of the forward-backward algorithm and the vector/matrix representations of $\tilde{A}$, $\tilde{\pi}$, $\eta$, $\xi$, and $\Xi$.
 
 \section{Variational Updates}
 Technically, the variational parameters above are $(\alpha, \beta, \gamma, \delta, \eta, \tilde{A}, \tilde{\pi})$. However, $\xi = \xi(\eta, \tilde{A}, \tilde{\pi})$ and $\Xi = \Xi(\eta, \tilde{A}, \tilde{\pi})$ so we can instead treat these as the effective variational parameters. This then readily gives as updates:
 \begin{align}
-    \eta_{tk} &\leftarrow 
+    \eta_{tk} &\leftarrow
     \begin{pmatrix}
         -\sum_u F_{tku} \\
         \sum_u N_{tu} \overline{\log \lambda_{ku}} -
-        \sum_u \frac{\alpha_{ku}}{\beta_{ku}} F_{tku} 
+        \sum_u \frac{\alpha_{ku}}{\beta_{ku}} F_{tku}
     \end{pmatrix} \\
     \tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
     \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
@@ -193,14 +193,14 @@ Similarly, variation with respect to the prior parameters for $(\lambda, A, \pi)
     \gamma_{ki1} &\leftarrow \nu_{ki1} + \sum_t \Xi_{kt, 1i} \\
     \gamma_{ki2} &\leftarrow \nu_{ki2} + \sum_t \Xi_{kt, 0i} \\
     \delta_{k1} &\leftarrow \rho_{k1} + \xi_{0k} \\
-    \delta_{k2} &\leftarrow \rho_{k2} + 1 - \xi_{0k} 
+    \delta_{k2} &\leftarrow \rho_{k2} + 1 - \xi_{0k}
 \end{align}
 These, then, give the proper updates for coordinate ascent.
 
 \section{Multiple observations}
 We have thus far used the time index $t$ assuming no ambiguity between stimulus time and presentation time. In the case that each stimulus is presented once, this presents no problem, but here we extend the analysis to the case where some stimuli are presented multiple times. To do so, we will continue to let $t$ designate the time within the stimulus but introduce an additional index $m$ that takes on a unique value for each stimulus presentation. Thus, different trials will have different values of $m$, but may have the same value of $t$.
 
-We can easily modify the observation model to incorporate this setup. Instead of observing a single count $N_{tu}$ for a given unit at a given stimulus time, we observe a \emph{set} of counts $\{ N_{m u} \vert t(m) = t \}$. (Here, we abuse notation by writing $t$ as both the index and the mapping from presentation index to stimulus time.) If we assume trials are independent, the log likelihoods of these observations simply add, in which case we simply replace sums over $t$ with sums over $m$: 
+We can easily modify the observation model to incorporate this setup. Instead of observing a single count $N_{tu}$ for a given unit at a given stimulus time, we observe a \emph{set} of counts $\{ N_{m u} \vert t(m) = t \}$. (Here, we abuse notation by writing $t$ as both the index and the mapping from presentation index to stimulus time.) If we assume trials are independent, the log likelihoods of these observations simply add, in which case we simply replace sums over $t$ with sums over $m$:
 \begin{align}
     \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{km u} N_{m u} \xi_{t(m) k} \overline{\log \lambda_{ku}} \\
     \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow \sum_{m u} \prod_k \left( 1 - \xi_{t(m) k} + \xi_{t(m) k} \frac{\alpha_{ku}}{\beta_{ku}}\right)
@@ -217,11 +217,11 @@ where we have defined
 \end{align}
 as the cumulative spike count and effective number of observations at each stimulus time, respectively. Note that the result of this process has simply been to replace $N \rightarrow \hat{N}$, $F \rightarrow M F$, meaning we can write modified update equations as follows:
 \begin{align}
-    \eta_{tk} &\leftarrow 
+    \eta_{tk} &\leftarrow
     \begin{pmatrix}
         -\sum_u M_{tu} F_{tku} \\
         \sum_u \hat{N}_{tu} \overline{\log \lambda_{ku}} -
-        \sum_u M_{tu}\frac{\alpha_{ku}}{\beta_{ku}} F_{tku} 
+        \sum_u M_{tu}\frac{\alpha_{ku}}{\beta_{ku}} F_{tku}
     \end{pmatrix} \\
     \alpha_{ku} &\leftarrow \sum_t \hat{N}_{tu} \xi_{tk} + c_{ku} \\
     \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku}\xi_{tk} + d_{ku} \\
@@ -255,20 +255,20 @@ yielding
 with $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $\zeta$
 \begin{align}
     \omega_{mu} &\leftarrow N_{mu} + s_u \\
-    \zeta_{mu} &\leftarrow F_{t(m)u} + r_u 
+    \zeta_{mu} &\leftarrow F_{t(m)u} + r_u
 \end{align}
-with 
+with
 \begin{equation}
     F_{tu} \equiv \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right)
 \end{equation}
 Similarly, the update for the local emission probability, $\eta$ takes the form
 \begin{equation}
-    \eta_{tk} \leftarrow 
+    \eta_{tk} \leftarrow
     \begin{pmatrix}
         -\sum_{u, m: \, t(m) = t} \frac{\omega_{mu}}{\zeta_{mu}} F_{t(m)ku} \\
         \sum_u N_{tu} \overline{\log \lambda_{ku}} -
-        \sum_{u, m: \, t(m) = t} \frac{\omega_{mu}} {\zeta_{mu}}\frac{\alpha_{ku}}{\beta_{ku}} F_{t(m)ku} 
-    \end{pmatrix} 
+        \sum_{u, m: \, t(m) = t} \frac{\omega_{mu}} {\zeta_{mu}}\frac{\alpha_{ku}}{\beta_{ku}} F_{t(m)ku}
+    \end{pmatrix}
 \end{equation}
 All other updates should remain unchanged.
 
@@ -287,7 +287,7 @@ Note that we have discretized $t$ as above and assume that the external covariat
 It will be convenient for us to assume that both the priors and the variational posterior for $\upsilon$ are gamma in form:
 \begin{align}
     p(\upsilon_{iu}) &= \mathrm{Gamma}(v_{iu}, w_{iu}) \\
-    q(\upsilon_{iu}) &= \mathrm{Gamma}(a_{iu}, b_{iu}) 
+    q(\upsilon_{iu}) &= \mathrm{Gamma}(a_{iu}, b_{iu})
 \end{align}
 This contributes an additional factor to the ELBO
 \begin{multline}
@@ -307,53 +307,53 @@ This leads straightforwardly to updates for the posterior parameters of $q(\upsi
 \end{align}
 For $b_{iu}$, we can more easily calculate the gradient with respect to the parameter $\log b$:
 \begin{align}
-    \nabla_{\log b_{iu}} \mathcal{L} = &-(v_{iu} - 1) + 
+    \nabla_{\log b_{iu}} \mathcal{L} = &-(v_{iu} - 1) +
     w_{iu} \frac{a_{iu}}{b_{iu}} - 1 - \sum_t N_{tu} x_{tiu} \\
-    & + \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
-    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
+    & + \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}}
+    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k}
     \frac{\alpha_{ku}}{\beta_{ku}}\right)
     \prod_j \left(\frac{a_{ju}}{b_{ju}}\right)^{x_{t(m)ju}} \\
-    &= -a_{iu} + w_{iu} \frac{a_{iu}}{b_{iu}} 
-    + \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
-    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
+    &= -a_{iu} + w_{iu} \frac{a_{iu}}{b_{iu}}
+    + \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}}
+    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k}
     \frac{\alpha_{ku}}{\beta_{ku}}\right)
-    \prod_j \left(\frac{a_{ju}}{b_{ju}}\right)^{x_{t(m)ju}} 
+    \prod_j \left(\frac{a_{ju}}{b_{ju}}\right)^{x_{t(m)ju}}
 \end{align}
 Thus, the updated value of $b_{iu}$, $b^*_{iu}$, is the solution to the transcendental equation
 \begin{equation}
-    b_{iu} = w_{iu} + \left( \frac{b_{iu}}{a_{iu}}\right) \sum_{m} x_{t(m)iu}\left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right]  
+    b_{iu} = w_{iu} + \left( \frac{b_{iu}}{a_{iu}}\right) \sum_{m} x_{t(m)iu}\left[ \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)\prod_{j} \left(\frac{a_{ju}}{b_{ju}} \right)^{x_{t(m)ju}} \right]
 \end{equation}
 
 Alternately, since we expect $\lvert (a/b) - 1 \rvert \ll 1$ when $x \gg 1$, we can write $b_{iu} = a_{iu}e^{-\epsilon_{iu}}$, in which case
 \begin{multline}
     \mathcal{L}_b = \sum_{iu} \left[a_{iu} \epsilon_{iu} - w_{iu} e^{\epsilon_{iu}}\right] \\
-     - \sum_{mu} \frac{\omega_{mu}}{\zeta_{mu}} 
-    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
+     - \sum_{mu} \frac{\omega_{mu}}{\zeta_{mu}}
+    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k}
     \frac{\alpha_{ku}}{\beta_{ku}}\right)
     e^{\sum_j \epsilon_{ju} x_{t(m)ju}}
 \end{multline}
 and
 \begin{multline}
     \nabla_\epsilon \mathcal{L}_b = a_{iu} - w_{iu} e^{\epsilon_{iu}} \\
-    - \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}} 
-    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k} 
+    - \sum_m x_{t(m)iu} \frac{\omega_{mu}}{\zeta_{mu}}
+    \prod_k \left(1 - \xi_{t(m)k} + \xi_{t(m)k}
     \frac{\alpha_{ku}}{\beta_{ku}}\right)
-    e^{\sum_j \epsilon_{ju} x_{t(m)ju}} 
+    e^{\sum_j \epsilon_{ju} x_{t(m)ju}}
 \end{multline}
 
  In addition, the additional regressor terms necessitate changes to the update rules given above:
 \begin{align}
     \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku} \xi_{tk} G_{tu} \\
     \zeta_{mu} &\leftarrow F_{t(m)u} G_{t(m)u} + r_u \\
-    \eta_{tk} &\leftarrow 
+    \eta_{tk} &\leftarrow
     \begin{pmatrix}
-        -\sum_{u, m: \, t(m) = t} \frac{\omega_{mu}}{\zeta_{mu}} F_{t(m)ku} 
+        -\sum_{u, m: \, t(m) = t} \frac{\omega_{mu}}{\zeta_{mu}} F_{t(m)ku}
         G_{t(m)u}\\
         \sum_u N_{tu} \overline{\log \lambda_{ku}} -
         \sum_{u, m: \, t(m) = t} \frac{\omega_{mu}} {\zeta_{mu}}\frac{\alpha_{ku}}{\beta_{ku}} F_{t(m)ku}  G_{t(m)u}
-    \end{pmatrix} 
+    \end{pmatrix}
 \end{align}
-where 
+where
 \begin{align}
     G_{tu} &\equiv \prod_i G_{tiu} \\
     G_{tiu} &\equiv \left(\frac{a_{iu}}{b_{iu}} \right)^{x_{tiu}}
@@ -393,7 +393,7 @@ In this case, the equations that must be solved to update $\mu$ and $\sigma^2$ t
 Since $G_{tu}$ depends on both $\mu_{iu}$ and $\sigma^2_{iu}$, these are both transcendental equations. In the case of $x(t) = c$ a constant in time, they can be solved via variable transform using the Lambert $W$ function, but for time-varying $x$, root-finding algorithms will be needed.
 
 \subsubsection{Approximating the sum of exponentials}
-We would like a cheap way of evaluating the objective $\mathcal{L}$ above, but the last term involves all variables and is a sum over time (the other sum over time decomposes easily). In fact, there is a nice trick to approximate this term. 
+We would like a cheap way of evaluating the objective $\mathcal{L}$ above, but the last term involves all variables and is a sum over time (the other sum over time decomposes easily). In fact, there is a nice trick to approximate this term.
 
 We can begin by writing the non-$G$ terms, which are constants in $\mu$ and $\sigma^2$ in exponential form:
 \begin{equation}
@@ -401,15 +401,15 @@ We can begin by writing the non-$G$ terms, which are constants in $\mu$ and $\si
 \end{equation}
 so that we can write the final term as
 \begin{equation}
-    \sum_{mu} \exp\left(A_{mu} +  \sum_i \left[ \mu_{iu} x_{t(m)iu} + 
+    \sum_{mu} \exp\left(A_{mu} +  \sum_i \left[ \mu_{iu} x_{t(m)iu} +
     \frac{1}{2} \sigma^2_{iu} x^2_{t(m)iu}\right]\right)
 \end{equation}
 But recall that this is equal to the expectation
 \begin{equation}
-    \sum_{mu}\mathbb{E}\left[ \theta_{mu} \prod_k \lambda_{ku}^{z_{t(m)k}} 
+    \sum_{mu}\mathbb{E}\left[ \theta_{mu} \prod_k \lambda_{ku}^{z_{t(m)k}}
     \prod_i e^{b_{iu} x_{t(m)iu}}\right]
 \end{equation}
-and often in practice, the expectations we are summing are quite close to 1 (exponents close to 0). This means, of course, that we can approximate 
+and often in practice, the expectations we are summing are quite close to 1 (exponents close to 0). This means, of course, that we can approximate
 \begin{equation}
     \sum_n e^{x_n} \approx \sum_n (1 + x_n + \ldots) \approx e^{\sum_n x_n}
 \end{equation}
@@ -420,9 +420,9 @@ In fact, even in cases where a scaling constant $\Lambda$ exists such that $\Lam
 \end{equation}
 Thus, we might well consider approximating the last term in $\mathcal{L}$ as
 \begin{multline}
-    \sum_{mu} \exp\left(A_{mu} +  \sum_i \left[ \mu_{iu} x_{t(m)iu} + 
+    \sum_{mu} \exp\left(A_{mu} +  \sum_i \left[ \mu_{iu} x_{t(m)iu} +
     \frac{1}{2} \sigma^2_{iu} x^2_{t(m)iu}\right]\right) \approx \\
-    \exp\left(\sum_{mu} A_{mu} +  \sum_{imu} \left[ \mu_{iu} x_{t(m)iu} + 
+    \exp\left(\sum_{mu} A_{mu} +  \sum_{imu} \left[ \mu_{iu} x_{t(m)iu} +
     \frac{1}{2} \sigma^2_{iu} x^2_{t(m)iu}\right]\right)
 \end{multline}
 which leads to dramatically simpler expressions for the gradient and Hessian.
@@ -434,9 +434,9 @@ In case it's useful later, here are the natural gradients. Since the natural par
 \end{equation}
 and use
 \begin{align}
-    \frac{\partial \mathcal{L}}{\partial \mu_{iu}} &= 
+    \frac{\partial \mathcal{L}}{\partial \mu_{iu}} &=
     -\frac{\mu_{iu}}{\varsigma^2_{iu}} + \frac{m_{iu}}{\varsigma^2_{iu}} + \sum_t N_{tu} x_{tiu} - \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x_{t(m)iu} \\
-    \frac{\partial \mathcal{L}}{\partial \sigma^2_{iu}} &= 
+    \frac{\partial \mathcal{L}}{\partial \sigma^2_{iu}} &=
     \frac{1}{2\sigma^2_{iu}} - \frac{1}{2\varsigma^2_{iu}} - \frac{1}{2} \sum_{m} \overline{\theta_{mu}} F_{t(m)u} G_{t(m)u} x^2_{t(m)iu}
 \end{align}
 
@@ -450,8 +450,8 @@ With appropriate priors on $c_k$ and $d_k$
 \subsection{Derivation of closed-form hyperpriors}
 What form should the distribution of the hyperpriors on $c$ and $d$ take? (In this section, we will suppress the index $k$.) To begin, we can write the likelihood for the $\lambda_u$ terms:
 \begin{equation}
-    \log p(\lambda) = \sum_u \log p(\lambda_u|c, d) = \sum_u \left[ 
-    (c - 1) \log \lambda_u - d\lambda_u + c \log d - \log \Gamma(c) 
+    \log p(\lambda) = \sum_u \log p(\lambda_u|c, d) = \sum_u \left[
+    (c - 1) \log \lambda_u - d\lambda_u + c \log d - \log \Gamma(c)
     \right]
 \end{equation}
 The $\log \Gamma(c)$ term presents a challenge, but we can use bounds on the gamma function of the form
@@ -465,23 +465,24 @@ along with the identities $z! = \Gamma(z + 1)$ and $\log \Gamma(z + 1) = \log \G
 \end{equation}
 which we can use to get a lower bound on $-\log \Gamma (z)$. That is
 \begin{multline}
-    \log p(\lambda) \ge \sum_u \left[ 
-    (c - 1) \log \lambda_u - d\lambda_u + c \log d - 
+    \log p(\lambda) \ge \sum_u \left[
+    (c - 1) \log \lambda_u - d\lambda_u + c \log d -
     \left(1 + \left(c - \frac{1}{2}\right) \log c - c\right)
     \right] \\
     = \sum_u \left[
-    (c - 1) (\log \lambda_u + 1) - d\lambda_u + c \log \frac{d}{c} + 
+    (c - 1) (\log \lambda_u + 1) - d\lambda_u + c \log \frac{d}{c} +
     \frac{1}{2} \log c
-    \right] 
+    \right]
 \end{multline}
 Here, it is the $c\log c$ term that presents a challenge for finding a conjugate prior, but the choice $d = \theta c$, corresponding to a $\mathrm{Ga}(c, c\theta)$ prior on firing rate effects --- equivalent to a mean effect of $\frac{1}{\theta}$ --- allows us to cancel terms and write
 \begin{equation}
-    \log p(\lambda) \ge \sum_u \left[ 
+    \label{plambda}
+    \log p(\lambda) \ge \sum_u \left[
     (c - 1) (\log \lambda_u + 1) - c\theta\lambda_u + c \log \theta + \frac{1}{2}\log c\right]
 \end{equation}
-Clearly, the conditional distributions for $c$ and $\theta$ have the form 
+Clearly, the conditional distributions for $c$ and $\theta$ have the form
 \begin{align}
-    c &\sim \mathrm{Ga}\left(\frac{U}{2} + 1, \sum_u \left[ 
+    c &\sim \mathrm{Ga}\left(\frac{U}{2} + 1, \sum_u \left[
     \theta\lambda_{u} - \log \theta - \log \lambda_{u} - 1
     \right]\right) \\
     \theta &\sim \mathrm{Ga}\left(
@@ -491,17 +492,60 @@ Clearly, the conditional distributions for $c$ and $\theta$ have the form
 As a result, we can easily implement a hierarchical model with closed-form updates by choosing Gamma priors on $c_k$ and $\theta_k$. More intuitively, we might want to think of putting Inverse-Gamma priors on $\theta^{-1} = \mathbb{E}[\lambda]$ and $c^{-1} = \mathbb{E}[\lambda]^2 \mathrm{var}[\lambda]$. A sparse prior on $\lambda$ then consists of a pair of priors that concentrates $\theta^{-1}$ around 1 and $c^{-1}$ around 0. In this case, given the model
 \begin{align}
     \theta &\sim \text{Ga}(a, b) \\
-    c &\sim \text{Ga}(g, h)     
-\end{align} 
+    c &\sim \text{Ga}(g, h)
+\end{align}
 The posterior distributions are
 \begin{align}
     \theta &\sim \text{Ga}\left(a + Uc, b + c\sum_u \lambda_u \right) \\
-    c &\sim \text{Ga}\left(g + \frac{U}{2}, h - U(\log \theta + 1) 
-    + \sum_u \left[ \theta \lambda_u - \log \lambda_u \right]\right) 
+    c &\sim \text{Ga}\left(g + \frac{U}{2}, h - U(\log \theta + 1)
+    + \sum_u \left[ \theta \lambda_u - \log \lambda_u \right]\right)
+\end{align}
+
+\subsection{Unit-level sparsity}
+The above discussion implements ARD-like sparsity at the level of features, but expression of features may also be sparse within the neural population. For instance, we may have
+\begin{align}
+    \lambda \sim \mathrm{Ga}(c, c\theta)
+\end{align}
+for units with the feature but $\lambda = 1$ for units without the feature. Indeed, we can combine these cases by introducing a discrete latent variable for each unit and feature, $\alpha_{ku} \in \lbrace 0, 1 \rbrace$ such that
+\begin{align}
+    \lambda &\sim
+    \begin{cases}
+        \mathrm{Ga}(c, c\theta) & \alpha = 1 \\
+        \mathrm{Ga}(C, C) & \alpha = 0
+    \end{cases}
+\end{align}
+with $C \gg 1$ large and fixed. That is, $\alpha$ is the probability that the feature will be drawn from the population distribution, while $1 - \alpha$ is the probability it will be drawn from a population that is approximately a delta function around 1.
+
+With this ansatz, we then write, in analogy with (\ref{plambda})
+\begin{align}
+    \mathbb{E}_q [\log p(\lambda, \alpha)] &=
+    \mathbb{E}_q[\log p(\lambda|\alpha)] + \mathbb{E}_q[\log p(\alpha)] \\
+    &\ge \sum_u \alpha_u \left[
+    (c - 1) (\log \lambda_u + 1) - c\theta\lambda_u + c \log \theta + \frac{1}{2}\log c\right] \\
+    &+ \sum_u (1 - \alpha_u) \left[
+        (C - 1)(\log \lambda_u + 1) - C\lambda_u + \frac{1}{2}\log C
+     \right] \\
+     &+ \mathbb{E}_q[\log p(\alpha)]
+\end{align}
+which leads to revised posterior updates
+\begin{align}
+    \theta &\sim \text{Ga}\left(a + c\sum_u \alpha_u, b + c\sum_u \alpha_u\lambda_u \right) \\
+    c &\sim \text{Ga}\left(g + \frac{1}{2}\sum_u \alpha_u,
+    h - (\log \theta + 1)\sum_u \alpha_u
+    + \sum_u \alpha_u \left[ \theta \lambda_u - \log \lambda_u \right]\right)
+\end{align}
+Assuming a Beta prior on $\alpha_{ku}$ likewise leads to conjugate updates, with sufficient statistics
+\begin{align}
+    &\mathbb{E}_q \left[
+        (c - 1) (\log \lambda_u + 1) - c\theta\lambda_u + c \log \theta + \frac{1}{2}\log c
+    \right] \\
+    &\mathbb{E}_q \left[
+        (C - 1)(\log \lambda_u + 1) - C\lambda_u + \frac{1}{2}\log C
+    \right]
 \end{align}
 
 \section{Semi-Markov Models}
-This section follows the paper by Yu and Kobayashi (2006), as well as papers by Mithcell and Jamieson (1993) and Mitchell, Harper, and Jamieson (1995).
+This section follows the paper by Yu and Kobayashi (2006), as well as papers by Mitchell and Jamieson (1993) and Mitchell, Harper, and Jamieson (1995).
 
 We again begin with the parameters defining the Hidden Markov Model (HMM): $A_{ji} = p({i \rightarrow j})$ is the transition matrix between states, with the columns of $A$ summing to 1 (again, the opposite of the usual convention, such that time evolution is equivalent to $A$ acting to the right on a state vector). Likewise, the initial probability of state $i$ is $\pi_i = p(z_0 = i)$. Finally, we will write $\psi_{tj} = p(y_t|z_t = j)$ for the local evidence for the observation $y_t$. Here, we will follow Murphy in adopting the convention that observations are indexed from 1 to $T$, with initial conditions indexed by 0. (Note that, for the forward-backward algorithm, $\psi$ does not have to be normalized along its second index. In fact, we have the freedom to rescale $\psi$ by an overall constant \emph{at each $t$}.)
 
@@ -521,7 +565,7 @@ Here, we follow Yu and Kobayashi, mutatis mutandis. Define:
     \gamma_{t|x}(m) &= \sum_d \alpha_{t|x} (m, d) &\text{marginalize out }d\\
     \psi^*_t(m) &= \frac{\alpha_{t|t}(m, d)}{\alpha_{t|t-1}(m, d)} =
     \frac{\psi_t(m)}{p(y_t|y_{1:t-1})} \\
-    r_t^{-1} &= p(y_t|y_{1:t-1}) = \sum_{m,d} \alpha_{t|t-1}(m, d)\psi_t(m) 
+    r_t^{-1} &= p(y_t|y_{1:t-1}) = \sum_{m,d} \alpha_{t|t-1}(m, d)\psi_t(m)
     = \sum_m \gamma_{t|t-1}(m) \psi_t(m)\\
     Z &= p(y_{1:T}) = \left(\prod_{t=1}^T r_t\right)^{-1} &\text{probability of data} \\
     \mathcal{D}_{t|x}(m, d) &= p(z_t=m, d_t=d, d_{t-1}=1|y_{1:x}) &\rightarrow (m, d) \\
@@ -546,11 +590,11 @@ These quantities then allow us to write the posterior probabilities
 \subsubsection{Forward}
 From Yu and Kobayashi, we have the following forward pass:
 \begin{enumerate}
-    \item $\alpha_{1|0}(m, d) = \pi_m p_m(d)$ for time 1; otherwise, use 
+    \item $\alpha_{1|0}(m, d) = \pi_m p_m(d)$ for time 1; otherwise, use
     \begin{equation}
         \alpha_{t|t-1}(m, d) = S_{t-1}(m) p_m(d) + \psi^*_{t-1}(m) \alpha_{t-1|t-2}(m, d + 1)
     \end{equation}
-    \item Use $\alpha_{t|t-1}$ and $\psi_t$ to get $r_t$; together, these give 
+    \item Use $\alpha_{t|t-1}$ and $\psi_t$ to get $r_t$; together, these give
     $\psi_t^*$. Store $r_t$
     \item Calculate and save $\mathcal{E}_t$.
     \item Calculate $\mathcal{S}_t$.
@@ -564,7 +608,7 @@ Again following Yu and Kobayashi:
     \item $\psi^*_t(m) = \psi_t(m) r_t$
     \item Calculate $\beta_t(m, d)$ by
     \begin{equation}
-        \beta_t(m, d) = 
+        \beta_t(m, d) =
         \begin{cases}
             \mathcal{S}^*_{t+1}(m)\psi^*_t(m), & d=1 \\
             \beta_{t+1}(m, d - 1) \psi^*_t(m), & d > 1
@@ -573,7 +617,7 @@ Again following Yu and Kobayashi:
     where, again,
     \begin{align}
         \mathcal{S}^*_{t + 1}(m) &= \sum_{n} \mathcal{E}^*_{t+1}(n) A(n, m) \\
-        \mathcal{E}^*_{t + 1}(n) &= \sum_d \beta_{t+1}(n, d) p_n(d) 
+        \mathcal{E}^*_{t + 1}(n) &= \sum_d \beta_{t+1}(n, d) p_n(d)
     \end{align}
     \item Use the above equation to calculate $\mathcal{E}^*_t$ and $\mathcal{S}^*_t$. Save $\mathcal{E}^*$.
 \end{enumerate}
@@ -584,7 +628,7 @@ Finally, we can calculate and return:
     \log Z &= - \sum_{t=1}^T \log r_t \\
     \xi_t(m) &= \sum_d \alpha_{t|T}(m,d) = \gamma_{t|T}(m) = \sum_d \alpha_{t|t-1}(m, d) \beta_t(m, d) \\
     \Xi_{t+1, t}(n, m) &= \mathcal{T}_{t+1|T}(n, m) = \mathcal{E}^*_{t+1}(n) A(n, m) \mathcal{E}_t(m) \\
-    C_t(m, d) &= \mathcal{D}_{t|T}(m, d) = 
+    C_t(m, d) &= \mathcal{D}_{t|T}(m, d) =
     \begin{cases}
         \pi_m p_m(d) \beta_1(m, d) & t = 1 \\
         \mathcal{S}_{t-1}(m)p_m(d) \beta_t(m, d) & t > 1 \\
@@ -623,7 +667,7 @@ leading to
 \end{equation}
 with the boundary condition $d_T = 0$ Thus,
 \begin{equation}
-    \log p(z_{t + 1}, d_{t + 1}|z_t, d_t) = 
+    \log p(z_{t + 1}, d_{t + 1}|z_t, d_t) =
     \begin{cases}
         -\infty, & d > 0, (z'\neq z \vee d' \neq d - 1) \\
         0, & d > 0, z' = z, d' = d - 1 \\
@@ -632,7 +676,7 @@ with the boundary condition $d_T = 0$ Thus,
 \end{equation}
 Clearly, the first condition is our constraint, and the terms in the second condition do not contribute to the sum. For the third term, we must weight by the probability of observing the given transition $(z, d) \rightarrow (z', d')$ and then take the expectation. However, the first piece of this term is independent of $d$, while the second is independent of $z$, allowing us to marginalize and yielding:
 \begin{align}
-    \mathbb{E}_q[\log p(z)] &= \sum_{t = 1}^{T - 1} 
+    \mathbb{E}_q[\log p(z)] &= \sum_{t = 1}^{T - 1}
     \mathrm{tr}(\Xi_{t+1, t}^T \cdot \log A) + \xi_1 \cdot \log \pi + \sum_d C(d) \cdot \mathbb{E}_q[\log p(d)]
 \end{align}
 where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log A$ terms, we have marginalized out $d$ to leave us with the two-slice marginals. In the second term, we have marginalized out $z$ to leave us with the sufficient statistics for observations, i.e., the number of times we enter each state $z'$ and draw duration $d$.} Thus we confirm that $C_{id}$ are indeed the correct sufficient statistics to calculate in performing maximum likelihood inference for $p(d|z)$. Moreover, the first and second terms are the same as in the HMM case, while the third is a new addition to be used in updating our estimate of the duration distribution in each state (see below).
@@ -640,13 +684,13 @@ where $C_{id}$ is defined above.\footnote{In taking the expectation of the $\log
 \subsubsection{$\mathbb{E}_q[-\log q]$}
 Finally, we can ask about the entropy term in the observation piece, $\mathbb{E}_q[-\log q(z)]$. From free-form variational arguments, $q(z)$ should take the same form as $\mathbb{E}_q[\log p(N, z|\eta, \lambda, A, \pi)]$. However, the joint posterior over $(z, d)$ also contains a term of the same form as $C \mathbb{E}[\log p]$, where the expectations are replaced by variational parameters, but, the expression in (\ref{KLobs}) is unchanged, save for the addition of a term
 \begin{equation}
-    \sum_{k, i, d} C(k, d, i) [\mathbb{E}_q\left[ \log p(d|i, k) \right] 
-    - \nu_{dik} ] 
+    \sum_{k, i, d} C(k, d, i) [\mathbb{E}_q\left[ \log p(d|i, k) \right]
+    - \nu_{dik} ]
 \end{equation}
-with $k$ labeling hidden states, $i$ labeling levels of those states, and $\nu$ a set of functions of variational parameters. Just as with $\tilde{A}$ and $\tilde{\pi}$ above, variation with respect to $\nu$ trivially yields 
+with $k$ labeling hidden states, $i$ labeling levels of those states, and $\nu$ a set of functions of variational parameters. Just as with $\tilde{A}$ and $\tilde{\pi}$ above, variation with respect to $\nu$ trivially yields
 \begin{equation}
      \nu_{dik} = \mathbb{E}_q[\log p(d|i, k)]
- \end{equation} 
+ \end{equation}
 
 \subsubsection{Updates for $p(d)$}
 Now assume the delay distribution is a member of the exponential family with base measure $h$ and natural parameter $\eta$:
@@ -662,13 +706,13 @@ where we have assumed a factorized component of the posterior $q(\eta_i)$.\footn
 
 As a result of all this, we can finally write the observation term in the evidence lower bound as
 \begin{equation}
-    \mathbb{E}_q[\log p(N, z|\lambda, A, \pi)] = 
+    \mathbb{E}_q[\log p(N, z|\lambda, A, \pi)] =
     \mathbb{E}_q[\log p(N|z) + \log p(z|\eta, \lambda, A, \pi) + \log p(\eta)]
 \end{equation}
 Of these, the first term is unchanged from the HMM case, the third is simply the prior on the parameters of the duration distribution, and the second is
 \begin{multline}
-    \mathbb{E}_q [\log p(z|\eta, \lambda, A, \pi)] = 
-    \mathrm{tr}(\Xi^T_{t+1, t} \cdot \log A) + \xi_1 \cdot \log \pi + \\ 
+    \mathbb{E}_q [\log p(z|\eta, \lambda, A, \pi)] =
+    \mathrm{tr}(\Xi^T_{t+1, t} \cdot \log A) + \xi_1 \cdot \log \pi + \\
     \sum_{i, d} C(d, i) [ \log h(d) + \mathbb{E}_q[\eta_i] \cdot T(d) -
     \mathbb{E}_q[A(\eta_i)] ]
 \end{multline}
@@ -703,7 +747,7 @@ Consider the case of lognormally distributed durations: $\log d \sim \mathcal{N}
 \end{align}
 If we then define $\tau = s^{-2}$ and put a Normal-Gamma posterior on $(m, \tau)$ with parameters $(\mu, \lambda, \alpha, \beta)$, we can easily calculate
 \begin{align}
-    \mathbb{E}_q[\eta] &= \mathbb{E}_q 
+    \mathbb{E}_q[\eta] &= \mathbb{E}_q
     \begin{bmatrix}
     m\tau \\
     -\frac{1}{2}\tau
@@ -712,11 +756,11 @@ If we then define $\tau = s^{-2}$ and put a Normal-Gamma posterior on $(m, \tau)
     \mu\frac{\alpha}{\beta} \\
     -\frac{\alpha}{2\beta}
     \end{bmatrix} \\
-    \mathbb{E}_q[A(\eta)] &= \mathbb{E}_q\left[ 
+    \mathbb{E}_q[A(\eta)] &= \mathbb{E}_q\left[
     \frac{1}{2}m^2\tau - \frac{1}{2} \log \tau
     \right] \\
     &= \frac{1}{2} \mathbb{E}_\tau\left[
-    \left(\mu^2 + \frac{1}{\lambda \tau}\right)\tau 
+    \left(\mu^2 + \frac{1}{\lambda \tau}\right)\tau
     \right]
     -\frac{1}{2} (\psi(\alpha) - \log \beta) \\
     &= \frac{1}{2} \left(\mu^2 \frac{\alpha}{\beta} + \frac{1}{\lambda} \right)
@@ -729,18 +773,18 @@ The relevant piece of the evidence lower bound for updating $(\mu, \lambda, \alp
 \end{multline}
 again, with $q(m, \tau) = \text{Normal-Gamma}(\mu, \lambda, \alpha, \beta)$. We can thus write
 \begin{align}
-    \mathbb{E}_q[\log p(d|z)] &= -\frac{1}{2}\log 2\pi C_0 - C_1 + 
+    \mathbb{E}_q[\log p(d|z)] &= -\frac{1}{2}\log 2\pi C_0 - C_1 +
     \mathbb{E}_q[m\tau] C_1 -\frac{1}{2}\mathbb{E}_q[\tau] C_2  \\
     &- \frac{1}{2} C_0 \mathbb{E}_q[m^2\tau] + \frac{1}{2} C_0 \mathbb{E}_q[\log \tau] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right] \\
-    &= G + F \cdot T(m, \tau) + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right] 
+    &= G + F \cdot T(m, \tau) + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
 \end{align}
 where
 \begin{align}
     G &\equiv -\frac{1}{2}\log 2\pi C_0 - C_1 \\
     F \cdot T &=
     \begin{bmatrix}
-        \frac{C_0}{2} & 
-        -\frac{C_2}{2} & 
+        \frac{C_0}{2} &
+        -\frac{C_2}{2} &
         C_1 &
         -\frac{C_0}{2}
     \end{bmatrix} \cdot \mathbb{E}_q
@@ -763,14 +807,14 @@ For the case above (lognormal durations, Normal-Gamma priors on the lognormal pa
     -\beta - \frac{\lambda\mu^2}{2} \\
     \lambda\mu \\
     -\frac{\lambda}{2}
-    \end{bmatrix}    
+    \end{bmatrix}
     \leftarrow
     \begin{bmatrix}
     \frac{1}{2}\sum_d C(d) + \alpha_0 - \frac{1}{2} \\
     -\frac{1}{2} \sum_d C(d) (\log d)^2 -\beta_0 - \frac{\lambda_0\mu_0^2}{2} \\
     \sum_d C(d) \log d + \lambda_0\mu_0 \\
     -\frac{1}{2}\sum_d C(d) - \frac{\lambda_0}{2}
-    \end{bmatrix}    
+    \end{bmatrix}
 \end{equation}
 We can also make use of the conversion from natural to conventional parameters:
 \begin{equation}
@@ -778,7 +822,7 @@ We can also make use of the conversion from natural to conventional parameters:
         \alpha \\
         \beta \\
         \mu \\
-        \lambda 
+        \lambda
     \end{bmatrix} =
     \begin{bmatrix}
         \eta_1 + \frac{1}{2} \\
@@ -791,23 +835,23 @@ and the entropy:
 \begin{align}
     H[q] &= \mathbb{E}_q[-\log q] = \mathbb{E}_q[-\log q(\tau) - \log q(m|\tau)] \\
     &= H_g(\alpha, \beta) + \mathbb{E}_q\left[
-    -\log \sqrt{\frac{\lambda\tau}{2\pi}} + 
-    \frac{\lambda\tau}{2} (m - \mu)^2 
+    -\log \sqrt{\frac{\lambda\tau}{2\pi}} +
+    \frac{\lambda\tau}{2} (m - \mu)^2
     \right] \\
     &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha) \psi(\alpha) \\
     & - \frac{1}{2} \log \frac{\lambda}{2\pi} - \frac{1}{2} \left(\psi(\alpha) - \log \beta\right)
-    + \frac{1}{2} 
+    + \frac{1}{2}
 \end{align}
 We can also use this to calculate the normalization correction:
 \begin{equation}
     \mathbb{E}_q[p(d|i, m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau)
-    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}} 
-    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)} 
+    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}}
+    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)}
     \frac{\beta^{-\frac{1}{2}}}{\hat{\beta}^{\alpha + \frac{1}{2}}}
 \end{equation}
-with 
+with
 \begin{equation}
-    \hat{\beta} = 1 + \frac{1}{2\beta} \frac{\lambda}{1 + \lambda} 
+    \hat{\beta} = 1 + \frac{1}{2\beta} \frac{\lambda}{1 + \lambda}
     (\log d - \mu)^2
 \end{equation}
 This can be derived either by performing the integral (using a log-normal for $p(d)$ and a normal-gamma for $(m, \tau)$) or by noting that the result should be proportional to the posterior (normal-gamma, by conjugacy) of $(m, \tau)$ after having observed a single data point, $\log d$.
