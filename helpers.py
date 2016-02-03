@@ -50,16 +50,19 @@ def mi(x, z):
     """
     zm = np.mean(z)
     xm = np.mean(x)
-    Hz = -zm * np.log(zm) - (1 - zm) * np.log(1 - zm)
-    Hx = -xm * np.log(xm) - (1 - xm) * np.log(1 - xm)
+    Hz = -zm * np.log(zm) - (1 - zm) * np.log1p(-zm)
+    Hx = -xm * np.log(xm) - (1 - xm) * np.log1p(-xm)
     x0 = x == 0
     x1 = x == 1
     p1 = np.mean(x)
     p0 = 1 - p1
     pz0 = np.mean(z[x0])
     pz1 = np.mean(z[x1])
-    Hzx = -p0 * (pz0 * np.log(pz0) + (1 - pz0) * np.log(1 - pz0))
-    Hzx += -p1 * (pz1 * np.log(pz1) + (1 - pz1) * np.log(1 - pz1))
+    Hzx = 0
+    if pz0 != 0 and pz0 != 1:
+        Hzx += -p0 * (pz0 * np.log(pz0) + (1 - pz0) * np.log1p(-pz0))
+    if pz1 != 0 and pz1 != 1:
+        Hzx += -p1 * (pz1 * np.log(pz1) + (1 - pz1) * np.log1p(-pz1))
 
     return (Hz - Hzx) / np.sqrt(Hz * Hx)
 
