@@ -103,7 +103,7 @@ if __name__ == '__main__':
     A_prior = np.tile(A_cat, (1, 1, K))
 
     ###### pi ###############
-    pi_off = 15.
+    pi_off = 15000.
     pi_on = 1.
     pi_prior = np.tile(np.r_[pi_off, pi_on].reshape(2, 1), (1, K))
 
