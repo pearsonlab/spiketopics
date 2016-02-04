@@ -9,9 +9,9 @@
 \section{Observation Model}
 Assume an experiment with $M$ observations (one per unit, time combination). Each unit is responsive to $R$ regressors and $K$ latent states. Stimuli are indexed by a time variable with $T$ unique values. Spike counts are governed by a Poisson process given by
 \begin{equation}
-    N_{m} \sim \mathrm{Poiss}(e^{\eta_{m}}) 
+    N_{m} \sim \mathrm{Poiss}(e^{\eta_{m}})
 \end{equation}
-where $N_{m}$ is the count from observation $m$ and the effective rate $\eta_{m}$ is given by 
+where $N_{m}$ is the count from observation $m$ and the effective rate $\eta_{m}$ is given by
 \begin{equation}
     \label{loglambda}
     \eta_m = \lambda_{0u(m)} + \sum_k z_{t(m)k} b_{ku(m)} + \sum_r x_{mr} \beta_{ru(m)} + \epsilon_{m}
@@ -43,22 +43,22 @@ In addition to the model (\ref{loglambda}) above and the HMM ansatz, we posit th
     (v^2_b)_{k} &\sim \text{Inv-Ga}\left(s_b, r_b \right) \\
     (v^2_\beta)_{r} &\sim \text{Inv-Ga}\left(s_\beta, r_\beta \right) \\
     (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left(s_\epsilon, r_\epsilon \right) \\
-    \pi_k &\sim \mathrm{Beta}\left((a_\pi)_k, (b_\pi)_k \right) \\ 
-    \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((a_A)_{ki}, (b_A)_{ki} \right)  
+    \pi_k &\sim \mathrm{Beta}\left((a_\pi)_k, (b_\pi)_k \right) \\
+    \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((a_A)_{ki}, (b_A)_{ki} \right)
     \end{align}
 where $A_{1i}$ is the probability of the transition $i \rightarrow 1$ (i.e., the transition \emph{into} the $z = 1$ state.)
 
 Note also that, by putting sparse priors on the $v^2$ terms, we can implement automatic relevance determination (ARD) on the regression coefficients.
 
 \section{Variational ansatz}
-We would like to approximate the joint posterior density 
+We would like to approximate the joint posterior density
 \begin{multline}
     p(\lambda_0, b, \beta, A, \pi, z, \epsilon|N) \propto p(N|\lambda_0, z, b, \beta, \epsilon) p(z|A, \pi) \\
     \times p(\lambda_0) p(b) p(\beta) p(A) p(\pi) p(\epsilon) p(v^2_b) p(v^2_\beta) p(v^2_\eta) p(v^2_\epsilon)
 \end{multline}
 with a structured mean field form that factorizes over units and chains:
 \begin{multline}
-    q(\lambda_0, b, \beta, A, \pi, z, \epsilon) = \prod_m q(\epsilon_m) \prod_{ku} q(\lambda_{0u}) 
+    q(\lambda_0, b, \beta, A, \pi, z, \epsilon) = \prod_m q(\epsilon_m) \prod_{ku} q(\lambda_{0u})
     q(b_{ku}) q(\beta_{ku}) q(z_k) q(A_k) q(\pi_k) \\
     \times q(v^2_{bk}) q(v^2_{\beta k}) q(v^2_{\eta u})
 \end{multline}
@@ -71,8 +71,8 @@ For this, we will use the posterior variational ansatz
     (v^2_b)_{k} &\sim \text{Inv-Ga}\left((\varsigma_b)_{k}, (\rho_b)_{k} \right) \\
     (v^2_\beta)_{r} &\sim \text{Inv-Ga}\left((\varsigma_\beta)_r, (\rho_\beta)_r \right) \\
     (v^2_\epsilon)_{u} &\sim \text{Inv-Ga}\left((\varsigma_\epsilon)_u, (\rho_\epsilon)_u \right) \\
-    \pi_k &\sim \mathrm{Beta}\left((\gamma_\pi)_k, (\delta_\pi)_k \right) \\ 
-    \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((\gamma_A)_{ki}, (\delta_A)_{ki} \right)  
+    \pi_k &\sim \mathrm{Beta}\left((\gamma_\pi)_k, (\delta_\pi)_k \right) \\
+    \left(A_k \right)_{1i} &\sim \mathrm{Beta}\left((\gamma_A)_{ki}, (\delta_A)_{ki} \right)
 \end{align}
 
 \section{HMM inference}
@@ -92,7 +92,7 @@ We would like to maximize a lower bound on the log evidence given by
 Thanks to factorization in the priors and posterior ansatz, this can easily be broken down in pieces, one per variable type:
 
 \subsection{$\lambda_0$}
-We want 
+We want
 \begin{multline}
     \mathbb{E}_{q(\lambda_0)}\left[ \log \frac{p(\lambda_0)}{q(\lambda_0)}\right] = \sum_u \mathbb{E}_q\left[ -\frac{1}{2v_0^2} (\lambda_{0u} - m_0)^2
     - \frac{1}{2}\log 2\pi v_0^2
@@ -102,27 +102,27 @@ We want
     = \sum_u \left[
     -\frac{1}{2v_0^2} \left(\sigma^2_{0u} + (\mu_{0u} - m_0)^2 \right)
     + \log \frac{\sigma_{0u}}{v_0} + \frac{1}{2}
-    \right] 
+    \right]
 \end{multline}
-where we have used 
+where we have used
 \begin{equation}
     \mathbb{E}[X^2] = \mathrm{var}[X] + \mathbb{E}[X]^2
 \end{equation}
 
 \subsection{$b$}
-As with the $\lambda$ case, we have 
+As with the $\lambda$ case, we have
 \begin{multline}
     \mathbb{E}_{q(b)}\left[ \log \frac{p(b)}{q(b)}\right] = \sum_{ku} \mathbb{E}_q\left[ -\frac{1}{2v_{bk}^2} b_{ku}^2
     - \frac{1}{2}\log 2\pi v_{bk}^2
     + \frac{1}{2\sigma_{bku}^2} (b_{ku} - \mu_{bku})^2
-    + \frac{1}{2}\log 2\pi \sigma^2_{bku} 
+    + \frac{1}{2}\log 2\pi \sigma^2_{bku}
     \right] \\
     = \sum_{ku} \left[
     -\frac{1}{2}\frac{\varsigma_{bk}}{\rho_{bk}}\left(\sigma^2_{bku} + \mu^2_{bku} \right)
     + \frac{1}{2}(\psi(\varsigma_{bk}) - \log \rho_{bk}) - \log \sqrt{2\pi} + \frac{1}{2} \log 2\pi e \sigma^2_{bku}
     \right]
 \end{multline}
-Where we have used $v^2 \sim \text{Inv-Ga}(\varsigma, \rho)$ to define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ and 
+Where we have used $v^2 \sim \text{Inv-Ga}(\varsigma, \rho)$ to define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ and
 \begin{align}
     \mathbb{E}[\tau] &= \frac{\varsigma}{\rho} \\
     \mathbb{E}[\log \tau] &= \psi(\varsigma) - \log \rho
@@ -134,11 +134,11 @@ Here again, we will define $\tau = v^{-2} \sim \mathrm{Ga}(\varsigma, \rho)$ so 
 \begin{multline}
     \mathbb{E}_{q(\tau)}\left[\log \frac{p(\tau)}{q(\tau)}\right] =
     \sum_k \mathbb{E}_q \left[
-    (s_{b} - 1) \log \tau_{bk} - r_{b} \tau_{bk} \right]  
-    + H_g(\varsigma_{bk}, \rho_{bk})    
+    (s_{b} - 1) \log \tau_{bk} - r_{b} \tau_{bk} \right]
+    + H_g(\varsigma_{bk}, \rho_{bk})
     + \mathrm{const} \\
-    = \sum_k \left[ 
-    (s_{b} - 1) (\psi(\varsigma_{bk}) - \log \rho_{bk}) 
+    = \sum_k \left[
+    (s_{b} - 1) (\psi(\varsigma_{bk}) - \log \rho_{bk})
     - r_{b} \frac{\varsigma_{bk}}{\rho_{bk}} + H_g(\varsigma_{bk}, \rho_{bk})
     \right]
 \end{multline}
@@ -160,7 +160,7 @@ with
     \overline{\log \pi_{k1}} &= \psi(\gamma_{\pi k}) - \psi(\gamma_{\pi k} + \delta_{\pi k}) \\
     \overline{\log \pi_{k0}} &= \psi(\delta_{\pi k}) - \psi(\gamma_{\pi k} + \delta_{\pi k})
 \end{align}
-with $\psi$ the digamma function and 
+with $\psi$ the digamma function and
 \begin{equation}
     H(\pi_k) = H_b(\gamma_{\pi k}, \delta_{\pi k})
 \end{equation}
@@ -169,13 +169,13 @@ with $H_b$ the entropy of the beta distribution:
     H_b(\alpha, \beta) = \log B(\alpha, \beta) - (\alpha - 1) \psi(\alpha) - (\beta - 1) \psi(\beta) + (\alpha + \beta - 2)\psi(\alpha + \beta)
 \end{equation}
 
-\subsection{$A$} 
+\subsection{$A$}
 Similarly,
 \begin{equation}
-    \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] = 
+    \mathbb{E}_{q(A)} \left[\log \frac{p(A)}{q(A)} \right] =
 \sum_{ik} \left[ (a_{Aki} - 1) \overline{\log A_{k1i}} + (b_{Aki} - 1) \overline{\log A_{k0i}} - \log B(a_{Aki}, b_{Aki}) + H(A_{k1i}) \right]
 \end{equation}
-where 
+where
 \begin{align}
     \overline{\log A_{k1i}} &= \psi(\gamma_{Aki}) - \psi(\gamma_{Aki} + \delta_{Aki}) \\
     \overline{\log A_{k0i}} &= \psi(\delta_{Aki}) - \psi(\gamma_{Aki} + \delta_{Aki})
@@ -200,11 +200,11 @@ with $\xi$ and $\Xi$ defined as the expected value of $z$ and the two-slice marg
 
 The first two terms involving expectations of $\lambda_{mu}$ can be calculated from (\ref{loglambda}) above and the variational ansatz:
 \begin{align}
-    \mathbb{E}_q [\eta_m] &= \overline{\eta_m} =  
+    \mathbb{E}_q [\eta_m] &= \overline{\eta_m} =
     \mu_{0u(m)} + \sum_{k} \xi_{t(m) k} \mu_{bku(m)} + \sum_r x_{mr} \mu_{\beta r u(m)} + \mu_{\epsilon m} \\
-    \mathbb{E}_q [e^{\eta_m}] &= \overline{e^{\eta_m}} = \exp \left( 
+    \mathbb{E}_q [e^{\eta_m}] &= \overline{e^{\eta_m}} = \exp \left(
     \overline{\eta_{m \setminus b}}
-    + \frac{1}{2} \left[ \sigma^2_{0u(m)} 
+    + \frac{1}{2} \left[ \sigma^2_{0u(m)}
     + \sum_r x^2_{m r} \sigma^2_{\beta ru(m)} + \sigma^2_{\epsilon u(m)}
     \right]
     \right) \\ \nonumber
@@ -225,11 +225,11 @@ and the fact that $z^2 = z$ since the latents are assumed to be binary.
 \subsection{$z$}
 Technically, $\xi$ is not a variational parameter, but depends on the variational parameters in $q(z)$: $\xi = \xi(\nu, \tilde{A}, \tilde{\pi})$, and similarly for $\Xi$. For the actual variational parameters, the updates are straightforward:
 \begin{align}
-    \nu_{tk} &\leftarrow \sum_{t(m) = t} 
+    \nu_{tk} &\leftarrow \sum_{t(m) = t}
     \begin{pmatrix}
         - F_{mk} \\
         N_{m} \mu_{bku(m)} -
-        e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk} 
+        e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk}
     \end{pmatrix} \\
     \tilde{A}_{k} &\leftarrow \overline{\log A_k} \\
     \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
@@ -247,7 +247,7 @@ Given conjugacy, these are trivial to write down:
     \gamma_{\pi k} &\leftarrow a_{\pi k} + \xi_{0k} \\
     \delta_{\pi k} &\leftarrow b_{\pi k} + 1 - \xi_{0k} \\
     \gamma_{A ki} &\leftarrow a_{A ki} + \sum_t \Xi_{kt, 1i} \\
-    \delta_{A ki} &\leftarrow b_{A ki} + \sum_t \Xi_{kt, 0i} 
+    \delta_{A ki} &\leftarrow b_{A ki} + \sum_t \Xi_{kt, 0i}
 \end{align}
 
 \subsection{$v^2$}
@@ -270,12 +270,12 @@ Here, the nonlinearity in $\overline{e^{\eta_m}}$ makes updates less straightfor
 which works out in the various cases as
 \begin{align}
     \frac{\partial\mathcal{L}}{\partial \mu_{0u}} &= -(\mu_{0u} - m_0)\tau_0 + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] \\
-    \frac{\partial\mathcal{L}}{\partial \mu_{bku}} &= 
+    \frac{\partial\mathcal{L}}{\partial \mu_{bku}} &=
     - \mu_{bku} \overline{\tau_{bk}} + \sum_{u(m) = u} [N_{m} - e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk} ] \xi_{t(m) k} \\
-    \frac{\partial\mathcal{L}}{\partial \mu_{\beta ru}} &= 
+    \frac{\partial\mathcal{L}}{\partial \mu_{\beta ru}} &=
     - \mu_{\beta ru} \overline{\tau_{\beta r}} + \sum_{u(m) = u} [N_{m} - \overline{e^{\eta_{m}}}] x_{mr}  \\
-    \frac{\partial\mathcal{L}}{\partial \mu_{\epsilon m}} &= 
-    - \mu_{\epsilon m} \overline{\tau_{\epsilon u(m)}} + N_{m} - 
+    \frac{\partial\mathcal{L}}{\partial \mu_{\epsilon m}} &=
+    - \mu_{\epsilon m} \overline{\tau_{\epsilon u(m)}} + N_{m} -
     \overline{e^{\eta_m}}
 \end{align}
 Unfortunately, $\overline{e^{\eta_m}}$ depends on the $\mu$ variables in question, requiring us to solve a transcendental equation in each case.
@@ -283,11 +283,11 @@ Unfortunately, $\overline{e^{\eta_m}}$ depends on the $\mu$ variables in questio
 The case of variation with respect to $\sigma^2$ is similar:
 \begin{align}
     \frac{\partial\mathcal{L}}{\partial \sigma^2_{0u}} &= -\frac{1}{2}\tau_0 + \frac{1}{2\sigma^2_{0u}} - \frac{1}{2} \sum_{u(m) = u} \overline{e^{\eta_m}} \\
-    \frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} &= 
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{bku}} &=
     - \frac{1}{2} \overline{\tau_{bk}} + \frac{1}{2\sigma^2_{bku}} - \frac{1}{2}\sum_{u(m) = u} \xi_{t(m)k} e^{\mu_{bku(m)} + \sigma^2_{bku(m)} / 2} F_{mk}  \\
-    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\beta ru}} &= 
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\beta ru}} &=
     - \frac{1}{2} \overline{\tau_{\beta r}} + \frac{1}{2\sigma^2_{\beta ru}} - \frac{1}{2} \sum_{u(m) = u} x^2_{mr} \overline{e^{\eta_m}} \\
-    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon m}} &= 
+    \frac{\partial\mathcal{L}}{\partial \sigma^2_{\epsilon m}} &=
     -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} + \frac{1}{2\sigma^2_{\epsilon m}} - \frac{1}{2} \overline{e^{\eta_m}}
 \end{align}
 where $\overline{\tau} = \mathbb{E}[1/v^2] = \varsigma / \rho$.
@@ -296,12 +296,12 @@ Note, however, that for unconstrained minimization, we need to shift parameteriz
 
 \begin{align}
     \frac{\partial\mathcal{L}}{\partial \kappa_{0u}} &= -\frac{1}{2}\tau_0 e^{\kappa_{0u}} + \frac{1}{2} - \frac{1}{2} \sum_{u(m) = u} e^{\kappa_{0u}} \overline{e^{\eta_m}} \\
-    \frac{\partial\mathcal{L}}{\partial \kappa_{bku}} &= 
+    \frac{\partial\mathcal{L}}{\partial \kappa_{bku}} &=
     - \frac{1}{2} \overline{\tau_{bk}} e^{\kappa_{bku}} + \frac{1}{2} - \frac{1}{2}\sum_{u(m) = u} \xi_{t(m)k} e^{\mu_{bku(m)} + \frac{1}{2} e^{\kappa_{bku}} + \kappa_{bku}} F_{mk}  \\
-    \frac{\partial\mathcal{L}}{\partial \kappa_{\beta ru}} &= 
-    - \frac{1}{2} \overline{\tau_{\beta r}} e^{\kappa_{\beta bru}} + 
+    \frac{\partial\mathcal{L}}{\partial \kappa_{\beta ru}} &=
+    - \frac{1}{2} \overline{\tau_{\beta r}} e^{\kappa_{\beta bru}} +
     \frac{1}{2} - \frac{1}{2} \sum_{u(m) = u} x^2_{mr} e^{\kappa_{\beta ru}} \overline{e^{\eta_m}} \\
-    \frac{\partial\mathcal{L}}{\partial \kappa_{\epsilon m}} &= 
+    \frac{\partial\mathcal{L}}{\partial \kappa_{\epsilon m}} &=
     -\frac{1}{2} \overline{\tau_{\epsilon u(m)}} e^{\kappa_{\epsilon m}} + \frac{1}{2} - \frac{1}{2} e^{\kappa_{\epsilon m}} \overline{e^{\eta_m}}
 \end{align}
 
@@ -324,12 +324,12 @@ Consider a log-linear Poisson model with a matrix of count observations of $U$ u
 \end{equation}
 Furthermore, assume that the variable $\eta$ is Gaussian:
 \begin{equation}
-    \eta_{tu} \sim \mathcal{N}\left(a_{u} + \sum_{r=1}^R x_{tr} b_{ru} + 
-    \sum_{k=1}^K z_{tk} c_{ku}, \sigma^2\right)
+    \eta_{t\cdot} \sim \mathcal{N}\left(a_{\cdot} + \sum_{r=1}^R x_{tr} b_{r\cdot} +
+    \sum_{k=1}^K z_{tk} c_{k\cdot}, \Sigma_\varepsilon\right)
 \end{equation}
-where $z \in \{0, 1\}$ and the variables $x$ are known regressors. We can then write the observation model as 
+where $z \in \{0, 1\}$ and the variables $x$ are known regressors. We can then write the observation model as
 \begin{equation}
-    p(N) = p(N|\eta) p(\eta|a, b, c, z, \sigma^2) p(a) p(b) p(c) p(z) p(\sigma^2)
+    p(N) = p(N|\eta) p(\eta|a, b, c, z, \sigma^2) p(a) p(b) p(c) p(z) p(\Sigma_\varepsilon)
 \end{equation}
 We will assume the following priors for the parameters:
 \begin{align}
@@ -337,7 +337,7 @@ We will assume the following priors for the parameters:
     b_{\cdot u} &\sim \mathcal{N}(m_b, S_b) \\
     c_{\cdot u} &\sim \mathcal{N}(m_c, S_c) \\
     z_{\cdot k} &\sim \mathrm{HMM}(A_k, \pi_k) \\
-    \sigma^2 &\sim \text{Inv-Gamma}
+    \Sigma_\varepsilon &\sim \text{Inv-Wishart}
 \end{align}
 That is, the coefficients $a$, $b$, and $c$ for each unit are drawn from population normal distributions (perhaps with nontrivial covariance), while the hidden binary variables $z$ are drawn from separate hidden Markov models.
 
@@ -348,13 +348,13 @@ Now, the variational posterior $q$ can be chosen as a product of the following:
     b_{\cdot u} &\sim \mathcal{N}(\mu^u_b, \Sigma^u_b) \\
     c_{\cdot u} &\sim \mathcal{N}(\mu^u_c, \Sigma^u_c) \\
     z_{\cdot k} &\sim \mathrm{HMM}(\tilde{A}_k, \tilde{\pi}_k) \\
-    \sigma^2 &\sim \text{Inv-Gamma}
+    \Sigma_\varepsilon &\sim \text{Inv-Wishart}
 \end{align}
 
 Some notes:
 \begin{itemize}
     \item Because of the linear-Gaussian form of the model for $\eta$, the Gaussian variational posteriors of $a$, $b$, and $c$ can make use of conjugacy for rapid, exact coordinate ascent.
-    \item For the priors, we specified a single population prior for each unit, but for the posteriors, we clearly need a posterior over \emph{each} unit. The same holds for the posteriors for $\eta$ at distinct times.\footnote{In this case, we might want a posterior that incorporates autocorrlation in time. File under future work.}
+    \item For the priors, we specified a single population prior for each unit, but for the posteriors, we clearly need a posterior over \emph{each} unit. The same holds for the posteriors for $\eta$ at distinct times.\footnote{In this case, we might want a posterior that incorporates autocorrelation in time. File under future work.}
     \item The HMM inference can be performed exactly by the forward-backward algorithm. Our only approximation is to assume that the posterior $q(z)$ takes the form of a product over \emph{independent} chains. This is only approximate because these chains are coupled through the observations (and intermediately through $\eta$) in the true posterior.
     \item The only non-conjugacy in the model is in $\eta$, since we assume a Gaussian posterior and a Poisson observation model for the counts.
 \end{itemize}
@@ -362,50 +362,50 @@ Some notes:
 \subsection{Inference on log firing rate}
 If we write the evidence lower bound as
 \begin{equation}
-    \mathcal{L} = \mathbb{E}_q \left[ \frac{\log p}{\log q}\right] = 
+    \mathcal{L} = \mathbb{E}_q \left[ \frac{\log p}{\log q}\right] =
     \mathbb{E}_q[\log p] + \mathcal{H}[q]
 \end{equation}
 Then the only non-conjugate terms, as noted above, are related to $\eta$\footnote{Recall that $p(N|\lambda)p(\lambda) d\lambda = p(N|e^\eta)\lvert\frac{d\lambda}{d\eta}\rvert p(\eta) d\eta$, so that we need an extra factor $e^\eta$ implying $N \rightarrow N + 1$ in the sufficient statistics. This is equivalent, of course, to noting that $\lambda = e^\eta$ should be log-normally distributed, in which case the extra factor is just the extra measure factor in the log-normal.}:
 \begin{align}
-    \mathcal{L}_\eta &= 
+    \mathcal{L}_\eta &=
     \sum_{tu} \mathbb{E}_q[(N_{tu} + 1) \eta_{tu} - e^{\eta_{tu}}]
-    - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[ \frac{(\eta - \overline{\eta})^2}{\sigma^2} \right]
-    + \frac{1}{2} \log |\Sigma_\eta| \\
-    &= \left[ \sum_{tu} (N_{tu} + 1) \mu_{\eta tu} - 
+    - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[
+    (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta}) \right]
+    - \frac{1}{2} \log |\Sigma_\eta| \\
+    &= \sum_{tu} \left[ (N_{tu} + 1) \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
-    &- \frac{\tau}{2} \sum_{tu} 
-    \left[ \Sigma_{\eta tuu} + (\mu_{\eta tu} - \mathbb{E}_q[\overline{\eta}_{tu}])^2 
-    + \mathrm{var}[\overline{\eta}]_{tuu}\right] \\
-    &+ \frac{1}{2} \log |\Sigma_\eta| + const
+    &- \frac{1}{2} \sum_{t} \mathrm{Tr}\left(
+    \mathbb{E}_q[\Sigma_\varepsilon^{-1}]
+    \left[ \Sigma_{\eta t} + (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])
+    (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])^\top
+    + \mathrm{Cov}[\overline{\eta}]_{t}\right] \right) \\
+    &- \frac{1}{2} \log |\Sigma_\eta| + const
 \end{align}
-with $\overline{\eta} \equiv a + bx + cz$ and $\tau \equiv \mathbb{E}_q[1/\sigma^2]$ the mean noise precision.
+with $\overline{\eta} \equiv a + bx + cz$.
 
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
 \begin{align}
-    \frac{\partial \mathcal{L}}{\partial \mu_{tu}} &= 
-    N_{tu} + 1 - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{tuu} \right) 
-    - \tau(\mu_{tu} - \mathbb{E}_q[\overline{\eta}_{tu}]) \\
-    \frac{\partial \mathcal{L}}{\partial \Sigma_{tu \neq v}} &= 
-    \frac{1}{2} \left(\Sigma^{-1} \right)_{tuv} \\
-    \frac{\partial \mathcal{L}}{\partial \Sigma_{tuu}} &= 
-    -\frac{1}{2} \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{tuu} \right)
-    - \frac{\tau}{2}
-    + \frac{1}{2} \left(\Sigma^{-1} \right)_{tuu} \\
+    \frac{\partial \mathcal{L}}{\partial \mu_{tu}} &=
+    N_{tu} + 1 - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)
+    - \mathbb{E}_q[\Sigma_\varepsilon^{-1}](\mu_{tu} - \mathbb{E}_q[\overline{\eta}_{tu}]) \\
+    \frac{\partial \mathcal{L}}{\partial \Sigma_{\eta tu \neq v}} &=
+    \frac{1}{2} \left(\Sigma^{-1}_\eta \right)_{tuv}
+    -\frac{1}{2}\mathbb{E}_q[\Sigma_\varepsilon^{-1}]_{uv}\\
+    \frac{\partial \mathcal{L}}{\partial \Sigma_{\eta tuu}} &=
+    -\frac{1}{2} \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)
+    + \frac{1}{2} \left(\Sigma^{-1}_\eta \right)_{tuu}
+    -\frac{1}{2}\mathbb{E}_q[\Sigma_\varepsilon^{-1}]_{uu} \\
 \end{align}
-and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{tuv} = 0$ for $u\neq v$ --- that is, the precision matrix $\Sigma^{-1}_t$ is diagonal, and we can rewrite the maximization equations as 
-\begin{align}
-    \mu_{tu} + \frac{1}{\tau}\exp\left(\mu_{tu} + \frac{1}{2} \sigma^2_{tu} \right)&= \mathbb{E}_q[\overline{\eta}_{tu}] + \frac{1}{\tau} (N_{tu} + 1) \\
-    \frac{1}{\sigma^2_{tu}} &= \exp\left(\mu_{tu} + \frac{1}{2}\sigma^2_{tu}\right) + \tau
-\end{align}
+and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{\eta tuv} = \mathbb{E}_q[\Sigma_\varepsilon^{-1}]$ for $u\neq v$ --- that is, the precision matrix $\Sigma^{-1}_{\eta t}$ is equal to the expected value of the noise matrix off-diagonal.
 
-\subsubsection{Solving for $\mu$}
+\subsubsection{DEPRECATED: Solving for $\mu$}
 The above transcendental equation for $\mu$ can be solved by using the Lambert W function, which satisfiex $z = W(z)e^{W(z)}$. That is, $y = W(z)$ is the solution to $ye^y = z$. Moreover, the equation
 \begin{equation}
     p^{ax + b} = cx + d
 \end{equation}
 has the solution
 \begin{equation}
-    x = \frac{-W\left(-\frac{a \log p}{c} 
+    x = \frac{-W\left(-\frac{a \log p}{c}
     p^{b - \frac{ad}{c}} \right)}{a \log p} - \frac{d}{c}
 \end{equation}
 Thus, we can substitute
@@ -418,14 +418,14 @@ Thus, we can substitute
 \end{align}
 into the above to yield
 \begin{equation}
-    \mu = N\tau^{-1} + \mathbb{E}_q[\overline{\eta}] - 
-    W\left(\tau^{-1} \exp \left( 
+    \mu = N\tau^{-1} + \mathbb{E}_q[\overline{\eta}] -
+    W\left(\tau^{-1} \exp \left(
     \frac{1}{2}\sigma^2 + N\tau^{-1} + \mathbb{E}_q[\overline{\eta}]
     \right)\right)
 \end{equation}
 Moreover, we note that when $x \gg 1$, $W(x) \approx \log x - \log \log x + o(1)$.
 
-\subsubsection{Solving for $\sigma^2$}
+\subsubsection{DEPRECATED: Solving for $\sigma^2$}
 For $\sigma^2$, we have the condition
 \begin{equation}
     \sigma^2 = \frac{1}{\tau + \exp\left(\mu + \frac{1}{2}\sigma^2 \right)}
