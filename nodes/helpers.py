@@ -138,6 +138,177 @@ def initialize_gamma_hierarchy(basename, parent_shape,
 
     return (shape, mean, child)
 
+def initialize_sparse_gamma_hierarchy(basename, parent_shape,
+    child_shape, **kwargs):
+    """
+    Initialize a hierarchical gamma variable:
+        p ~ Beta(a, b)
+        p = 0: lambda ~ Gamma(C, C)
+        p = 1: lambda ~ Gamma(c, c * m)
+        c ~ Gamma
+        m ~ Gamma
+
+    basename is the name of the name of the child variable
+    parent_shape and child_shape are the shapes of the parent and
+        child variables
+    """
+    pars = {k: np.array(v) for k, v in kwargs.iteritems()}
+    par_shapes = ({'prior_shape_shape': parent_shape,
+        'prior_shape_rate': parent_shape,
+        'prior_mean_shape': parent_shape, 'prior_mean_rate': parent_shape,
+        'post_shape_shape': parent_shape, 'post_shape_rate': parent_shape,
+        'post_mean_shape': parent_shape, 'post_mean_rate': parent_shape,
+        'post_child_shape': child_shape, 'post_child_rate': child_shape,
+        'prior_sparsity': parent_shape, 'post_sparsity': parent_shape,
+        'prior_child_sparsity': child_shape,
+        'post_child_sparsity': child_shape,
+        'spike_severity': spike_severity})
+
+    check_shapes(par_shapes, pars)
+
+    shapename = basename + '_shape'
+    shape = GammaNode(pars['prior_shape_shape'],
+        pars['prior_shape_rate'], pars['post_shape_shape'],
+        pars['post_shape_rate'], name=shapename)
+
+    meanname = basename + '_mean'
+    mean = GammaNode(pars['prior_mean_shape'],
+        pars['prior_mean_rate'], pars['post_mean_shape'],
+        pars['post_mean_rate'], name=meanname)
+
+    child = GammaNode(shape, ProductNode(shape, mean),
+        pars['post_child_shape'], pars['post_child_rate'],
+        name=basename)
+
+    sparsename = basename + '_sparsity'
+    sparsity = DirichletNode(pars['prior_sparsity'], pars['post_sparsity'],
+        name=sparsename)
+
+    feature_name = basename + '_feature'
+    features = BernoulliNode(pars['prior_child_sparsity'],
+        pars['post_child_sparsity'], name=feature_name)
+
+    C = pars['spike_severity']
+
+    def update_shape(idx=Ellipsis):
+        """
+        Update for shape variable in terms of mean and child nodes.
+        idx is assumed to index *last* dimension of arrays
+        """
+        # binary feature variables for each unit
+        alpha = features.expected_x()
+        n_eff = np.sum(alpha.T[idx])
+
+        shape.post_shape.T[idx] = shape.prior_shape.T[idx]
+        shape.post_shape.T[idx] += 0.5 * n_eff
+
+        shape.post_rate.T[idx] = shape.prior_rate.T[idx]
+        eff_rate = alpha * (mean.expected_x() * child.expected_x() -
+            mean.expected_log_x() - child.expected_log_x() - 1)
+        shape.post_rate.T[idx] += np.sum(eff_rate.T[idx])
+
+    def update_mean(idx=Ellipsis):
+        """
+        Update for mean variable in terms of shape and child nodes.
+        idx is assumed to index *last* dimension of arrays
+        """
+        # binary feature variables for each unit
+        alpha = features.expected_x()[0]
+        n_eff = np.sum(alpha.T[idx])
+
+        mean.post_shape.T[idx] = mean.prior_shape.T[idx]
+        mean.post_shape.T[idx] += n_eff * shape.expected_x().T[idx]
+
+        mean.post_rate.T[idx] = mean.prior_rate.T[idx]
+        rate_eff = alpha * child.expected_x()
+        mean.post_rate.T[idx] += (shape.expected_x().T[idx] *
+            np.sum(rate_eff.T[idx]))
+
+    def update_features(idx=Ellipsis):
+        """
+        Update the binary variables indicating whether each unit has a
+        particular feature.
+        """
+        c = shape.expected_x()
+        th = mean.expected_x()
+        logc = shape.expected_log_x()
+        logth = mean.expected_log_x()
+        alpha = features.expected()[0]
+        loglam = child.expected_log_x()
+        lam = child.expected_x()
+
+        # "slab" portion
+        elp = (c - 1) * (loglam + 1)
+        elp += -c * th * lam
+        elp += c * logth
+        elp += 0.5 * logc
+        elp *= alpha
+
+        # "spike" portion
+        elsp = (C - 1) * (loglam + 1)
+        elsp += -C * lam
+        eslp += 0.5 * np.log(C)
+        eslp *= (1 - alpha)
+
+        ess = elp - eslp
+
+        features.post.T[idx] = features.prior.T[idx]
+        features.post.T[idx] += ess.T[idx]
+
+    def update_sparsity(idx=Ellipsis):
+        """
+        Update the per-feature sparsity.
+        """
+        # remember, features is prob x units x feature
+        ess = np.sum(features.expected(), axis=1)
+        sparsity.post.T[idx] = sparsity.prior.T[idx]
+        sparsity.post.T[idx] += ess.T[idx]
+
+    def update_parents(idx=Ellipsis):
+        features.update(idx)
+        sparsity.update(idx)
+        shape.update(idx)
+        mean.update(idx)
+
+    def expected_log_prior(self):
+        """
+        Calculate expected value of log prior under the posterior distribution.
+        """
+        c = shape.expected_x()
+        th = mean.expected_x()
+        logc = shape.expected_log_x()
+        logth = mean.expected_log_x()
+        alpha = features.expected()[0]
+        loglam = self.expected_log_x()
+        lam = self.expected_x()
+
+        # "slab" portion
+        elp = (c - 1) * (loglam + 1)
+        elp += -c * th * lam
+        elp += c * logth
+        elp += 0.5 * logc
+        elp *= alpha
+
+        # "spike" portion
+        elsp = (C - 1) * (loglam + 1)
+        elsp += -C * lam
+        eslp += 0.5 * np.log(C)
+        eslp *= (1 - alpha)
+
+        return np.sum(elp) + np.sum(eslp)
+
+    shape.update = update_shape
+    mean.update = update_mean
+    features.update = update_features
+    sparsity.update = update_sparsity
+    child.has_parents = True
+    child.update_parents = update_parents
+
+    # instead of monkey-patching, honestly bind functions
+    child.expected_log_prior = expected_log_prior.__get__(child, GammaNode)
+
+    return (shape, mean, child, sparsity, features)
+
 def initialize_ragged_gamma_hierarchy(basename, parent_shape,
     child_shape, **kwargs):
     """
