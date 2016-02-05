@@ -518,14 +518,16 @@ with $C \gg 1$ large and fixed. That is, $\alpha$ is the probability that the fe
 
 With this ansatz, we then write, in analogy with (\ref{plambda})
 \begin{align}
-    \mathbb{E}_q [\log p(\lambda, \alpha)] &=
-    \mathbb{E}_q[\log p(\lambda|\alpha)] + \mathbb{E}_q[\log p(\alpha)] \\
+    \mathbb{E}_q [\log p(\lambda, \alpha, \pi)] &=
+    \mathbb{E}_q[\log p(\lambda|\alpha)] + \mathbb{E}_q[\log p(\alpha|\pi)]
+    + \mathbb{E}_q[\log p(\pi)] \\
     &\ge \sum_u \alpha_u \left[
     (c - 1) (\log \lambda_u + 1) - c\theta\lambda_u + c \log \theta + \frac{1}{2}\log c\right] \\
     &+ \sum_u (1 - \alpha_u) \left[
         (C - 1)(\log \lambda_u + 1) - C\lambda_u + \frac{1}{2}\log C
      \right] \\
-     &+ \mathbb{E}_q[\log p(\alpha)]
+     &+ \sum_u \left[\alpha_u \log \pi + (1 - \alpha_u) \log (1 - \pi)\right] \\
+     &+ a \log \pi + b \log (1 - \pi)
 \end{align}
 which leads to revised posterior updates
 \begin{align}
