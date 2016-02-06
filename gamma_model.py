@@ -187,9 +187,23 @@ class GammaModel:
         allprod = bl * od * Fz * G
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
 
-        lam.post_shape[..., idx] = lam.prior_shape.expected_x()[..., idx] + Nz
-        lam.post_rate[..., idx] = lam.prior_rate.expected_x(
-        )[..., idx] + eff_rate
+        # WARNING:
+        # this is super hacky, but getting around it would require
+        # writing both a CategoricalNode and a MixtureNode, and I'm not
+        # yet convinced it's worth it
+        if 'fr_latents_spike' in self.nodes:
+            alpha = self.nodes['fr_latents_feature'].expected_x()[..., idx]
+            Eslab_shape = lam.prior_shape.expected_x()[..., idx]
+            Eslab_rate = lam.prior_rate.expected_x()[..., idx]
+            C = self.nodes['fr_latents_spike'].prior_shape
+            Eshape = alpha * Eslab_shape + (1 - alpha) * C
+            Erate = alpha * Eslab_rate + (1 - alpha) * C
+        else:
+            Eshape = lam.prior_shape.expected_x()[..., idx]
+            Erate = lam.prior_rate.expected_x()[..., idx]
+
+        lam.post_shape[..., idx] = Eshape + Nz
+        lam.post_rate[..., idx] = Erate + eff_rate
         self.F_prod(idx, update=True)
 
     def calc_log_evidence(self, idx):

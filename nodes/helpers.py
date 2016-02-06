@@ -188,7 +188,9 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
     features = BernoulliNode(sparsity,
         pars['post_features'], name=feature_name)
 
+    spike_name = basename + '_spike'
     C = pars['spike_severity']
+    spike = GammaNode(C, C, C, C, name=spike_name)
 
     def update_shape(idx=Ellipsis):
         """
@@ -265,6 +267,9 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
         sparsity.post[0].T[idx] += Neff
         sparsity.post[1].T[idx] += Nu - Neff
 
+    def update_spike(idx=Ellipsis):
+        pass
+
     def update_parents(idx=Ellipsis):
         features.update(idx)
         sparsity.update(idx)
@@ -302,13 +307,14 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
     mean.update = update_mean
     features.update = update_features
     sparsity.update = update_sparsity
+    spike.update = update_spike
     child.has_parents = True
     child.update_parents = update_parents
 
     # instead of monkey-patching, honestly bind functions
     child.expected_log_prior = expected_log_prior.__get__(child, GammaNode)
 
-    return (shape, mean, child, sparsity, features)
+    return (shape, mean, child, sparsity, features, spike)
 
 def initialize_ragged_gamma_hierarchy(basename, parent_shape,
     child_shape, **kwargs):
