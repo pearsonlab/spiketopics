@@ -195,9 +195,11 @@ if __name__ == '__main__':
         # gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
         gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
         gpm.finalize()
+        if idx < 4:
+            continue
 
         print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-4, verbosity=2)
+        gpm.do_inference(tol=1e-4, verbosity=4)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)

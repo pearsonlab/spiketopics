@@ -44,6 +44,6 @@ The `docs` folder contains notes, papers, and other documentation for the algori
 
 ## TODO:
 - [ ] Correlated noise across neurons (log-Normal model does this)
-- [ ] Response sparsity within populations, not just features
+- [x] Response sparsity within populations, not just features
 - [ ] Smarter feature sparsity
 - [ ] Noise autocorrelation in time (hard)

@@ -233,7 +233,6 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
         th = mean.expected_x()
         logc = shape.expected_log_x()
         logth = mean.expected_log_x()
-        alpha = features.expected_x()
         loglam = child.expected_log_x()
         lam = child.expected_x()
 
@@ -242,16 +241,15 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
         elp += -c * th * lam
         elp += c * logth
         elp += 0.5 * logc
-        elp *= alpha
 
         # "spike" portion
         elsp = (C - 1) * (loglam + 1)
         elsp += -C * lam
         elsp += 0.5 * np.log(C)
-        elsp *= (1 - alpha)
 
         ess = elp - elsp
-        ess0 = logit(features.expected_x()[0])
+        pivec = sparsity.expected_log_x()
+        ess0 = pivec[0] - pivec[1]
 
         features.post.T[idx] = expit((ess + ess0).T[idx])
 
@@ -260,15 +258,16 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
         Update the per-feature sparsity.
         """
         # remember, features is units x feature
-        ess = np.sum(features.expected_x().T[idx])
-        Nu = np.prod(features.expected_x().T[idx].shape)
+        alpha = features.expected_x().T[idx]
+        Neff = np.sum(alpha)
+        Nu = np.sum(np.ones_like(alpha))
         sparsity.post.T[idx] = sparsity.prior.expected_x().T[idx]
-        sparsity.post[0].T[idx] += ess
-        sparsity.post[1].T[idx] += Nu - ess
+        sparsity.post[0].T[idx] += Neff
+        sparsity.post[1].T[idx] += Nu - Neff
 
     def update_parents(idx=Ellipsis):
-        sparsity.update(idx)
         features.update(idx)
+        sparsity.update(idx)
         shape.update(idx)
         mean.update(idx)
 
