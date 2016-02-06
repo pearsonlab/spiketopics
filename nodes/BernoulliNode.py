@@ -28,9 +28,9 @@ class BernoulliNode:
         """
         Calculate expected value of log prior under the posterior distribution.
         """
-        p = self.prior
+        p = self.prior.expected_x()
         pp = self.expected_x()
-        elp = np.sum(pp * np.log(p) + (1 - pp) * np.log1p(-p))
+        elp = pp * np.log(p[0]) + (1 - pp) * np.log(p[1])
         elp = elp.view(np.ndarray)
 
         return np.sum(elp)
@@ -40,7 +40,8 @@ class BernoulliNode:
         Calculate differential entropy of posterior.
         """
         p = self.post
-        H = -p * np.log(p) - (1 - p) * np.log1p(-p) 
+        H = -p * np.log(p) - (1 - p) * np.log1p(-p)
+        H[np.isnan(H)] = 0
 
         return np.sum(H)
 

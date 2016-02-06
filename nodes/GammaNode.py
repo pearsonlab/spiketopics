@@ -14,7 +14,7 @@ class GammaNode:
         if post_shape.shape != post_rate.shape:
             raise ValueError('Dimensions of posteriors must agree!')
 
-        # if any parameters are passed as arrays, wrap in 
+        # if any parameters are passed as arrays, wrap in
         # constant node
         if isinstance(prior_shape, np.ndarray):
             self.prior_shape = prior_shape.copy().view(ConstNode)
@@ -41,10 +41,10 @@ class GammaNode:
         """
         Calculate expected value of log prior under the posterior distribution.
         """
-        alpha = self.prior_shape
-        beta = self.prior_rate
+        alpha = self.prior_shape.expected_x()
+        beta = self.prior_rate.expected_x()
         elp = (alpha - 1) * self.expected_log_x()
-        elp += -beta * self.expected_x() 
+        elp += -beta * self.expected_x()
         elp += alpha * np.log(beta)
         elp += -gammaln(alpha)
         elp = elp.view(np.ndarray)

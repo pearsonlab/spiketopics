@@ -80,6 +80,7 @@ if __name__ == '__main__':
     fr_mean_shape = 1 * U * np.ones((K,))
     fr_mean_rate = 1 * U * np.ones((K,))
 
+    sp_prior = np.array([0.1, 0.9])
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape,
                 'prior_shape_rate': fr_shape_rate,
@@ -90,7 +91,11 @@ if __name__ == '__main__':
                 'post_mean_shape': fr_mean_shape,
                 'post_mean_rate': fr_mean_rate,
                 'post_child_shape': np.ones((U, K)),
-                'post_child_rate': np.ones((U, K))
+                'post_child_rate': np.ones((U, K)),
+                'prior_sparsity': np.tile(sp_prior.reshape(2, 1), (1, K)),
+                'post_sparsity': np.tile(sp_prior.reshape(2, 1), (1, K)),
+                'post_features': 0.1 * np.ones((U, K)),
+                'spike_severity': 1e5
                 })
 
     ############ latent states ####################

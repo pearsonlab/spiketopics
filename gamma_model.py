@@ -89,7 +89,10 @@ class GammaModel:
         parent_shape: shape of parent node
         """
         # test if parameters indicate there's a hierarchy
-        if 'prior_shape_shape' in kwargs:
+        if 'prior_sparsity' in kwargs:
+            nodes = nd.initialize_sparse_gamma_hierarchy(name, parent_shape,
+                                                         node_shape, **kwargs)
+        elif 'prior_shape_shape' in kwargs:
             nodes = nd.initialize_gamma_hierarchy(name, parent_shape,
                                                   node_shape, **kwargs)
         elif 'mapper' in kwargs:
