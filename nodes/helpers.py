@@ -248,7 +248,7 @@ def initialize_sparse_gamma_hierarchy(basename, parent_shape,
         elsp = (C - 1) * (loglam + 1)
         elsp += -C * lam
         elsp += 0.5 * np.log(C)
-
+        
         ess = elp - elsp
         pivec = sparsity.expected_log_x()
         ess0 = pivec[0] - pivec[1]

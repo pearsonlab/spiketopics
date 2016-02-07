@@ -77,10 +77,15 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-4 * np.ones((K,))
+    fr_shape_shape = 1. * np.ones((K,))
+    fr_shape_rate = 1 * np.ones((K,))
     fr_mean_shape = 1 * U * np.ones((K,))
     fr_mean_rate = 1 * U * np.ones((K,))
+    # fr_mean_shape = 1 * np.ones((K,))
+    # fr_mean_rate = 1 * np.ones((K,))
 
-    sp_prior = np.array([0.1, 0.9])
+    sp_prior = np.array([1, 1])
+    sp_init = np.array([10, 1])
     fr_latent_dict = ({
                 'prior_shape_shape': fr_shape_shape,
                 'prior_shape_rate': fr_shape_rate,
@@ -91,12 +96,12 @@ if __name__ == '__main__':
                 'post_mean_shape': fr_mean_shape,
                 'post_mean_rate': fr_mean_rate,
                 'post_child_shape': np.ones((U, K)),
-                'post_child_rate': np.ones((U, K)),
-                'prior_sparsity': np.tile(sp_prior.reshape(2, 1), (1, K)),
-                'post_sparsity': np.tile(sp_prior.reshape(2, 1), (1, K)),
-                'post_features': 0.1 * np.ones((U, K)),
-                'spike_severity': 1e5
-                })
+                'post_child_rate': np.ones((U, K))})
+                # 'prior_sparsity': np.tile(sp_prior.reshape(2, 1), (1, K)),
+                # 'post_sparsity': np.tile(sp_init.reshape(2, 1), (1, K)),
+                # 'post_features': 0.8 * np.random.rand(U, K),
+                # 'spike_severity': 1e8
+                # })
 
     ############ latent states ####################
     ###### A ###############
@@ -190,7 +195,7 @@ if __name__ == '__main__':
         # set up model object
         gpm = gp.GammaModel(df, K)
         gpm.initialize_baseline(**jitter_inits(baseline_dict, 0.25))
-        gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.25))
+        gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.15))
         gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
         # gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
         gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))

@@ -32,6 +32,7 @@ class BernoulliNode:
         pp = self.expected_x()
         elp = pp * np.log(p[0]) + (1 - pp) * np.log(p[1])
         elp = elp.view(np.ndarray)
+        elp[np.isnan(elp)] = 0
 
         return np.sum(elp)
 
