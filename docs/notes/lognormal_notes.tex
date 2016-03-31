@@ -381,7 +381,15 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$\footnot
     + \mathrm{Cov}[\overline{\eta}]_{t}\right] \right) \\
     &- \frac{1}{2} \log |\Sigma_\eta| + const
 \end{align}
-with $\overline{\eta} \equiv a + bx + cz$.
+with $\overline{\eta} \equiv a + bx + cz$ and
+\begin{align}
+    \mathrm{Cov}[\overline{\eta}] &= \mathrm{Cov}[a] + \mathrm{Cov}[bx] + \mathrm{Cov}[cz] \\
+    \mathrm{Cov}[a]_{tuu'} &= \delta_{uu'}(\sigma^a_u)^2 \\
+    \mathrm{Cov}[bx]_{tuu'} &= \mathrm{Tr}\left((x_t\cdot x_t^\top) \Sigma^b_{uu'}\right) \\
+    \mathrm{Cov}[cz]_{tuu'} &= \mathbb{E}_q\left[\sum_{k}\left( c_{ku} z_{tk} - \mu^c_{ku}\xi_{tk} \right)\sum_{k'}\left( c_{k'u'} z_{tk'} - \mu^c_{k'u'}\xi_{tk'} \right)\right] \\
+    &= \sum_{kk'}\left[\left(\delta_{uu'}\Sigma^c_{kk'} + \mu^c_{ku} \mu^c_{k'u'} \right)\left(\delta_{kk'}\xi_{tk}(1 - \xi_{tk}) + \xi_{tk}\xi_{tk'}\right) - \mu^c_{ku}\mu^c_{k'u'}\xi_{tk}\xi_{tk'} \right] \\
+    &= \delta_{uu'}\left(\sum_k \Sigma^c_{kk} \xi_{tk} (1 - \xi_{tk}) + \xi_t^\top \Sigma^c \xi_t\right) + \sum_k \mu^c_{ku}\mu^c_{ku'}\xi_{tk}(1 - \xi_{tk})\\
+\end{align}
 
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
 \begin{align}
