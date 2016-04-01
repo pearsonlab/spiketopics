@@ -1,5 +1,5 @@
 """
-Contains code to run the forward-backward algorithm for inference in 
+Contains code to run the forward-backward algorithm for inference in
 Hidden Markov Models.
 """
 from __future__ import division
@@ -35,22 +35,22 @@ def fb_infer(A, pi, psi):
     logZ[0] = np.log(np.sum(a))
     beta[-1, :] = 1
     beta[-1, :] = beta[-1, :] / np.sum(beta[-1, :])
-    
+
     # forwards
     for t in xrange(1, T):
         a = psi[t] * (A.dot(alpha[t - 1]))
         alpha[t] = a / np.sum(a)
         logZ[t] = np.log(np.sum(a))
-        
+
     # backwards
     for t in xrange(T - 1, 0, -1):
         b = A.T.dot(beta[t] * psi[t])
         beta[t - 1] = b / np.sum(b)
-        
+
     # posterior
     gamma = alpha * beta
     gamma = gamma / np.sum(gamma, axis=1, keepdims=True)
-    
+
     # calculate 2-slice marginal
     Xi = ((beta[1:] * psi[1:])[:, np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis]
 
@@ -61,4 +61,3 @@ def fb_infer(A, pi, psi):
         raise ValueError('NaNs appear in posterior')
 
     return gamma, np.sum(logZ), Xi
-
