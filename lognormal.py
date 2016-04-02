@@ -133,3 +133,19 @@ def expected_log_dirichlet(a, alpha):
     elp += -_logB(a)
 
     return np.sum(elp)
+
+def inverse_gamma_entropy(alpha, beta):
+    """
+    Entropy of Inverse-Gamma distribution
+    """
+    H = alpha + np.log(beta) + gammaln(alpha) - (1 + alpha) * digamma(alpha)
+    return np.sum(H)
+
+def expected_log_inverse_gamma(a, b, alpha, beta):
+    """
+    E[log p(x)] where
+    p(x) = Inverse-Gamma(a, b)
+    q(x) = Inverse-Gamma(alpha, beta)
+    """
+    elp = -(a + 1) * (np.log(beta) - digamma(alpha)) - b * (beta / (alpha - 1))
+    return np.sum(elp)
