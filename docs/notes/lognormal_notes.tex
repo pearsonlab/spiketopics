@@ -365,14 +365,14 @@ If we write the evidence lower bound as
     \mathcal{L} = \mathbb{E}_q \left[ \frac{\log p}{\log q}\right] =
     \mathbb{E}_q[\log p] + \mathcal{H}[q]
 \end{equation}
-Then the only non-conjugate terms, as noted above, are related to $\eta$\footnote{Recall that $p(N|\lambda)p(\lambda) d\lambda = p(N|e^\eta)\lvert\frac{d\lambda}{d\eta}\rvert p(\eta) d\eta$, so that we need an extra factor $e^\eta$ implying $N \rightarrow N + 1$ in the sufficient statistics. This is equivalent, of course, to noting that $\lambda = e^\eta$ should be log-normally distributed, in which case the extra factor is just the extra measure factor in the log-normal.}:
+Then the only non-conjugate terms, as noted above, are related to $\eta$:
 \begin{align}
     \mathcal{L}_\eta &=
-    \sum_{tu} \mathbb{E}_q[(N_{tu} + 1) \eta_{tu} - e^{\eta_{tu}}]
+    \sum_{tu} \mathbb{E}_q[N_{tu} \eta_{tu} - e^{\eta_{tu}}]
     - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[
     (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta}) \right]
     - \frac{1}{2} \log |\Sigma_\eta| \\
-    &= \sum_{tu} \left[ (N_{tu} + 1) \mu_{\eta tu} -
+    &= \sum_{tu} \left[ N_{tu} \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
     &- \frac{1}{2} \sum_{t} \mathrm{Tr}\left(
     \mathbb{E}_q[\Sigma_\varepsilon^{-1}]
@@ -394,7 +394,7 @@ with $\overline{\eta} \equiv a + bx + cz$ and
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
 \begin{align}
     \frac{\partial \mathcal{L}}{\partial \mu_{tu}} &=
-    N_{tu} + 1 - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)
+    N_{tu} - \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)
     - \mathbb{E}_q[\Sigma_\varepsilon^{-1}](\mu_{tu} - \mathbb{E}_q[\overline{\eta}_{tu}]) \\
     \frac{\partial \mathcal{L}}{\partial \Sigma_{\eta tu \neq v}} &=
     \frac{1}{2} \left(\Sigma^{-1}_\eta \right)_{tuv}

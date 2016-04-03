@@ -21,7 +21,7 @@ def log_observed_spikes(N, mu, Sig):
     mu: (T, U)
     Sig: (T, U, U) or (T, U)
     """
-    out = (N + 1) * mu
+    out = N * mu
     if len(Sig.shape) == 3:
         out += - np.exp(mu + 0.5 * np.diagonal(Sig, 0, 1, 2))
     else:
