@@ -359,6 +359,29 @@ Some notes:
     \item The only non-conjugacy in the model is in $\eta$, since we assume a Gaussian posterior and a Poisson observation model for the counts.
 \end{itemize}
 
+\subsection{LKJ covariance prior}
+While an Inverse-Wishart prior on the noise covariance matrix $\Sigma_\varepsilon$ is conjugate and therefore a natural choice, there is no simple closed form way to calculate either $\mathbb{E}_q[\log p(\Sigma)]$ or $\mathcal{H}(\Sigma)$. Moreover, reasoning about covariances is comparatively more difficult than reasoning about correlations. Thus, rather than a distribution on $\Sigma_\varepsilon$, we can opt for a distribution on the pieces of the decomposition
+\begin{align}
+    \Sigma_\varepsilon &= S^{\frac{1}{2}} \Omega S^{\frac{1}{2}} \\
+    S^{\frac{1}{2}} &= \mathrm{diag}(\boldsymbol{\sigma}) \\
+    \sigma^2_i &\sim \text{Inv-Gamma}(a_i, b_i) \\
+    \Omega &\sim \mathrm{LKJ}(\eta)
+\end{align}
+where the LKJ prior\footnote{Lewandowski, Kurowicka, and Joe: Generating Random Correlation Matrices based on vines and the extended onion method} is a prior on \emph{correlation matrices} where the density is proportional to $ |\Omega|^{\eta - 1}$. Thus, as $\eta$ grows, the correlation matrix increasingly resembles the unit matrix. Conveniently, LKJ give an algorithm for drawing from this distribution that relies on the fact that the underlying degrees of freedom are the canonical partial correlations (CPCs) of the variables: $\rho_{ij;1\ldots i - 1}$ ($j > i$).\footnote{For example, for $d=4$, these are the correlations $p_{12}$, $p_{13}$, $p_{14}$, $p_{23;1}$, $p_{24;1}$, and $p_{34;12}$.} These CPCs can then be related to the correlations in $\Omega$ by the definitions
+\begin{align}
+    \omega_{ij} &\equiv \rho_{ij} \\
+    \rho_{ij;kL} &= \frac{\rho_{ij;L} - \rho_{ik;L}\rho_{ij;L}}
+    {\sqrt{(1 - \rho_{ik;L}^2)(1 - \rho_{ij;L}^2)}}
+\end{align}
+In fact, one can show that if we choose $L < k < i < j$ (e.g., $\rho_{56;1234}$ for $k=4$, $L = 123$), then the $\rho_{ij}$ can all be computed recursively using \emph{only} CPCs, and no intermediate partials are shared across computations for different $i$ and $j$. As a result, no clever caching is necessary, and the computations could even be done in parallel.
+
+Just as importantly, the CPCs follow simple Beta distributions (rescaled to the interval (-1, 1)):
+\begin{align}
+    p_{i,j > i;1\ldots i - 1} &\sim \mathrm{Beta}(\beta_{i}, \beta_{i}) \\
+    \beta_i &= \eta + \frac{d - 1 - i}{2}
+\end{align}
+Thus, if we choose the LKJ prior, the covariance $\Sigma_\varepsilon$ can be replaced by $d$ Inverse-Gamma variates $\sigma^2$ and $d(d-1)/$ Beta variates $p$ without loss of generality. Calculating expectations of log priors and entropies of these variables is then straightforward.
+
 \subsection{Inference on log firing rate}
 If we write the evidence lower bound as
 \begin{equation}
