@@ -149,3 +149,35 @@ def expected_log_inverse_gamma(a, b, alpha, beta):
     """
     elp = -(a + 1) * (np.log(beta) - digamma(alpha)) - b * (beta / (alpha - 1))
     return np.sum(elp)
+
+def U_to_vec(U):
+    """
+    Convert an upper triangular matrix to a vector.
+    **Does not** include diagonal.
+    Returned vector is read out from U by rows.
+    """
+    r, c = np.triu_indices_from(U, k=1)
+    return U[r, c]
+
+def vec_to_U(v):
+    """
+    Convert a vector to an upper triangular matrix.
+    Vector **does not** include diagonal entries.
+    Matrix is filled in by rows.
+    """
+    # get matrix size
+    N = v.size
+    d = int((1 + np.sqrt(1 + 8 * N))/2)
+    U = np.zeros((d, d))
+    U[np.triu_indices(d, 1)] = v
+    return U
+
+def cor_from_vec(v):
+    """
+    Convert a vector of partial correlations to a matrix.
+    Elements of v are read out row-wise.
+    """
+    C = vec_to_U(v)
+    C = C + C.T  # symmetrize
+    np.fill_diagonal(C, 1)
+    return C
