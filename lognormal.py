@@ -150,14 +150,69 @@ def expected_log_inverse_gamma(a, b, alpha, beta):
     elp = -(a + 1) * (np.log(beta) - digamma(alpha)) - b * (beta / (alpha - 1))
     return np.sum(elp)
 
+def expected_log_beta(a, b, alpha, beta):
+    """
+    E[log p(x)] where
+    p(x) = Beta(a, b)
+    q(x) = Beta(alpha, beta)
+    """
+    # stack parameters along last axis (our Dirichlet convention)
+    # and treat as dirichlet
+    new_a = np.vstack([a[..., np.newaxis], b[..., np.newaxis]], axis=-1)
+    new_alpha = np.vstack([alpha[..., np.newaxis], beta[..., np.newaxis]], axis=-1)
+    return expected_log_dirichlet(new_a, new_alpha)
+
+def beta_entropy(alpha, beta):
+    """
+    Entropy of Beta distribution
+    """
+    # stack parameters along last axis (our Dirichlet convention)
+    # and treat as dirichlet
+    new_alpha = np.vstack([alpha[..., np.newaxis], beta[..., np.newaxis]], axis=-1)
+    return dirichlet_entropy(new_alpha)
+
+def expected_log_LKJ(h, eta, d):
+    """
+    E[log p(x)] where
+    p(x) = LKJ(h, d)  # d = matrix dimension
+    q(x) = LKJ(eta, d)
+    """
+    b = LKJ_to_beta_pars(h, d)
+    beta = LKJ_to_beta_pars(eta, d)
+    return expected_log_beta(b, b, beta, beta)
+
+def LKJ_entropy(eta, d):
+    beta = LKJ_to_beta_pars(eta, d)
+    return beta_entropy(beta, beta)
+
+def LKJ_to_beta_pars(eta, d):
+    """
+    Transform LKJ distribution with parameter eta for matrix of dimension d
+    to vector of beta distribution parameters:
+    p_{i >= 1, j>i; 1...i-1} ~ Beta(b_i, b_i)
+    b_i = eta + (d - 1 - i)/2
+    """
+    idxmat = np.broadcast_to((d - 1 - np.arange(d))/2., (d, d)).T
+    bmat =  eta + idxmat
+    return U_to_vec(bmat)  # only upper triangle, flattened
+
+def draw_LKJ(eta, d):
+    """
+    Random draw from the LKJ distribution with parameter eta and dimension d.
+    """
+    betas = LKJ_to_beta_pars(eta, d)
+    cpc = 2 * npr.beta(betas, betas) - 1  # rescale to (-1, 1)
+    return corrmat_from_vec(corr_from_cpc(cpc))
+
 def U_to_vec(U):
     """
     Convert an upper triangular matrix to a vector.
     **Does not** include diagonal.
     Returned vector is read out from U by rows.
+    Assumes matrix is **first two** dimensions of passed array.
     """
-    r, c = np.triu_indices_from(U, k=1)
-    return U[r, c]
+    r, c = np.triu_indices(U.shape[0], k=1)
+    return U[r, c, ...]
 
 def vec_to_U(v):
     """
@@ -172,12 +227,47 @@ def vec_to_U(v):
     U[np.triu_indices(d, 1)] = v
     return U
 
-def cor_from_vec(v):
+def corrmat_from_vec(v):
     """
-    Convert a vector of partial correlations to a matrix.
+    Convert a vector of correlations to a matrix.
     Elements of v are read out row-wise.
     """
     C = vec_to_U(v)
     C = C + C.T  # symmetrize
     np.fill_diagonal(C, 1)
     return C
+
+def corr_from_cpc(v):
+    """
+    Given a vector of canonical partial correlations (taken from the
+    upper triangle by rows), return a vector of correlations in the
+    same format.
+    """
+    U = vec_to_U(v)  # upper triangular matrix of canonical partial correlations
+    d = np.shape(U)[0]  # dimension of U
+    UU = np.zeros_like(U)  # output matrix
+    UU[0,1:] = U[0, 1:]  # already full correlations
+    for r in range(1, d):
+        for c in range(r + 1, d):
+            UU[r, c] = _corr_from_partials(r, c, U)
+
+    return U_to_vec(UU)
+
+def _corr_from_partials(r, c, R, L=-1):
+    """
+    Calculate standard correlation recursively from canonical partial
+    correlations (CPCs).
+    Makes use of the relation between partial correlations
+    r_{ij;L} = \sqrt{(1 - r_{ik;L}^2)(1 - r_{jk;L}^2)} r_{ij;kL} + r_{ik;L} r_{jk;L}
+    r, c are the row and column of the entry to calculate
+    R is a matrix of CPCs.
+    """
+    RLr = R[L, r]
+    RLc = R[L, c]
+
+    if L == r - 1:  # then everything in the formula below is a CPC
+        Rrc = R[r, c]
+    else:
+        Rrc = _corr_from_partials(r, c, R, L + 1)
+
+    return RLr * RLc + Rrc * np.sqrt((1 - RLr**2) * (1 - RLc**2))
