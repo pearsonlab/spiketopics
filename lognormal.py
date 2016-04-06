@@ -9,9 +9,10 @@ import autograd.numpy as np
 import autograd.numpy.random as npr
 from fbi import fb_infer
 
-def L(N, eta_mean, eta_cov):
+def L(N, eta_mean, eta_cov, m_a, s_a, mu_a, sig_a):
     elbo = log_observed_spikes(N, eta_mean, eta_cov)
     elbo += normal_entropy(eta_mean, eta_cov)
+    elbo += expected_log_normal(m_a, s_a, mu_a, sig_a)
     return elbo
 
 def log_observed_spikes(N, mu, Sig):
@@ -38,6 +39,17 @@ def expected_log_normal(m, s, mu, sig):
     out = -0.5 * (sig / s + (mu - m)**2/s)
     return np.sum(out)
 
+def normal_entropy(mu, sig):
+    """
+    Entropy of multivariate normal.
+    sig is **variance**
+    """
+    out = mu.size * 0.5 * (np.log(np.pi) + 1)
+
+    out += 0.5 * np.sum(np.log(sig))
+
+    return out
+
 def expected_log_mvnormal(m, S, mu, Sig):
     """
     E[log p(x)] where
@@ -50,17 +62,6 @@ def expected_log_mvnormal(m, S, mu, Sig):
     out = -0.5 * np.einsum('...ij, ...ij', Sig, Lam)
     out += -0.5 * np.einsum('...ij, ...i, ...j', Lam, x, x)
     return np.sum(out)
-
-def normal_entropy(mu, sig):
-    """
-    Entropy of multivariate normal.
-    sig is **variance**
-    """
-    out = mu.size * 0.5 * (np.log(np.pi) + 1)
-
-    out += 0.5 * np.sum(np.log(sig))
-
-    return out
 
 def mvnormal_entropy(mu, Sig):
     """
@@ -112,7 +113,7 @@ def _logB(alpha):
 def dirichlet_entropy(alpha):
     """
     Entropy of collection of Dirichlet distributions.
-    *Last* index of alpha is the index that sums to 1.
+    *Last* index of alpha is the index of the individual distributions.
     """
     alpha0 = np.sum(alpha, axis=-1)
     H = _logB(alpha)
@@ -126,13 +127,31 @@ def expected_log_dirichlet(a, alpha):
     E[log p(x)] where
     p(x) = Dirichlet(a)
     q(x) = Normal(alpha)
-    *Last* index of a/alpha is the index that sums to 1.
+    *Last* index of alpha is the index of the individual distributions.
     """
     Elog_x = digamma(alpha) - digamma(np.sum(alpha, axis=-1, keepdims=True))
     elp = np.sum((a - 1) * Elog_x, axis=-1)
     elp += -_logB(a)
 
     return np.sum(elp)
+
+def expected_log_markov(a, alpha):
+    """
+    Markov matrix is first two axes, with axis 0 the Dirichlet.
+    E[log p(x)] where
+    p(x_{ij}) = Dirichlet(a_{.j})_i  (i.e., each column (axis=0) a Dirichlet)
+    q(x_{ij}) = Dirichlet(alpha_{.j})_i
+    """
+    # change to convention of Dirichlet, where *last* index of a/alpha is the
+    # one for the simplex
+    return expected_log_dirichlet(a.T, alpha.T)
+
+def markov_entropy(alpha):
+    """
+    Entropy of Markov matrix.
+    Each column in alpha (axis=0) a Dirichlet
+    """
+    return dirichlet_entropy(alpha.T)
 
 def inverse_gamma_entropy(alpha, beta):
     """
