@@ -158,8 +158,8 @@ def expected_log_beta(a, b, alpha, beta):
     """
     # stack parameters along last axis (our Dirichlet convention)
     # and treat as dirichlet
-    new_a = np.vstack([a[..., np.newaxis], b[..., np.newaxis]], axis=-1)
-    new_alpha = np.vstack([alpha[..., np.newaxis], beta[..., np.newaxis]], axis=-1)
+    new_a = np.stack([a, b], axis=-1)
+    new_alpha = np.stack([alpha, beta], axis=-1)
     return expected_log_dirichlet(new_a, new_alpha)
 
 def beta_entropy(alpha, beta):
@@ -168,7 +168,7 @@ def beta_entropy(alpha, beta):
     """
     # stack parameters along last axis (our Dirichlet convention)
     # and treat as dirichlet
-    new_alpha = np.vstack([alpha[..., np.newaxis], beta[..., np.newaxis]], axis=-1)
+    new_alpha = np.stack([alpha, beta], axis=-1)
     return dirichlet_entropy(new_alpha)
 
 def expected_log_LKJ(h, eta, d):
@@ -242,6 +242,8 @@ def corr_from_cpc(v):
     Given a vector of canonical partial correlations (taken from the
     upper triangle by rows), return a vector of correlations in the
     same format.
+    Makes use of the relation between partial correlations
+    r_{ij;L} = \sqrt{(1 - r_{ik;L}^2)(1 - r_{jk;L}^2)} r_{ij;kL} + r_{ik;L} r_{jk;L}
     """
     U = vec_to_U(v)  # upper triangular matrix of canonical partial correlations
     d = np.shape(U)[0]  # dimension of U
@@ -249,25 +251,9 @@ def corr_from_cpc(v):
     UU[0,1:] = U[0, 1:]  # already full correlations
     for r in range(1, d):
         for c in range(r + 1, d):
-            UU[r, c] = _corr_from_partials(r, c, U)
+            rho = U[r, c]
+            for l in range(r - 1, -1, -1):
+                rho = rho * np.sqrt((1 - U[l, c]**2) * (1 - U[l, r]**2)) + U[l, c] * U[l, r]
+            UU[r, c] = rho
 
     return U_to_vec(UU)
-
-def _corr_from_partials(r, c, R, L=-1):
-    """
-    Calculate standard correlation recursively from canonical partial
-    correlations (CPCs).
-    Makes use of the relation between partial correlations
-    r_{ij;L} = \sqrt{(1 - r_{ik;L}^2)(1 - r_{jk;L}^2)} r_{ij;kL} + r_{ik;L} r_{jk;L}
-    r, c are the row and column of the entry to calculate
-    R is a matrix of CPCs.
-    """
-    RLr = R[L, r]
-    RLc = R[L, c]
-
-    if L == r - 1:  # then everything in the formula below is a CPC
-        Rrc = R[r, c]
-    else:
-        Rrc = _corr_from_partials(r, c, R, L + 1)
-
-    return RLr * RLc + Rrc * np.sqrt((1 - RLr**2) * (1 - RLc**2))
