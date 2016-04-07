@@ -30,6 +30,24 @@ def log_observed_spikes(N, mu, Sig):
 
     return np.sum(out)
 
+def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
+    """
+    Calculate log psi, where psi \propto p(obs|z)
+    """
+    xi1 = xi[:, 1, :]
+    T, U = mu_eta.shape
+    K, _ = mu_c.shape
+    lpsi = np.einsum('u,tu,ku->tk', tau, mu_eta, mu_c)
+    lpsi += 0.5 * np.einsum('u,ku,ju,tj->tk', tau, mu_c, mu_c, xi1)
+    lpsi += 0.5 * np.einsum('u,kj,tj->tk', tau, Sig_c, xi1)
+    lpsi += 0.5 * np.einsum('u,ku,ku,tk->tk', tau, mu_c, mu_c, 1 - xi1)
+    lpsi += 0.5 * np.einsum('u,kk,tk->tk', tau, Sig_c, 1 - xi1)
+
+    log_psi = np.zeros((T, 2, K))
+    log_psi[:, 1, :] = lpsi
+
+    return log_psi
+
 def expected_log_normal(m, s, mu, sig):
     """
     E[log p(x)] where
