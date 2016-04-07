@@ -362,6 +362,7 @@ Some notes:
 \subsection{LKJ covariance prior}
 While an Inverse-Wishart prior on the noise covariance matrix $\Sigma_\varepsilon$ is conjugate and therefore a natural choice, there is no simple closed form way to calculate either $\mathbb{E}_q[\log p(\Sigma)]$ or $\mathcal{H}(\Sigma)$. Moreover, reasoning about covariances is comparatively more difficult than reasoning about correlations. Thus, rather than a distribution on $\Sigma_\varepsilon$, we can opt for a distribution on the pieces of the decomposition
 \begin{align}
+    \label{sigeps_def}
     \Sigma_\varepsilon &= S^{\frac{1}{2}} \Omega S^{\frac{1}{2}} \\
     S^{\frac{1}{2}} &= \mathrm{diag}(\boldsymbol{\sigma}) \\
     \sigma^2_i &\sim \text{Inv-Gamma}(a_i, b_i) \\
@@ -370,6 +371,7 @@ While an Inverse-Wishart prior on the noise covariance matrix $\Sigma_\varepsilo
 where the LKJ prior\footnote{Lewandowski, Kurowicka, and Joe: Generating Random Correlation Matrices based on vines and the extended onion method} is a prior on \emph{correlation matrices} where the density is proportional to $ |\Omega|^{\eta - 1}$. Thus, as $\eta$ grows, the correlation matrix increasingly resembles the unit matrix. Conveniently, LKJ give an algorithm for drawing from this distribution that relies on the fact that the underlying degrees of freedom are the canonical partial correlations (CPCs) of the variables: $\rho_{ij;1\ldots i - 1}$ ($j > i$).\footnote{For example, for $d=4$, these are the correlations $p_{12}$, $p_{13}$, $p_{14}$, $p_{23;1}$, $p_{24;1}$, and $p_{34;12}$.} These CPCs can then be related to the correlations in $\Omega$ by the definitions
 \begin{align}
     \omega_{ij} &\equiv \rho_{ij} \\
+    \label{rho_recursion}
     \rho_{ij;kL} &= \frac{\rho_{ij;L} - \rho_{ik;L}\rho_{ij;L}}
     {\sqrt{(1 - \rho_{ik;L}^2)(1 - \rho_{ij;L}^2)}}
 \end{align}
@@ -381,6 +383,8 @@ Just as importantly, the CPCs follow simple Beta distributions (rescaled to the 
     \beta_i &= \eta + \frac{d - 1 - i}{2}
 \end{align}
 Thus, if we choose the LKJ prior, the covariance $\Sigma_\varepsilon$ can be replaced by $d$ Inverse-Gamma variates $\sigma^2$ and $d(d-1)/$ Beta variates $p$ without loss of generality. Calculating expectations of log priors and entropies of these variables is then straightforward.
+
+Moreover, we can note that for all canonical partial correlations $\rho = 2x - 1$ for $x \sim \mathrm{Beta}(\beta, \beta)$, we have $E[\rho] = 0$. And since every entry in $\Omega \sim LKJ(\eta)$, a full correlation, is constructed from sums of products of random variables (stemming from the recursion in (\ref{rho_recursion})), each of which contains at least one partial correlation with mean 0, we have $\mathbb{E}[\Omega] = \mathbf{1}$, the identity correlation matrix.
 
 \subsection{Inference on log firing rate}
 If we write the evidence lower bound as
@@ -428,6 +432,42 @@ We can then ask what happens when we look for local minima of this objective wit
     -\frac{1}{2}\mathbb{E}_q[\Sigma_\varepsilon^{-1}]_{uu} \\
 \end{align}
 and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{\eta tuv} = \mathbb{E}_q[\Sigma_\varepsilon^{-1}]$ for $u\neq v$ --- that is, the precision matrix $\Sigma^{-1}_{\eta t}$ is equal to the expected value of the noise matrix off-diagonal.
+
+\subsection{Inference on latents}
+Here as above, inference for the latents $z_{tk}$ can be done via the forward-backward algorithm. However, for that algorithm, we also need the log evidence of the observations conditioned on latent state assignments:
+\begin{equation}
+    \log \psi_{tk} = \log p(N|z_{tk})
+\end{equation}
+
+The expression in the bottleneck model is different than that for $\nu_{tk}$ and $F$ calculated in the model without $\eta$ above. In this case, it results from the term in $\mathcal{L}$
+\begin{equation}
+    - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[
+    (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta}) \right]
+\end{equation}
+which (momentarily ignoring expectations) has the following terms involving $z$:
+\begin{equation}
+    -\frac{1}{2}\sum_{uu'k}\left(\Sigma_\varepsilon\right)^{-1}_{uu'} \left[-2\eta_{tu'} c_{ku} + \sum_{k'}c_{ku}c_{k'u'}z_{tk'}\right]z_{tk}
+\end{equation}
+for which the expectation over variables other than $z_{tk}$ reduces to:
+\begin{equation}
+    -\frac{1}{2}\sum_{uu'k}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right] \left[-2(\mu_\eta)_{tu'} c_{ku} + \sum_{k'}c_{ku}c_{k'u'}(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
+\end{equation}
+where we have made use of the fact that $z^2 = z$ in deriving th term proportional to $\delta_{kk'}$.\footnote{Note that while it appears that the term in brackets depends on $\xi_{tk} = \mathbb{E}[z_{tk}]$, a simple calculation shows that it only depends on terms with $k' \neq k$.}
+
+This further simplifies when we make use of the decomposition of $\Sigma_\varepsilon$ in terms of scale and correlation matrices (\ref{sigeps_def}), for which we have $\mathbb{E}[\Omega] = \mathbf{1}$. In fact, we also have $\mathbb{E}[\Omega^{-1}] = \mathbf{1}$. This can be argued straightforwardly from the permutation and rotational symmetries of the LKJ likelihood.
+
+Thus we can write
+\begin{equation}
+    \mathbb{E}_q\left[\Sigma_\varepsilon^{-1}\right] =
+    \mathbb{E}_\sigma \left[ S^{-\frac{1}{2}} \mathbf{1} S^{-\frac{1}{2}}\right]
+    = \mathbb{E}_\sigma \left[\mathrm{diag}(\boldsymbol{\sigma}^{-2}) \right]
+\end{equation}
+yielding
+\begin{align}
+    \log \psi_{tk} = \sum_u \tau_u \left[(\mu_\eta)_{tu} \cdot c_{ku} - \frac{1}{2} \sum_{k'} c_{ku} \cdot c_{k'u} (\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
+\end{align}
+where $\tau_u \equiv \mathbb{E}[\sigma_u^{-2}]$.
+Note that here, we have taken $\psi$ here as $T \times K$ rather than $T \times 2 \times K$, with one entry for each state. This is because only \emph{relative} log probabilities are needed for the forward-backward algorithm, so for each chain $k$, we can take $\log \psi_t$ as a two-column matrix with the first column all 0s.
 
 \subsubsection{DEPRECATED: Solving for $\mu$}
 The above transcendental equation for $\mu$ can be solved by using the Lambert W function, which satisfiex $z = W(z)e^{W(z)}$. That is, $y = W(z)$ is the solution to $ye^y = z$. Moreover, the equation
