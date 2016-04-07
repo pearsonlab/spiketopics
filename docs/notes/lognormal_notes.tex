@@ -450,7 +450,7 @@ which (momentarily ignoring expectations) has the following terms involving $z$:
 \end{equation}
 for which the expectation over variables other than $z_{tk}$ reduces to:
 \begin{equation}
-    -\frac{1}{2}\sum_{uu'k}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right] \left[-2(\mu_\eta)_{tu'} c_{ku} + \sum_{k'}c_{ku}c_{k'u'}(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
+    -\frac{1}{2}\sum_{uu'k}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right] \left[-2(\mu_\eta)_{tu'} (\mu_c)_{ku} + \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u'} + (\Sigma_c)_{kk'}\delta_{uu'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
 \end{equation}
 where we have made use of the fact that $z^2 = z$ in deriving th term proportional to $\delta_{kk'}$.\footnote{Note that while it appears that the term in brackets depends on $\xi_{tk} = \mathbb{E}[z_{tk}]$, a simple calculation shows that it only depends on terms with $k' \neq k$.}
 
@@ -464,7 +464,7 @@ Thus we can write
 \end{equation}
 yielding
 \begin{align}
-    \log \psi_{tk} = \sum_u \tau_u \left[(\mu_\eta)_{tu} \cdot c_{ku} - \frac{1}{2} \sum_{k'} c_{ku} \cdot c_{k'u} (\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
+    \log \psi_{tk} = \sum_u \tau_u \left[(\mu_\eta)_{tu} (\mu_c)_{ku} - \frac{1}{2} \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u} + (\Sigma_c)_{kk'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
 \end{align}
 where $\tau_u \equiv \mathbb{E}[\sigma_u^{-2}]$.
 Note that here, we have taken $\psi$ here as $T \times K$ rather than $T \times 2 \times K$, with one entry for each state. This is because only \emph{relative} log probabilities are needed for the forward-backward algorithm, so for each chain $k$, we can take $\log \psi_t$ as a two-column matrix with the first column all 0s.
