@@ -9,10 +9,44 @@ import autograd.numpy as np
 import autograd.numpy.random as npr
 from fbi import fb_infer
 
-def L(N, eta_mean, eta_cov, m_a, s_a, mu_a, sig_a):
+def L(N, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps, b_eps,
+    mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post, pi_post,
+    alpha_eps, beta_eps, eta_eps):
+    """
+    Evidence lower bound for model:
+
+    p-model (generative):
+        N_{tu} ~ Poisson(eta_{tu})
+        eta_{tu} ~ MvNormal(a_u + sum_r x_{tr} b_{ru} + sum_k z_{tk} c_{ku}, Sig_eps)
+        a_u ~ Normal(m_a, s_a)
+        b_{.u} ~ MvNormal(m_b, S_b)
+        c_{.u} ~ MvNormal(m_c, S_c)
+        x_{tr} ~ Given
+        z_{.k} ~ HMM(A_k, pi_k)
+        A_k ~ MarkovMatrix(A_prior) (i.e., Dirichlet on cols)
+        pi_k ~ Dirichlet(pi_prior)
+        Sig_eps = diag(sig_eps) * Omega * diag(sig_eps)
+        sig_eps^2 ~ Inverse-Gamma(a_eps, b_eps)
+        Omega ~ LKJ(h_eps)
+
+    q-model (posterior/recognition):
+        eta_{t.} ~ MvNormal(mu_eta_{t}, Sig_eta_{t})
+        a_u ~ Normal(mu_a_{u}, sig_a_{u})
+        b_{.u} ~ MvNormal(mu_b_{u}, sig_b_{u})
+        c_{.u} ~ MvNormal(mu_c_{u}, sig_c_{u})
+        z_{.k} ~ HMM(A_post, pi_post)
+        Sig_eps = diag(sig_eps) * Omega * diag(sig_eps)
+        sig_eps^2 ~ Inverse-Gamma(alpha_eps, beta_eps)
+        Omega ~ LKJ(eta_eps)
+    """
+    # first do preliminary calculations
+    tau = alpha_eps / beta_eps  # precision noise scale (tau ~ Ga(alpha, beta))
+    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi)
+    xi, logZ, Xi = fb_infer(A_post, pi_post, np.exp(log_psi))  # forward-backward
+
     elbo = log_observed_spikes(N, eta_mean, eta_cov)
-    elbo += normal_entropy(eta_mean, eta_cov)
-    elbo += expected_log_normal(m_a, s_a, mu_a, sig_a)
+    elbo += mvnormal_entropy(eta_mean, eta_cov)
+    # elbo += expected_log_normal(m_a, s_a, mu_a, sig_a)
     return elbo
 
 def log_observed_spikes(N, mu, Sig):
