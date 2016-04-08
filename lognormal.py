@@ -7,7 +7,37 @@ from __future__ import print_function
 from scipy.special import digamma, gammaln
 import autograd.numpy as np
 import autograd.numpy.random as npr
+from autograd import grad
 from fbi import fb_infer
+
+def pack(*args):
+    """
+    Pack ndarray objects in args with dimensions given in dimlist into a single vector
+    return vector, dimlist (list of dimension tuples)
+    """
+    x = np.concatenate([np.array(a).reshape(-1) for a in args])
+    dimlist = [np.array(a).shape for a in args]
+    return x, dimlist
+
+def unpack(x, dimlist):
+    """
+    Given a list of dimensions of arrays and a flat vector x, return
+    a list of arrays of the given dimension extracted from x
+    """
+    offset = 0
+    varlist = []
+    for d in dimlist:
+        sz = np.prod(d)
+        v = x[offset:offset + sz].reshape(d)
+        varlist.append(v)
+        offset += sz
+
+    return varlist
+
+# def gradL(x, dimlist):
+#     """
+#     Single-input version of L to be differentiated.
+#     """
 
 def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     b_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
