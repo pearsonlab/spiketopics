@@ -401,6 +401,7 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
     - \frac{1}{2} \log |\Sigma_\eta| \\
     &= \sum_{tu} \left[ N_{tu} \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
+    \label{eta_cov}
     &- \frac{1}{2} \sum_{t} \mathrm{Tr}\left(
     \mathbb{E}_q[\Sigma_\varepsilon^{-1}]
     \left[ \Sigma_{\eta t} + (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])
@@ -412,10 +413,21 @@ with $\overline{\eta} \equiv a + bx + cz$ and
 \begin{align}
     \mathrm{Cov}[\overline{\eta}] &= \mathrm{Cov}[a] + \mathrm{Cov}[bx] + \mathrm{Cov}[cz] \\
     \mathrm{Cov}[a]_{tuu'} &= \delta_{uu'}(\sigma^a_u)^2 \\
-    \mathrm{Cov}[bx]_{tuu'} &= \mathrm{Tr}\left((x_t\cdot x_t^\top) \Sigma^b_{uu'}\right) \\
+    \mathrm{Cov}[bx]_{tuu'} &= \delta_{uu'}\mathrm{Tr}\left((x_t\cdot x_t^\top) \Sigma^b_{u}\right) \\
     \mathrm{Cov}[cz]_{tuu'} &= \mathbb{E}_q\left[\sum_{k}\left( c_{ku} z_{tk} - \mu^c_{ku}\xi_{tk} \right)\sum_{k'}\left( c_{k'u'} z_{tk'} - \mu^c_{k'u'}\xi_{tk'} \right)\right] \\
     &= \sum_{kk'}\left[\left(\delta_{uu'}\Sigma^c_{kk'} + \mu^c_{ku} \mu^c_{k'u'} \right)\left(\delta_{kk'}\xi_{tk}(1 - \xi_{tk}) + \xi_{tk}\xi_{tk'}\right) - \mu^c_{ku}\mu^c_{k'u'}\xi_{tk}\xi_{tk'} \right] \\
-    &= \delta_{uu'}\left(\sum_k \Sigma^c_{kk} \xi_{tk} (1 - \xi_{tk}) + \xi_t^\top \Sigma^c \xi_t\right) + \sum_k \mu^c_{ku}\mu^c_{ku'}\xi_{tk}(1 - \xi_{tk})\\
+    &= \delta_{uu'}\left(\sum_k \Sigma^c_{kku} \xi_{tk} (1 - \xi_{tk}) + \xi_t^\top \Sigma_u^c \xi_t\right) + \sum_k \mu^c_{ku}\mu^c_{ku'}\xi_{tk}(1 - \xi_{tk})
+\end{align}
+In the case of the LKJ prior on $\Sigma_\varepsilon$ discussed above, this can be further simplified, since $\mathbb{E}_q[\Sigma_\varepsilon^{-1}] = \mathbb{E}_q[\mathrm{diag}(\boldsymbol{\sigma}^{-2})] \equiv \boldsymbol{\tau}$. Since this matrix is diagonal, (\ref{eta_cov}) simplifies to
+\begin{align}
+    & -\frac{1}{2} \sum_{tu}\tau_u \left[ \Sigma^\eta_{tuu} +
+    \left(\mu^\eta_{tu} - \mu^a_{u} - \sum_r \mu^b_{ru} x_{tr} - \sum_k \mu^c_{ku} \xi_{tk}\right)^2
+    \right. \\
+    & \left.
+    + (\sigma^a_u)^2 + x^\top_t \Sigma^b_u\, x_t +
+    \xi^\top_t \Sigma^c_u\, \xi_t +
+    \sum_k (\Sigma^c_{kku} + (\mu^c_{ku})^2)\xi_{tk}(1 - \xi_{tk})
+    \right]
 \end{align}
 
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
@@ -429,7 +441,7 @@ We can then ask what happens when we look for local minima of this objective wit
     \frac{\partial \mathcal{L}}{\partial \Sigma_{\eta tuu}} &=
     -\frac{1}{2} \exp\left(\mu_{tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)
     + \frac{1}{2} \left(\Sigma^{-1}_\eta \right)_{tuu}
-    -\frac{1}{2}\mathbb{E}_q[\Sigma_\varepsilon^{-1}]_{uu} \\
+    -\frac{1}{2}\mathbb{E}_q[\Sigma_\varepsilon^{-1}]_{uu}
 \end{align}
 and asking $\nabla \mathcal{L} = 0$ then immediately gives $\Sigma^{-1}_{\eta tuv} = \mathbb{E}_q[\Sigma_\varepsilon^{-1}]$ for $u\neq v$ --- that is, the precision matrix $\Sigma^{-1}_{\eta t}$ is equal to the expected value of the noise matrix off-diagonal.
 
