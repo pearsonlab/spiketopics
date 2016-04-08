@@ -11,7 +11,7 @@ from fbi import fb_infer
 
 def L(N, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps, b_eps,
     mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post, pi_post,
-    alpha_eps, beta_eps, eta_eps):
+    alpha_eps, beta_eps, eta_eps, xi0):
     """
     Evidence lower bound for model:
 
@@ -39,14 +39,66 @@ def L(N, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps, b_eps,
         sig_eps^2 ~ Inverse-Gamma(alpha_eps, beta_eps)
         Omega ~ LKJ(eta_eps)
     """
-    # first do preliminary calculations
-    tau = alpha_eps / beta_eps  # precision noise scale (tau ~ Ga(alpha, beta))
-    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi)
-    xi, logZ, Xi = fb_infer(A_post, pi_post, np.exp(log_psi))  # forward-backward
+    # get shape information
+    T, U = N.shape
+    M, K = pi_prior.shape
 
-    elbo = log_observed_spikes(N, eta_mean, eta_cov)
-    elbo += mvnormal_entropy(eta_mean, eta_cov)
-    # elbo += expected_log_normal(m_a, s_a, mu_a, sig_a)
+    ###### noise pre-calculations ############
+    tau = alpha_eps / beta_eps  # noise precisions (tau ~ Ga(alpha, beta))
+
+    ###### HMM pre-calculations ############
+    # first do preliminary calculations
+    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
+
+    # preallocate
+    xi = np.empty((T, M, K))
+    Xi = np.empty((T - 1, M, M, K))
+    logZ = np.empty((K,))
+    # run forward-backward on each chain
+    for k in range(K):
+        xi[..., k], logZ[k], Xi[..., k] = fb_infer(A_post[..., k], pi_post[..., k], np.exp(log_psi[..., k]))
+
+
+    # observations
+    elbo = log_observed_spikes(N, mu_eta, Sig_eta)
+
+    # effective log firing rates
+    #TODO: E[log p(eta|a, b, c, z, etc.)]
+    elbo += mvnormal_entropy(mu_eta, Sig_eta)
+
+    # baselines
+    elbo += expected_log_normal(m_a, s_a, mu_a, sig_a)
+    elbo += normal_entropy(mu_a, sig_a)
+
+    # external regressor series coefficients
+    elbo += expected_log_mvnormal(m_b, S_b, mu_b, Sig_b)
+    elbo += mvnormal_entropy(mu_b, Sig_b)
+
+    # HMM coefficients
+    elbo += expected_log_mvnormal(m_c, S_c, mu_c, Sig_c)
+    elbo += mvnormal_entropy(mu_c, Sig_c)
+
+    # HMM parameters
+    elbo += expected_log_markov(A_prior, A_post)
+    elbo += markov_entropy(A_post)
+    elbo += expected_log_dirichlet(pi_prior, pi_post)
+    elbo += dirichlet_entropy(pi_post)
+
+    # HMMs
+    Elog_A = mean_log_markov(A_post)
+    Elog_pi = mean_log_dirichlet(pi_post)
+    for k in range(K):
+        elbo += expected_log_state_sequence(xi[..., k], Xi[..., k],
+            Elog_A[..., k], Elog_pi[..., k])
+        elbo += hmm_entropy(log_psi[..., k], np.log(A_post[..., k]),
+            np.log(pi_post[..., k]), xi[..., k], Xi[..., k], logZ[k])
+
+    # noise
+    elbo += expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
+    elbo += inverse_gamma_entropy(alpha_eps, beta_eps)
+    elbo += expected_log_LKJ(h_eps, eta_eps, U)
+    elbo += LKJ_entropy(eta_eps, U)
+
     return elbo
 
 def log_observed_spikes(N, mu, Sig):
@@ -70,12 +122,12 @@ def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     """
     xi1 = xi[:, 1, :]
     T, U = mu_eta.shape
-    K, _ = mu_c.shape
-    lpsi = np.einsum('u,tu,ku->tk', tau, mu_eta, mu_c)
-    lpsi += 0.5 * np.einsum('u,ku,ju,tj->tk', tau, mu_c, mu_c, xi1)
-    lpsi += 0.5 * np.einsum('u,kj,tj->tk', tau, Sig_c, xi1)
-    lpsi += 0.5 * np.einsum('u,ku,ku,tk->tk', tau, mu_c, mu_c, 1 - xi1)
-    lpsi += 0.5 * np.einsum('u,kk,tk->tk', tau, Sig_c, 1 - xi1)
+    _, K = mu_c.shape
+    lpsi = np.einsum('u,tu,uk->tk', tau, mu_eta, mu_c)
+    lpsi += 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
+    lpsi += 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
+    lpsi += 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
+    lpsi += 0.5 * np.einsum('u,ukk,tk->tk', tau, Sig_c, 1 - xi1)
 
     log_psi = np.zeros((T, 2, K))
     log_psi[:, 1, :] = lpsi
@@ -181,11 +233,18 @@ def expected_log_dirichlet(a, alpha):
     q(x) = Normal(alpha)
     *Last* index of alpha is the index of the individual distributions.
     """
-    Elog_x = digamma(alpha) - digamma(np.sum(alpha, axis=-1, keepdims=True))
+    Elog_x = mean_log_dirichlet(alpha)
     elp = np.sum((a - 1) * Elog_x, axis=-1)
     elp += -_logB(a)
 
     return np.sum(elp)
+
+def mean_log_dirichlet(alpha):
+    """
+    E[log x] where
+    x ~ Dirichlet(alpha)
+    """
+    return digamma(alpha) - digamma(np.sum(alpha, axis=-1, keepdims=True))
 
 def expected_log_markov(a, alpha):
     """
@@ -204,6 +263,13 @@ def markov_entropy(alpha):
     Each column in alpha (axis=0) a Dirichlet
     """
     return dirichlet_entropy(alpha.T)
+
+def mean_log_markov(alpha):
+    """
+    E[log x] where
+    x ~ Markov matrix
+    """
+    return mean_log_dirichlet(alpha.T).T
 
 def inverse_gamma_entropy(alpha, beta):
     """
