@@ -9,9 +9,9 @@ import autograd.numpy as np
 import autograd.numpy.random as npr
 from fbi import fb_infer
 
-def L(N, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps, b_eps,
-    mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post, pi_post,
-    alpha_eps, beta_eps, eta_eps, xi0):
+def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
+    b_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
+    pi_post, alpha_eps, beta_eps, eta_eps, xi0):
     """
     Evidence lower bound for model:
 
@@ -58,12 +58,12 @@ def L(N, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps, b_eps,
     for k in range(K):
         xi[..., k], logZ[k], Xi[..., k] = fb_infer(A_post[..., k], pi_post[..., k], np.exp(log_psi[..., k]))
 
-
     # observations
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
 
     # effective log firing rates
-    #TODO: E[log p(eta|a, b, c, z, etc.)]
+    elbo += log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b,
+                Sig_b, X, mu_c, Sig_c, xi)
     elbo += mvnormal_entropy(mu_eta, Sig_eta)
 
     # baselines
@@ -115,6 +115,30 @@ def log_observed_spikes(N, mu, Sig):
         out += - np.exp(mu + 0.5 * Sig)
 
     return np.sum(out)
+
+def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
+    mu_c, Sig_c, xi):
+    """
+    E[log p(eta)] where
+    eta_{.t} ~ MvNormal(m, S)
+    m_{ut} = a_u + \sum_r b_{ru} x_{tr} + \sum_k c_{ku} z_{tk}
+    """
+    T, R = X.shape
+    xi1 = xi[:, 1, :]
+
+    out = np.einsum('u, tuu ->', tau, Sig_eta)
+    out += np.sum(tau * (mu_eta - mu_a - np.dot(X, mu_b.T) - np.dot(xi1, mu_c.T))**2)
+    out += T * np.sum(tau * sig_a)
+    out += np.einsum('u,tr,ts,urs', tau, X, X, Sig_b)
+    out += np.einsum('u,tk,tj,ukj', tau, xi1, xi1, Sig_c)
+
+    v = xi1 * (1 - xi1)
+    W = np.diagonal(Sig_c, axis1=1, axis2=2) + mu_c**2
+    out += np.einsum('u,tk,uk->', tau, v, W)
+
+    out += np.sum(np.linalg.slogdet(Sig_eta)[1])
+    return -0.5 * out
+
 
 def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     """
