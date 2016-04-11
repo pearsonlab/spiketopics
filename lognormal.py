@@ -178,13 +178,20 @@ def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     T, U = mu_eta.shape
     _, K = mu_c.shape
     lpsi = np.einsum('u,tu,uk->tk', tau, mu_eta, mu_c)
-    lpsi += 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
-    lpsi += 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
-    lpsi += 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
-    lpsi += 0.5 * np.einsum('u,ukk,tk->tk', tau, Sig_c, 1 - xi1)
+    lpsi = lpsi + 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
+    lpsi = lpsi + 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
+    lpsi = lpsi + 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
+    lpsi = lpsi + 0.5 * np.einsum('u,ukk,tk->tk', tau, Sig_c, 1 - xi1)
 
-    log_psi = np.zeros((T, 2, K))
-    log_psi[:, 1, :] = lpsi
+    # log_psi = np.zeros((T, 2, K))
+    # log_psi[:, 1, :] = lpsi
+
+    # this is a dirty, dirty hack to make autograd work:
+    # 1. We can't do the reasonable thing -- assigning to an array of 0s
+    #   for z = 1 slice -- because autograd doesn't handle slice assignment
+    # 2. **However**, only *relative* psi is important, so we make
+    #   log p(D|z=0) = -log p(D|z=1) such that their difference is correct
+    log_psi = 0.5 * np.stack(np.array([-lpsi, lpsi]), axis=1)
 
     return log_psi
 
