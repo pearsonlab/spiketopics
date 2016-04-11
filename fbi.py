@@ -3,7 +3,7 @@ Contains code to run the forward-backward algorithm for inference in
 Hidden Markov Models.
 """
 from __future__ import division
-import numpy as np
+import autograd.numpy as np
 
 def fb_infer(A, pi, psi):
     """
@@ -24,28 +24,31 @@ def fb_infer(A, pi, psi):
     M = A.shape[0]
 
     # initialize empty variables
-    alpha = np.empty((T, M))  # p(z_t|y_{1:T})
-    beta = np.empty((T, M))  # p(y_{t+1:T}|z_t) (unnormalized)
-    gamma = np.empty((T, M))  # p(z_t|y_{1:T}) (posterior)
-    logZ = np.empty(T)  # log partition function
+    # alpha = np.empty((T, M))  # p(z_t|y_{1:T})
+    # beta = np.empty((T, M))  # p(y_{t+1:T}|z_t) (unnormalized)
+    # gamma = np.empty((T, M))  # p(z_t|y_{1:T}) (posterior)
+    # logZ = np.empty(T)  # log partition function
 
     # initialize
     a = psi[0] * pi
-    alpha[0] = a / np.sum(a)
-    logZ[0] = np.log(np.sum(a))
-    beta[-1, :] = 1
-    beta[-1, :] = beta[-1, :] / np.sum(beta[-1, :])
+    alpha = [a / np.sum(a)]
+    logZ = [np.log(np.sum(a))]
+    b = np.ones(M)
+    beta = [b / np.sum(b)]
 
     # forwards
     for t in xrange(1, T):
-        a = psi[t] * (A.dot(alpha[t - 1]))
-        alpha[t] = a / np.sum(a)
-        logZ[t] = np.log(np.sum(a))
+        a = psi[t] * (np.dot(A, alpha[t - 1]))
+        alpha.append(a / np.sum(a))
+        logZ.append(np.log(np.sum(a)))
 
     # backwards
     for t in xrange(T - 1, 0, -1):
-        b = A.T.dot(beta[t] * psi[t])
-        beta[t - 1] = b / np.sum(b)
+        b = np.dot(A.T, beta[0] * psi[t])
+        beta.insert(0, b / np.sum(b))  # prepend
+
+    alpha = np.array(alpha)
+    beta = np.array(beta)
 
     # posterior
     gamma = alpha * beta

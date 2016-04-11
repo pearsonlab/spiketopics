@@ -4,7 +4,7 @@ and gradient ascent.
 """
 from __future__ import division
 from __future__ import print_function
-from scipy.special import digamma, gammaln
+from autograd.scipy.special import digamma, gammaln
 import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd import grad
@@ -30,14 +30,9 @@ def unpack(x, dimlist):
         sz = np.prod(d)
         v = x[offset:offset + sz].reshape(d)
         varlist.append(v)
-        offset += sz
+        offset = offset + sz
 
     return varlist
-
-# def gradL(x, dimlist):
-#     """
-#     Single-input version of L to be differentiated.
-#     """
 
 def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     b_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
@@ -81,53 +76,62 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
 
     # preallocate
-    xi = np.empty((T, M, K))
-    Xi = np.empty((T - 1, M, M, K))
-    logZ = np.empty((K,))
+    # xi = np.empty((T, M, K))
+    # Xi = np.empty((T - 1, M, M, K))
+    # logZ = np.empty((K,))
     # run forward-backward on each chain
+    xi_l = []
+    Xi_l = []
+    logZ_l = []
     for k in range(K):
-        xi[..., k], logZ[k], Xi[..., k] = fb_infer(A_post[..., k], pi_post[..., k], np.exp(log_psi[..., k]))
+        xi_this, logZ_this, Xi_this = fb_infer(A_post[..., k], pi_post[..., k], np.exp(log_psi[..., k]))
+        xi_l.append(xi_this)
+        Xi_l.append(Xi_this)
+        logZ_l.append(logZ_this)
+
+    xi = np.stack(np.array(xi_l), axis=-1)
+    Xi = np.stack(np.array(Xi_l), axis=-1)
+    logZ = np.array(logZ_l)
 
     # observations
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
 
     # effective log firing rates
-    elbo += log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b,
-                Sig_b, X, mu_c, Sig_c, xi)
-    elbo += mvnormal_entropy(mu_eta, Sig_eta)
+    elbo = elbo + log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, xi)
+    elbo = elbo + mvnormal_entropy(mu_eta, Sig_eta)
 
     # baselines
-    elbo += expected_log_normal(m_a, s_a, mu_a, sig_a)
-    elbo += normal_entropy(mu_a, sig_a)
+    elbo = elbo + expected_log_normal(m_a, s_a, mu_a, sig_a)
+    elbo = elbo + normal_entropy(mu_a, sig_a)
 
     # external regressor series coefficients
-    elbo += expected_log_mvnormal(m_b, S_b, mu_b, Sig_b)
-    elbo += mvnormal_entropy(mu_b, Sig_b)
+    elbo = elbo + expected_log_mvnormal(m_b, S_b, mu_b, Sig_b)
+    elbo = elbo + mvnormal_entropy(mu_b, Sig_b)
 
     # HMM coefficients
-    elbo += expected_log_mvnormal(m_c, S_c, mu_c, Sig_c)
-    elbo += mvnormal_entropy(mu_c, Sig_c)
+    elbo = elbo + expected_log_mvnormal(m_c, S_c, mu_c, Sig_c)
+    elbo = elbo + mvnormal_entropy(mu_c, Sig_c)
 
     # HMM parameters
-    elbo += expected_log_markov(A_prior, A_post)
-    elbo += markov_entropy(A_post)
-    elbo += expected_log_dirichlet(pi_prior, pi_post)
-    elbo += dirichlet_entropy(pi_post)
+    elbo = elbo + expected_log_markov(A_prior, A_post)
+    elbo = elbo + markov_entropy(A_post)
+    elbo = elbo + expected_log_dirichlet(pi_prior, pi_post)
+    elbo = elbo + dirichlet_entropy(pi_post)
 
     # HMMs
     Elog_A = mean_log_markov(A_post)
     Elog_pi = mean_log_dirichlet(pi_post)
     for k in range(K):
-        elbo += expected_log_state_sequence(xi[..., k], Xi[..., k],
+        elbo = elbo + expected_log_state_sequence(xi[..., k], Xi[..., k],
             Elog_A[..., k], Elog_pi[..., k])
-        elbo += hmm_entropy(log_psi[..., k], np.log(A_post[..., k]),
+        elbo = elbo + hmm_entropy(log_psi[..., k], np.log(A_post[..., k]),
             np.log(pi_post[..., k]), xi[..., k], Xi[..., k], logZ[k])
 
     # noise
-    elbo += expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
-    elbo += inverse_gamma_entropy(alpha_eps, beta_eps)
-    elbo += expected_log_LKJ(h_eps, eta_eps, U)
-    elbo += LKJ_entropy(eta_eps, U)
+    elbo = elbo + expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
+    elbo = elbo + inverse_gamma_entropy(alpha_eps, beta_eps)
+    elbo = elbo + expected_log_LKJ(h_eps, eta_eps, U)
+    elbo = elbo + LKJ_entropy(eta_eps, U)
 
     return elbo
 
@@ -140,9 +144,9 @@ def log_observed_spikes(N, mu, Sig):
     """
     out = N * mu
     if len(Sig.shape) == 3:
-        out += - np.exp(mu + 0.5 * np.diagonal(Sig, 0, 1, 2))
+        out = out - np.exp(mu + 0.5 * np.diagonal(Sig, 0, 1, 2))
     else:
-        out += - np.exp(mu + 0.5 * Sig)
+        out = out - np.exp(mu + 0.5 * Sig)
 
     return np.sum(out)
 
@@ -156,17 +160,17 @@ def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
     T, R = X.shape
     xi1 = xi[:, 1, :]
 
-    out = np.einsum('u, tuu ->', tau, Sig_eta)
-    out += np.sum(tau * (mu_eta - mu_a - np.dot(X, mu_b.T) - np.dot(xi1, mu_c.T))**2)
-    out += T * np.sum(tau * sig_a)
-    out += np.einsum('u,tr,ts,urs', tau, X, X, Sig_b)
-    out += np.einsum('u,tk,tj,ukj', tau, xi1, xi1, Sig_c)
+    out = np.einsum('u, tuu->', tau, Sig_eta)
+    out = out + np.sum(tau * (mu_eta - mu_a - np.dot(X, mu_b.T) - np.dot(xi1, mu_c.T))**2)
+    out = out + T * np.sum(tau * sig_a)
+    out = out + np.einsum('u,tr,ts,urs->', tau, X, X, Sig_b)
+    out = out + np.einsum('u,tk,tj,ukj->', tau, xi1, xi1, Sig_c)
 
     v = xi1 * (1 - xi1)
     W = np.diagonal(Sig_c, axis1=1, axis2=2) + mu_c**2
-    out += np.einsum('u,tk,uk->', tau, v, W)
+    out = out + np.einsum('u,tk,uk->', tau, v, W)
 
-    out += np.sum(np.linalg.slogdet(Sig_eta)[1])
+    out = out + np.sum(np.linalg.slogdet(Sig_eta)[1])
     return -0.5 * out
 
 
@@ -182,9 +186,6 @@ def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     lpsi = lpsi + 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
     lpsi = lpsi + 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
     lpsi = lpsi + 0.5 * np.einsum('u,ukk,tk->tk', tau, Sig_c, 1 - xi1)
-
-    # log_psi = np.zeros((T, 2, K))
-    # log_psi[:, 1, :] = lpsi
 
     # this is a dirty, dirty hack to make autograd work:
     # 1. We can't do the reasonable thing -- assigning to an array of 0s
@@ -211,7 +212,7 @@ def normal_entropy(mu, sig):
     """
     out = mu.size * 0.5 * (np.log(np.pi) + 1)
 
-    out += 0.5 * np.sum(np.log(sig))
+    out = out + 0.5 * np.sum(np.log(sig))
 
     return out
 
@@ -224,8 +225,8 @@ def expected_log_mvnormal(m, S, mu, Sig):
     """
     Lam = np.linalg.inv(S)
     x = m - mu
-    out = -0.5 * np.einsum('...ij, ...ij', Sig, Lam)
-    out += -0.5 * np.einsum('...ij, ...i, ...j', Lam, x, x)
+    out = -0.5 * np.einsum('...ij, ...ij->...', Sig, Lam)
+    out = out - 0.5 * np.einsum('...ij, ...i, ...j->...', Lam, x, x)
     return np.sum(out)
 
 def mvnormal_entropy(mu, Sig):
@@ -235,7 +236,7 @@ def mvnormal_entropy(mu, Sig):
     out = mu.size * 0.5 * (np.log(np.pi) + 1)
 
     _, logdet = np.linalg.slogdet(Sig)
-    out += 0.5 * np.sum(logdet)
+    out = out + 0.5 * np.sum(logdet)
 
     return out
 
@@ -252,7 +253,7 @@ def hmm_entropy(log_psi, log_A, log_pi, xi, Xi, logZ):
     three arguments
     """
     emission_piece = np.sum(xi * log_psi)
-    initial_piece = xi[0].dot(log_pi)
+    initial_piece = np.dot(xi[0], log_pi)
     transition_piece = np.sum(Xi * log_A)
     logq = emission_piece + initial_piece + transition_piece
     return -logq + logZ
@@ -265,7 +266,7 @@ def expected_log_state_sequence(xi, Xi, Elog_A, Elog_pi):
     Elog_A: (M, M) -- Expected value of log transition matrix
     Elog_pi: (M,) -- Expected value of log initial state probability
     """
-    initial_piece = xi[0].dot(Elog_pi)
+    initial_piece = np.dot(xi[0], Elog_pi)
     transition_piece = np.sum(Xi * Elog_A)
     return initial_piece + transition_piece
 
@@ -282,8 +283,8 @@ def dirichlet_entropy(alpha):
     """
     alpha0 = np.sum(alpha, axis=-1)
     H = _logB(alpha)
-    H += (alpha0 - alpha.shape[-1]) * digamma(alpha0)
-    H += -np.sum((alpha - 1) * digamma(alpha), axis=-1)
+    H = H + (alpha0 - alpha.shape[-1]) * digamma(alpha0)
+    H = H - np.sum((alpha - 1) * digamma(alpha), axis=-1)
 
     return np.sum(H)
 
@@ -296,7 +297,7 @@ def expected_log_dirichlet(a, alpha):
     """
     Elog_x = mean_log_dirichlet(alpha)
     elp = np.sum((a - 1) * Elog_x, axis=-1)
-    elp += -_logB(a)
+    elp = elp - _logB(a)
 
     return np.sum(elp)
 
@@ -356,8 +357,8 @@ def expected_log_beta(a, b, alpha, beta):
     """
     # stack parameters along last axis (our Dirichlet convention)
     # and treat as dirichlet
-    new_a = np.stack([a, b], axis=-1)
-    new_alpha = np.stack([alpha, beta], axis=-1)
+    new_a = np.stack(np.array([a, b]), axis=-1)
+    new_alpha = np.stack(np.array([alpha, beta]), axis=-1)
     return expected_log_dirichlet(new_a, new_alpha)
 
 def beta_entropy(alpha, beta):
@@ -366,7 +367,7 @@ def beta_entropy(alpha, beta):
     """
     # stack parameters along last axis (our Dirichlet convention)
     # and treat as dirichlet
-    new_alpha = np.stack([alpha, beta], axis=-1)
+    new_alpha = np.stack(np.array([alpha, beta]), axis=-1)
     return dirichlet_entropy(new_alpha)
 
 def expected_log_LKJ(h, eta, d):
