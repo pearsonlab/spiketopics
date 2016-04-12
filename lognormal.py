@@ -151,7 +151,8 @@ def log_observed_spikes(N, mu, Sig):
     """
     out = N * mu
     if len(Sig.shape) == 3:
-        out = out - np.exp(mu + 0.5 * np.diagonal(Sig, 0, 1, 2))
+        # get diagonal of *last* two indices
+        out = out - np.exp(mu + 0.5 * np.diagonal(Sig, 0, -1, -2))
     else:
         out = out - np.exp(mu + 0.5 * Sig)
 
@@ -167,15 +168,16 @@ def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
     T, R = X.shape
     xi1 = xi[:, 1, :]
 
-    out = np.einsum('u, tuu->', tau, Sig_eta)
+    diag_Sig_eta = np.diagonal(Sig_eta, axis1=-1, axis2=-2)
+    out = np.sum(np.einsum('u,tu->t', tau, diag_Sig_eta))
     out = out + np.sum(tau * (mu_eta - mu_a - np.dot(X, mu_b.T) - np.dot(xi1, mu_c.T))**2)
     out = out + T * np.sum(tau * sig_a)
     out = out + np.einsum('u,tr,ts,urs->', tau, X, X, Sig_b)
     out = out + np.einsum('u,tk,tj,ukj->', tau, xi1, xi1, Sig_c)
 
     v = xi1 * (1 - xi1)
-    W = np.diagonal(Sig_c, axis1=1, axis2=2) + mu_c**2
-    out = out + np.einsum('u,tk,uk->', tau, v, W)
+    W = np.diagonal(Sig_c, axis1=-1, axis2=-2) + mu_c**2
+    out = out + np.sum(np.einsum('u,tk,uk->t', tau, v, W))
 
     out = out + np.sum(np.linalg.slogdet(Sig_eta)[1])
     return -0.5 * out
@@ -192,14 +194,15 @@ def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     lpsi = lpsi + 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
     lpsi = lpsi + 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
     lpsi = lpsi + 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
-    lpsi = lpsi + 0.5 * np.einsum('u,ukk,tk->tk', tau, Sig_c, 1 - xi1)
+    diag_Sig_c = np.diagonal(Sig_c, axis1=-1, axis2=-2)
+    lpsi = lpsi + 0.5 * np.einsum('u,uk,tk->tk', tau, diag_Sig_c, 1 - xi1)
 
     # this is a dirty, dirty hack to make autograd work:
     # 1. We can't do the reasonable thing -- assigning to an array of 0s
     #   for z = 1 slice -- because autograd doesn't handle slice assignment
     # 2. **However**, only *relative* psi is important, so we make
     #   log p(D|z=0) = -log p(D|z=1) such that their difference is correct
-    log_psi = 0.5 * np.stack(np.array([-lpsi, lpsi]), axis=1)
+    log_psi = 0.5 * np.transpose(np.array([-lpsi, lpsi]), (1, 0, 2))
 
     return log_psi
 
@@ -232,8 +235,8 @@ def expected_log_mvnormal(m, S, mu, Sig):
     """
     Lam = np.linalg.inv(S)
     x = m - mu
-    out = -0.5 * np.einsum('...ij, ...ij->...', Sig, Lam)
-    out = out - 0.5 * np.einsum('...ij, ...i, ...j->...', Lam, x, x)
+    out = -0.5 * np.einsum('...ij,...ij->...', Sig, Lam)
+    out = out - 0.5 * np.einsum('...ij,...i,...j->...', Lam, x, x)
     return np.sum(out)
 
 def mvnormal_entropy(mu, Sig):
