@@ -82,10 +82,6 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     # first do preliminary calculations
     log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
 
-    # preallocate
-    # xi = np.empty((T, M, K))
-    # Xi = np.empty((T - 1, M, M, K))
-    # logZ = np.empty((K,))
     # run forward-backward on each chain
     xi_l = []
     Xi_l = []
