@@ -34,6 +34,13 @@ def unpack(x, dimlist):
 
     return varlist
 
+def stack_last(arglist):
+    """
+    Stack arguments along (new) last dimension
+    """
+    nd = arglist[0].ndim
+    return np.transpose(np.array(arglist), tuple(range(1, nd + 1)) + (0,))
+
 def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     b_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
     pi_post, alpha_eps, beta_eps, eta_eps, xi0):
@@ -89,8 +96,8 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
         Xi_l.append(Xi_this)
         logZ_l.append(logZ_this)
 
-    xi = np.stack(np.array(xi_l), axis=-1)
-    Xi = np.stack(np.array(Xi_l), axis=-1)
+    xi = stack_last(xi_l)
+    Xi = stack_last(Xi_l)
     logZ = np.array(logZ_l)
 
     # observations
@@ -357,8 +364,8 @@ def expected_log_beta(a, b, alpha, beta):
     """
     # stack parameters along last axis (our Dirichlet convention)
     # and treat as dirichlet
-    new_a = np.stack(np.array([a, b]), axis=-1)
-    new_alpha = np.stack(np.array([alpha, beta]), axis=-1)
+    new_a = stack_last([a, b])
+    new_alpha = stack_last([alpha, beta])
     return expected_log_dirichlet(new_a, new_alpha)
 
 def beta_entropy(alpha, beta):
@@ -367,7 +374,7 @@ def beta_entropy(alpha, beta):
     """
     # stack parameters along last axis (our Dirichlet convention)
     # and treat as dirichlet
-    new_alpha = np.stack(np.array([alpha, beta]), axis=-1)
+    new_alpha = stack_last([alpha, beta])
     return dirichlet_entropy(new_alpha)
 
 def expected_log_LKJ(h, eta, d):
