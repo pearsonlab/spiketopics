@@ -422,17 +422,17 @@ def draw_LKJ(eta, d):
     cpc = 2 * npr.beta(betas, betas) - 1  # rescale to (-1, 1)
     return corrmat_from_vec(corr_from_cpc(cpc))
 
-def U_to_vec(U):
+def U_to_vec(U, k=1):
     """
     Convert an upper triangular matrix to a vector.
     **Does not** include diagonal.
     Returned vector is read out from U by rows.
     Assumes matrix is **first two** dimensions of passed array.
     """
-    r, c = np.triu_indices(U.shape[0], k=1)
+    r, c = np.triu_indices(U.shape[0], k)
     return U[r, c, ...]
 
-def vec_to_U(v):
+def vec_to_U(v, k=1):
     """
     Convert a vector to an upper triangular matrix.
     Vector **does not** include diagonal entries.
@@ -440,9 +440,9 @@ def vec_to_U(v):
     """
     # get matrix size
     N = v.size
-    d = int((1 + np.sqrt(1 + 8 * N))/2)
+    d = int((2 * k - 1 + np.sqrt((2 * k - 1)**2 + 8 * N))/2)
     U = np.zeros((d, d))
-    U[np.triu_indices(d, 1)] = v
+    U[np.triu_indices(d, k)] = v
     return U
 
 def corrmat_from_vec(v):
@@ -475,3 +475,24 @@ def corr_from_cpc(v):
             UU[r, c] = rho
 
     return U_to_vec(UU)
+
+def vecs_from_covs(Sig):
+    """
+    Convert an array of covariance matrices to vectors via Cholesky and
+    flattening.
+    Assumes matrix indices are *last two*.
+    """
+    d = Sig.shape[-1]
+    # S_flat = Sig.reshape((-1, d, d))
+    # L_arr = np.linalg.cholesky(S_flat)
+    L_arr = np.linalg.cholesky(Sig)
+    return np.array([U_to_vec(L.T, k=0) for L in L_arr])
+
+def covs_from_vecs(Lvecs):
+    """
+    Inverse of vecs_from_covs.
+    """
+    if Lvecs.ndim == 1:
+        return np.dot(vec_to_U(Lvecs, k=0).T, vec_to_U(Lvecs, k=0))
+    else:
+        return np.array([np.dot(vec_to_U(v, k=0).T, vec_to_U(v, k=0)) for v in Lvecs])
