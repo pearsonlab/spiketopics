@@ -79,22 +79,7 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     tau = alpha_eps / beta_eps  # noise precisions (tau ~ Ga(alpha, beta))
 
     ###### HMM pre-calculations ############
-    # first do preliminary calculations
-    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
-
-    # run forward-backward on each chain
-    xi_l = []
-    Xi_l = []
-    logZ_l = []
-    for k in range(K):
-        xi_this, logZ_this, Xi_this = fb_infer(A_post[..., k], pi_post[..., k], np.exp(log_psi[..., k]))
-        xi_l.append(xi_this)
-        Xi_l.append(Xi_this)
-        logZ_l.append(logZ_this)
-
-    xi = stack_last(xi_l)
-    Xi = stack_last(Xi_l)
-    logZ = np.array(logZ_l)
+    log_psi, xi, Xi, logZ = HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post)
 
     # observations
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
@@ -137,6 +122,34 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     elbo = elbo + LKJ_entropy(eta_eps, U)
 
     return elbo
+
+def HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post):
+    K = xi0.shape[-1]
+
+    # "effective" A and pi for the HMM are exp(mean(log(.)))
+    Elog_A = mean_log_markov(A_post)
+    Elog_pi = mean_log_dirichlet(pi_post)
+    A_bar = np.exp(Elog_A)
+    pi_bar = np.exp(Elog_pi)
+
+    # first, get emission probabilities
+    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
+
+    # run forward-backward on each chain
+    xi_l = []
+    Xi_l = []
+    logZ_l = []
+    for k in range(K):
+        xi_this, logZ_this, Xi_this = fb_infer(A_bar[..., k], pi_bar[..., k], np.exp(log_psi[..., k]))
+        xi_l.append(xi_this)
+        Xi_l.append(Xi_this)
+        logZ_l.append(logZ_this)
+
+    xi = stack_last(xi_l)
+    Xi = stack_last(Xi_l)
+    logZ = np.array(logZ_l)
+
+    return log_psi, xi, Xi, logZ
 
 def log_observed_spikes(N, mu, Sig):
     """
