@@ -41,9 +41,9 @@ def stack_last(arglist):
     nd = arglist[0].ndim
     return np.transpose(np.array(arglist), tuple(range(1, nd + 1)) + (0,))
 
-def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
+def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     b_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
-    pi_post, alpha_eps, beta_eps, eta_eps, xi0):
+    pi_post, alpha_eps, beta_eps, eta_eps):
     """
     Evidence lower bound for model:
 
