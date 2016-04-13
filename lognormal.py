@@ -112,8 +112,8 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     for k in range(K):
         elbo = elbo + expected_log_state_sequence(xi[..., k], Xi[..., k],
             Elog_A[..., k], Elog_pi[..., k])
-        elbo = elbo + hmm_entropy(log_psi[..., k], np.log(A_post[..., k]),
-            np.log(pi_post[..., k]), xi[..., k], Xi[..., k], logZ[k])
+        elbo = elbo + hmm_entropy(log_psi[..., k], Elog_A[..., k],
+            Elog_pi[..., k], xi[..., k], Xi[..., k], logZ[k])
 
     # noise
     elbo = elbo + expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
@@ -259,12 +259,12 @@ def mvnormal_entropy(mu, Sig):
 
     return out
 
-def hmm_entropy(log_psi, log_A, log_pi, xi, Xi, logZ):
+def hmm_entropy(log_psi, Elog_A, Elog_pi, xi, Xi, logZ):
     """
     Entropy of Hidden Markov Model with parameters
     log_psi: (T, M) -- log evidence
-    log_A: (M, M) -- log Markov transition matrix
-    log_pi: (M,) -- log initial state probability
+    Elog_A: (M, M) -- expected log Markov transition matrix
+    Elog_pi: (M,) -- expected log initial state probability
     xi: (T, M) -- q(z_t)  (posterior marginal)
     Xi: (T-1, M, M) -- q(z_{t + 1}, z_t)  (two-slice marginal)
     logZ: log partition function
@@ -272,8 +272,8 @@ def hmm_entropy(log_psi, log_A, log_pi, xi, Xi, logZ):
     three arguments
     """
     emission_piece = np.sum(xi * log_psi)
-    initial_piece = np.dot(xi[0], log_pi)
-    transition_piece = np.sum(Xi * log_A)
+    initial_piece = np.dot(xi[0], Elog_pi)
+    transition_piece = np.sum(Xi * Elog_A)
     logq = emission_piece + initial_piece + transition_piece
     return -logq + logZ
 
