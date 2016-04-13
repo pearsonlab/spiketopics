@@ -244,8 +244,8 @@ def expected_log_mvnormal(m, S, mu, Sig):
     """
     Lam = np.linalg.inv(S)
     x = m - mu
-    out = -0.5 * np.einsum('...ij,...ij->...', Sig, Lam)
-    out = out - 0.5 * np.einsum('...ij,...i,...j->...', Lam, x, x)
+    out = -0.5 * np.einsum('uij,ij->u', Sig, Lam)
+    out = out - 0.5 * np.einsum('ij,ui,uj->u', Lam, x, x)
     return np.sum(out)
 
 def mvnormal_entropy(mu, Sig):
