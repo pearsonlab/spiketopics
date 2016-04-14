@@ -181,7 +181,12 @@ def HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post, permuted=False
     xi_l = []
     Xi_l = []
     logZ_l = []
-    for k in range(K):
+    if permuted:
+        krange = np.random.permutation(K)
+    else:
+        krange = range(K)
+
+    for k in krange:
         xi_this, logZ_this, Xi_this = fb_infer(A_bar[..., k], pi_bar[..., k], np.exp(log_psi[..., k]))
         xi_l.append(xi_this)
         Xi_l.append(Xi_this)
