@@ -476,23 +476,11 @@ def corr_from_cpc(v):
 
     return U_to_vec(UU)
 
-def vecs_from_covs(Sig):
+def covs_from_factors(F):
     """
-    Convert an array of covariance matrices to vectors via Cholesky and
-    flattening.
-    Assumes matrix indices are *last two*.
+    Turn an array of factor matrices (possibly triangular) into an array of
+    covariances. Matrix indices are assumed to be the *last two*.
+    That is, we want
+    F[..., :, :] * F[..., :, :].T
     """
-    d = Sig.shape[-1]
-    # S_flat = Sig.reshape((-1, d, d))
-    # L_arr = np.linalg.cholesky(S_flat)
-    L_arr = np.linalg.cholesky(Sig)
-    return np.array([U_to_vec(L.T, k=0) for L in L_arr])
-
-def covs_from_vecs(Lvecs):
-    """
-    Inverse of vecs_from_covs.
-    """
-    if Lvecs.ndim == 1:
-        return np.dot(vec_to_U(Lvecs, k=0).T, vec_to_U(Lvecs, k=0))
-    else:
-        return np.array([np.dot(vec_to_U(v, k=0).T, vec_to_U(v, k=0)) for v in Lvecs])
+    return np.einsum('...ij,...kj->...ik', F, F)
