@@ -34,6 +34,44 @@ def unpack(x, dimlist):
 
     return varlist
 
+def transform_inputs(eta_cov_chol, log_sig_a, Sig_b_chol, Sig_c_chol, log_A_post, log_pi_post, log_mu_eps, log_ups_eps, log_eta_eps):
+    """
+    Transform unconstrained variables used by gradient to constrained variables
+    used by L.
+
+    Note that because we use covs_from_factors, the inputs are not enforced
+    to be triangular and so can be overparameterized/nonidentifiable.
+    """
+    eta_cov = covs_from_factors(eta_cov_chol)
+    sig_a = np.exp(log_sig_a)
+    Sig_b = covs_from_factors(Sig_b_chol)
+    Sig_c = covs_from_factors(Sig_c_chol)
+    A_post = np.exp(log_A_post)
+    pi_post = np.exp(log_pi_post)
+    mu_eps = np.exp(log_mu_eps)
+    ups_eps = np.exp(log_ups_eps)
+    eta_eps = np.exp(log_eta_eps - 1)
+
+    return eta_cov, sig_a, Sig_b, Sig_c, A_post, pi_post, mu_eps, ups_eps, eta_eps
+
+def update_xi0(parvec, xi0, dimlist):
+    """
+    Use current parameter vector (parvec) to update current best estimate of
+    xi (xi0), since this is not itself a tunable parameter, but a function
+    of tunable parameters that needs to be known in advance in order to
+    "bootstrap" the computation of L.
+    """
+    pars = unpack(parvec, dimlist)
+    mu_eta = pars[0]
+    mu_c, Sig_c_fact, log_A_post, log_pi_post, log_mu_eps, log_ups_eps = pars[6:-1]
+
+    Sig_c = covs_from_factors(Sig_c_fact)
+    A_post = np.exp(log_A_post)
+    pi_post = np.exp(log_pi_post)
+    tau = np.exp(log_mu_eps)
+
+    return HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post, permuted=True)[1]
+
 def stack_last(arglist):
     """
     Stack arguments along (new) last dimension
