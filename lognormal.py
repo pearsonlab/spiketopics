@@ -79,9 +79,9 @@ def stack_last(arglist):
     nd = arglist[0].ndim
     return np.transpose(np.array(arglist), tuple(range(1, nd + 1)) + (0,))
 
-def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
-    b_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
-    pi_post, alpha_eps, beta_eps, eta_eps):
+def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
+    v_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
+    pi_post, mu_eps, ups_eps, eta_eps):
     """
     Evidence lower bound for model:
 
@@ -96,7 +96,8 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
         A_k ~ MarkovMatrix(A_prior) (i.e., Dirichlet on cols)
         pi_k ~ Dirichlet(pi_prior)
         Sig_eps = diag(sig_eps) * Omega * diag(sig_eps)
-        sig_eps^2 ~ Inverse-Gamma(a_eps, b_eps)
+        sig_eps = 1 / sqrt(tau_eps)
+        tau_eps ~ Gamma(m_eps, v_eps)  (mean, variance parameterization)
         Omega ~ LKJ(h_eps)
 
     q-model (posterior/recognition):
@@ -106,7 +107,8 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
         c_{.u} ~ MvNormal(mu_c_{u}, sig_c_{u})
         z_{.k} ~ HMM(A_post, pi_post)
         Sig_eps = diag(sig_eps) * Omega * diag(sig_eps)
-        sig_eps^2 ~ Inverse-Gamma(alpha_eps, beta_eps)
+        tau_eps ~ Gamma(mu_eps, ups_eps)  (mean, variance parameterization)
+        sig_eps^2 = 1/tau_eps
         Omega ~ LKJ(eta_eps)
     """
     # get shape information
@@ -114,16 +116,16 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
     M, K = pi_prior.shape
 
     ###### noise pre-calculations ############
-    tau = alpha_eps / beta_eps  # noise precisions (tau ~ Ga(alpha, beta))
+    # tau = alpha_eps / beta_eps  # noise precisions (tau ~ Ga(alpha, beta))
 
     ###### HMM pre-calculations ############
-    log_psi, xi, Xi, logZ = HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post)
+    log_psi, xi, Xi, logZ = HMM_inference(xi0, mu_eps, mu_eta, mu_c, Sig_c, A_post, pi_post)
 
     # observations
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
 
     # effective log firing rates
-    elbo = elbo + log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, xi)
+    elbo = elbo + log_bottleneck_variables(mu_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, xi)
     elbo = elbo + mvnormal_entropy(mu_eta, Sig_eta)
 
     # baselines
@@ -154,14 +156,16 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, a_eps,
             Elog_pi[..., k], xi[..., k], Xi[..., k], logZ[k])
 
     # noise
-    elbo = elbo + expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
-    elbo = elbo + inverse_gamma_entropy(alpha_eps, beta_eps)
+    # elbo = elbo + expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
+    # elbo = elbo + inverse_gamma_entropy(alpha_eps, beta_eps)
+    elbo = elbo + expected_log_gamma(m_eps, v_eps, mu_eps, ups_eps)
+    elbo = elbo + gamma_entropy(mu_eps, ups_eps)
     elbo = elbo + expected_log_LKJ(h_eps, eta_eps, U)
     elbo = elbo + LKJ_entropy(eta_eps, U)
 
     return elbo
 
-def HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post):
+def HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post, permuted=False):
     K = xi0.shape[-1]
 
     # "effective" A and pi for the HMM are exp(mean(log(.)))
@@ -250,6 +254,9 @@ def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     # 2. **However**, only *relative* psi is important, so we make
     #   log p(D|z=0) = -log p(D|z=1) such that their difference is correct
     log_psi = 0.5 * np.transpose(np.array([-lpsi, lpsi]), (1, 0, 2))
+
+    if np.any(np.isnan(log_psi)):
+        raise ValueError('NaNs appear in emission probabilities')
 
     return log_psi
 
@@ -390,13 +397,6 @@ def mean_log_markov(alpha):
     """
     return mean_log_dirichlet(alpha.T).T
 
-def inverse_gamma_entropy(alpha, beta):
-    """
-    Entropy of Inverse-Gamma distribution
-    """
-    H = alpha + np.log(beta) + gammaln(alpha) - (1 + alpha) * digamma(alpha)
-    return np.sum(H)
-
 def expected_log_inverse_gamma(a, b, alpha, beta):
     """
     E[log p(x)] where
@@ -405,6 +405,41 @@ def expected_log_inverse_gamma(a, b, alpha, beta):
     """
     elp = -(a + 1) * (np.log(beta) - digamma(alpha)) - b * (beta / (alpha - 1))
     return np.sum(elp)
+
+def inverse_gamma_entropy(alpha, beta):
+    """
+    Entropy of Inverse-Gamma distribution
+    """
+    H = alpha + np.log(beta) + gammaln(alpha) - (1 + alpha) * digamma(alpha)
+    return np.sum(H)
+
+def expected_log_gamma(m, v, mu, ups):
+    """
+    E[log p(x)] where
+    p(x) = Gamma(a, b)
+    q(x) = Gamma(alpha, beta)
+    E[x] = m = a/b
+    var[x] = v = a/b**2
+    => a = m**2/v, b = m/v
+    """
+    a = m**2/ v
+    b = m / v
+    alpha = mu**2 / ups
+    beta = mu / ups
+    elp = (a - 1) * (digamma(alpha) - np.log(beta)) - b * (alpha / beta)
+    return np.sum(elp)
+
+def gamma_entropy(mu, ups):
+    """
+    Entropy of Inverse-Gamma distribution
+    E[x] = mu = a/b
+    var[x] = ups = a/b**2
+    => alpha = mu**2/ups, beta = mu/ups
+    """
+    alpha = mu**2 / ups
+    beta = mu / ups
+    H = alpha - np.log(beta) + gammaln(alpha) + (1 - alpha) * digamma(alpha)
+    return np.sum(H)
 
 def expected_log_beta(a, b, alpha, beta):
     """
