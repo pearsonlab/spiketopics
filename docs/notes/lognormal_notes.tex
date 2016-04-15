@@ -458,12 +458,16 @@ The expression in the bottleneck model is different than that for $\nu_{tk}$ and
 \end{equation}
 which (momentarily ignoring expectations) has the following terms involving $z$:
 \begin{equation}
-    -\frac{1}{2}\sum_{uu'k}\left(\Sigma_\varepsilon\right)^{-1}_{uu'} \left[-2\eta_{tu'} c_{ku} + \sum_{k'}c_{ku}c_{k'u'}z_{tk'}\right]z_{tk}
+    -\frac{1}{2}\sum_{uu'k}\left(\Sigma_\varepsilon\right)^{-1}_{uu'} \left[-2(\eta_{tu'} - a_{u'} - \sum_r b_{ru'} x_{tr})c_{ku} + \sum_{k'}c_{ku}c_{k'u'}z_{tk'}\right]z_{tk}
 \end{equation}
 for which the expectation over variables other than $z_{tk}$ reduces to:
-\begin{equation}
-    -\frac{1}{2}\sum_{uu'k}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right] \left[-2(\mu_\eta)_{tu'} (\mu_c)_{ku} + \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u'} + (\Sigma_c)_{kk'}\delta_{uu'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
-\end{equation}
+\begin{multline}
+    -\frac{1}{2}\sum_{uu'k}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right]
+    \left[-2\left((\mu_\eta)_{tu'} - (\mu_a)_{u'} - \sum_r (\mu_b)_{ru'} x_{tr}\right)
+    (\mu_c)_{ku} + \right. \\
+    \left.
+    \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u'} + (\Sigma_c)_{kk'}\delta_{uu'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
+\end{multline}
 where we have made use of the fact that $z^2 = z$ in deriving th term proportional to $\delta_{kk'}$.\footnote{Note that while it appears that the term in brackets depends on $\xi_{tk} = \mathbb{E}[z_{tk}]$, a simple calculation shows that it only depends on terms with $k' \neq k$.}
 
 This further simplifies when we make use of the decomposition of $\Sigma_\varepsilon$ in terms of scale and correlation matrices (\ref{sigeps_def}), for which we have $\mathbb{E}[\Omega] = \mathbf{1}$. In fact, we also have $\mathbb{E}[\Omega^{-1}] = \mathbf{1}$. This can be argued straightforwardly from the permutation and rotational symmetries of the LKJ likelihood.
@@ -475,9 +479,14 @@ Thus we can write
     = \mathbb{E}_\sigma \left[\mathrm{diag}(\boldsymbol{\sigma}^{-2}) \right]
 \end{equation}
 yielding
-\begin{align}
-    \log \psi_{tk} = \sum_u \tau_u \left[(\mu_\eta)_{tu} (\mu_c)_{ku} - \frac{1}{2} \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u} + (\Sigma_c)_{kk'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
-\end{align}
+\begin{multline}
+    \log \psi_{tk} = \sum_u \tau_u \left[
+    \left((\mu_\eta)_{tu} - (\mu_a)_{u} - \sum_r (\mu_b)_{ru}
+    \right)
+    (\mu_c)_{ku} \right .\\
+    \left.
+     -\frac{1}{2} \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u} + (\Sigma_c)_{kk'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
+\end{multline}
 where $\tau_u \equiv \mathbb{E}[\sigma_u^{-2}]$.
 Note that here, we have taken $\psi$ here as $T \times K$ rather than $T \times 2 \times K$, with one entry for each state. This is because only \emph{relative} log probabilities are needed for the forward-backward algorithm, so for each chain $k$, we can take $\log \psi_t$ as a two-column matrix with the first column all 0s.
 
