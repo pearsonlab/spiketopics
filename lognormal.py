@@ -168,14 +168,13 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
 def HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post, permuted=False):
     K = xi0.shape[-1]
 
+    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
+
     # "effective" A and pi for the HMM are exp(mean(log(.)))
     Elog_A = mean_log_markov(A_post)
     Elog_pi = mean_log_dirichlet(pi_post)
     A_bar = np.exp(Elog_A)
     pi_bar = np.exp(Elog_pi)
-
-    # first, get emission probabilities
-    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
 
     # run forward-backward on each chain
     xi_l = []
@@ -246,12 +245,13 @@ def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
     xi1 = xi[:, 1, :]
     T, U = mu_eta.shape
     _, K = mu_c.shape
+    
     lpsi = np.einsum('u,tu,uk->tk', tau, mu_eta, mu_c)
-    lpsi = lpsi + 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
-    lpsi = lpsi + 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
-    lpsi = lpsi + 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
+    lpsi = lpsi - 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
+    lpsi = lpsi - 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
+    lpsi = lpsi - 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
     diag_Sig_c = np.diagonal(Sig_c, axis1=-1, axis2=-2)
-    lpsi = lpsi + 0.5 * np.einsum('u,uk,tk->tk', tau, diag_Sig_c, 1 - xi1)
+    lpsi = lpsi - 0.5 * np.einsum('u,uk,tk->tk', tau, diag_Sig_c, 1 - xi1)
 
     # this is a dirty, dirty hack to make autograd work:
     # 1. We can't do the reasonable thing -- assigning to an array of 0s
