@@ -54,7 +54,7 @@ def transform_inputs(eta_cov_chol, log_sig_a, Sig_b_chol, Sig_c_chol, log_A_post
 
     return eta_cov, sig_a, Sig_b, Sig_c, A_post, pi_post, mu_eps, ups_eps, eta_eps
 
-def update_xi0(parvec, xi0, dimlist):
+def update_xi0(parvec, xi0, X, dimlist):
     """
     Use current parameter vector (parvec) to update current best estimate of
     xi (xi0), since this is not itself a tunable parameter, but a function
@@ -62,7 +62,7 @@ def update_xi0(parvec, xi0, dimlist):
     "bootstrap" the computation of L.
     """
     pars = unpack(parvec, dimlist)
-    mu_eta = pars[0]
+    mu_eta, mu_a, mu_b = pars[0:5:2]
     mu_c, Sig_c_fact, log_A_post, log_pi_post, log_mu_eps, log_ups_eps = pars[6:-1]
 
     Sig_c = covs_from_factors(Sig_c_fact)
@@ -70,7 +70,7 @@ def update_xi0(parvec, xi0, dimlist):
     pi_post = np.exp(log_pi_post)
     tau = np.exp(log_mu_eps)
 
-    return HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post, permuted=True)[1]
+    return HMM_inference(xi0, tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post, permuted=True)[1]
 
 def stack_last(arglist):
     """
@@ -119,7 +119,7 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
     # tau = alpha_eps / beta_eps  # noise precisions (tau ~ Ga(alpha, beta))
 
     ###### HMM pre-calculations ############
-    log_psi, xi, Xi, logZ = HMM_inference(xi0, mu_eps, mu_eta, mu_c, Sig_c, A_post, pi_post)
+    log_psi, xi, Xi, logZ = HMM_inference(xi0, mu_eps, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post)
 
     # observations
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
@@ -165,10 +165,10 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
 
     return elbo
 
-def HMM_inference(xi0, tau, mu_eta, mu_c, Sig_c, A_post, pi_post, permuted=False):
+def HMM_inference(xi0, tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post, permuted=False):
     K = xi0.shape[-1]
 
-    log_psi = log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi0)
+    log_psi = log_emission_probs(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, xi0)
 
     # "effective" A and pi for the HMM are exp(mean(log(.)))
     Elog_A = mean_log_markov(A_post)
@@ -238,15 +238,17 @@ def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
     return -0.5 * out
 
 
-def log_emission_probs(tau, mu_eta, mu_c, Sig_c, xi):
+def log_emission_probs(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, xi):
     """
     Calculate log psi, where psi \propto p(obs|z)
     """
     xi1 = xi[:, 1, :]
     T, U = mu_eta.shape
     _, K = mu_c.shape
-    
-    lpsi = np.einsum('u,tu,uk->tk', tau, mu_eta, mu_c)
+
+    mu_eff = mu_eta - mu_a - np.einsum('ur,tr->tu', mu_b, X)
+
+    lpsi = np.einsum('u,tu,uk->tk', tau, mu_eff, mu_c)
     lpsi = lpsi - 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
     lpsi = lpsi - 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
     lpsi = lpsi - 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
