@@ -372,19 +372,51 @@ where the LKJ prior\footnote{Lewandowski, Kurowicka, and Joe: Generating Random 
 \begin{align}
     \omega_{ij} &\equiv \rho_{ij} \\
     \label{rho_recursion}
-    \rho_{ij;kL} &= \frac{\rho_{ij;L} - \rho_{ik;L}\rho_{ij;L}}
-    {\sqrt{(1 - \rho_{ik;L}^2)(1 - \rho_{ij;L}^2)}}
+    \rho_{ij;kL} &= \frac{\rho_{ij;L} - \rho_{ik;L}\rho_{jk;L}}
+    {\sqrt{(1 - \rho_{ik;L}^2)(1 - \rho_{jk;L}^2)}}
 \end{align}
 In fact, one can show that if we choose $L < k < i < j$ (e.g., $\rho_{56;1234}$ for $k=4$, $L = 123$), then the $\rho_{ij}$ can all be computed recursively using \emph{only} CPCs, and no intermediate partials are shared across computations for different $i$ and $j$. As a result, no clever caching is necessary, and the computations could even be done in parallel.
 
+Moreover, it is useful to know that the Cholesky factorization for $\Omega$ takes a particularly simple form. If $L = U^\top$ satisfies $LL^\top = \Omega$, then
+\begin{equation}
+    U =
+    \begin{pmatrix}
+    1 & r_{12} & r_{13} & r_{14} & \ldots \\
+    & \sqrt{1 - r_{12}^2} & \sqrt{1 - r_{13}^2}r_{23} & \sqrt{1 - r_{14}^2}r_{24} & \ldots \\
+    && \sqrt{(1 - r_{13}^2)(1 - r_{23}^2)} & \sqrt{(1 - r_{14}^2)(1 - r_{24}^2)}r_{34} & \ldots \\
+    &&& \sqrt{(1 - r_{14}^2)(1 - r_{24}^2)(1 - r_{34}^2)} & \ldots \\
+    \end{pmatrix}
+\end{equation}
+where $r_{ij} = [R]_{ij}$ is the matrix of canonical partial correlations: $r_{ij} = \rho_{ij;\lbrace k | k < i,j\rbrace}$. Thus we have
+\begin{equation}
+    |U| = \prod_i U_{ii} = \prod_{i < j} \sqrt{1 - r_{ij}^2}
+\end{equation}
+and
+\begin{equation}
+    \label{det_omega}
+    |\Omega| = |U|^2 = |L|^2 = \prod_{i < j} (1 - r_{ij}^2)
+\end{equation}
+
 Just as importantly, the CPCs follow simple Beta distributions (rescaled to the interval (-1, 1)):
 \begin{align}
-    p_{i,j > i;1\ldots i - 1} &\sim \mathrm{Beta}(\beta_{i}, \beta_{i}) \\
+    r_{i,j > i;1\ldots i - 1} &\sim \mathrm{Beta}(\beta_{i}, \beta_{i}) \\
     \beta_i &= \eta + \frac{d - 1 - i}{2}
 \end{align}
 Thus, if we choose the LKJ prior, the covariance $\Sigma_\varepsilon$ can be replaced by $d$ Inverse-Gamma variates $\sigma^2$ and $d(d-1)/$ Beta variates $p$ without loss of generality. Calculating expectations of log priors and entropies of these variables is then straightforward.
 
-Moreover, we can note that for all canonical partial correlations $\rho = 2x - 1$ for $x \sim \mathrm{Beta}(\beta, \beta)$, we have $E[\rho] = 0$. And since every entry in $\Omega \sim LKJ(\eta)$, a full correlation, is constructed from sums of products of random variables (stemming from the recursion in (\ref{rho_recursion})), each of which contains at least one partial correlation with mean 0, we have $\mathbb{E}[\Omega] = \mathbf{1}$, the identity correlation matrix.
+Moreover, we can note that for all canonical partial correlations $r = 2x - 1$ for $x \sim \mathrm{Beta}(\beta, \beta)$, we have $E[\rho] = 0$. And since every entry in $\Omega \sim LKJ(\eta)$, a full correlation, is constructed from sums of products of random variables (stemming from the recursion in (\ref{rho_recursion})), each of which contains at least one partial correlation with mean 0, we have $\mathbb{E}[\Omega] = \mathbf{1}$, the identity correlation matrix.
+
+Likewise, we will want to make use of the expectation of the log determinant of $\Omega$, which we can calculate from the above as
+\begin{equation}
+    \mathbb{E}[\log |\Omega|] = \sum_{i < j} \mathbb{E}[\log (1 - r_{ij}^2)]
+\end{equation}
+From the above, we can rewrite this in terms of the beta-distributed variables $x_{ij} \sim \mathrm{Beta}(\beta_i, \beta_i)$ as
+\begin{align}
+    \label{Elogdet_Omega}
+    \mathbb{E}[\log |\Omega|] &= \sum_{i < j} \mathbb{E}[\log (4x_{ij}(1 - x_{ij}))] \\
+    &= d(d - 1) \log 2 + 2\sum_{i} (d - i)[\psi(\beta_i) - \psi(2\beta_i)]
+\end{align}
+That is, the expectation of the log determinant is simply proportional to the sum of expectations of the logs of the rescaled partial correlations $x$.
 
 \subsection{Inference on log firing rate}
 If we write the evidence lower bound as
@@ -397,8 +429,8 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
     \mathcal{L}_\eta &=
     \sum_{tu} \mathbb{E}_q[N_{tu} \eta_{tu} - e^{\eta_{tu}}]
     - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[
-    (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta}) \right]
-    - \frac{1}{2} \log |\Sigma_\eta| \\
+    (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta})
+    - \frac{1}{2} \log |\Sigma_\varepsilon| \right]\\
     &= \sum_{tu} \left[ N_{tu} \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
     \label{eta_cov}
@@ -407,7 +439,7 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
     \left[ \Sigma_{\eta t} + (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])
     (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])^\top
     + \mathrm{Cov}[\overline{\eta}]_{t}\right] \right) \\
-    &- \frac{1}{2} \log |\Sigma_\eta| + const
+    &- \frac{1}{2} \mathbb{E}_q[\log |\Sigma_\varepsilon|] + const
 \end{align}
 with $\overline{\eta} \equiv a + bx + cz$ and
 \begin{align}
@@ -429,6 +461,16 @@ In the case of the LKJ prior on $\Sigma_\varepsilon$ discussed above, this can b
     \sum_k (\Sigma^c_{kku} + (\mu^c_{ku})^2)\xi_{tk}(1 - \xi_{tk})
     \right]
 \end{align}
+
+We can also simplify the $\log |\Sigma_\varepsilon|$ term by noting that
+\begin{align}
+    -\frac{1}{2}\mathbb{E}_q[\log |\Sigma_\varepsilon|] &=
+    -\frac{1}{2}\mathbb{E}_q[\log S + \log |\Omega|] \\
+    &= -\frac{1}{2}\mathbb{E}_q[\sum_i \log \sigma^2_i + \log |\Omega|] \\
+    &= \frac{1}{2}\sum_i \log \tau_i - \frac{1}{2}\mathbb{E}_q[\log |\Omega|] \\
+    &= \frac{1}{2}\sum_i \log \tau_i - \sum_{i} (d - i)[\psi(\beta_i) - \psi(2\beta_i)]
+\end{align}
+where the last calculation follows from (\ref{Elogdet_Omega}).
 
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
 \begin{align}
