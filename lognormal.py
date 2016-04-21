@@ -207,7 +207,7 @@ def log_observed_spikes(N, mu, Sig):
     out = N * mu
     if len(Sig.shape) == 3:
         # get diagonal of *last* two indices
-        out = out - np.exp(mu + 0.5 * np.diagonal(Sig, 0, -1, -2))
+        out = out - np.exp(mu + 0.5 * np.diagonal(Sig, axis1=-1, axis2=-2))
     else:
         out = out - np.exp(mu + 0.5 * Sig)
 
