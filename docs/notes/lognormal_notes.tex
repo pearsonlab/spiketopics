@@ -428,8 +428,8 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
 \begin{align}
     \mathcal{L}_\eta &=
     \sum_{tu} \mathbb{E}_q[N_{tu} \eta_{tu} - e^{\eta_{tu}}]
-    - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[
-    (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta})
+    - \frac{1}{2} \sum_{t} \mathbb{E}_q \left[
+    (\eta_t - \overline{\eta}_t)^\top \Sigma_\varepsilon^{-1}(\eta_t - \overline{\eta}_t)
     - \frac{1}{2} \log |\Sigma_\varepsilon| \right]\\
     &= \sum_{tu} \left[ N_{tu} \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
@@ -439,7 +439,7 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
     \left[ \Sigma_{\eta t} + (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])
     (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])^\top
     + \mathrm{Cov}[\overline{\eta}]_{t}\right] \right) \\
-    &- \frac{1}{2} \mathbb{E}_q[\log |\Sigma_\varepsilon|] + const
+    &- \frac{T}{2} \mathbb{E}_q[\log |\Sigma_\varepsilon|] + const
 \end{align}
 with $\overline{\eta} \equiv a + bx + cz$ and
 \begin{align}
@@ -464,11 +464,11 @@ In the case of the LKJ prior on $\Sigma_\varepsilon$ discussed above, this can b
 
 We can also simplify the $\log |\Sigma_\varepsilon|$ term by noting that
 \begin{align}
-    -\frac{1}{2}\mathbb{E}_q[\log |\Sigma_\varepsilon|] &=
-    -\frac{1}{2}\mathbb{E}_q[\log S + \log |\Omega|] \\
-    &= -\frac{1}{2}\mathbb{E}_q[\sum_i \log \sigma^2_i + \log |\Omega|] \\
-    &= \frac{1}{2}\sum_i \log \tau_i - \frac{1}{2}\mathbb{E}_q[\log |\Omega|] \\
-    &= \frac{1}{2}\sum_i \log \tau_i - \sum_{i} (d - i)[\psi(\beta_i) - \psi(2\beta_i)]
+    -\frac{T}{2}\mathbb{E}_q[\log |\Sigma_\varepsilon|] &=
+    -\frac{T}{2}\mathbb{E}_q[\log S + \log |\Omega|] \\
+    &= -\frac{T}{2}\mathbb{E}_q[\sum_u \log \sigma^2_u + \log |\Omega|] \\
+    &= \frac{T}{2}\sum_u \log \tau_u - \frac{T}{2}\mathbb{E}_q[\log |\Omega|] \\
+    &= \frac{T}{2}\sum_u \log \tau_u - T\sum_{u} (U - u)[\psi(\beta_u) - \psi(2\beta_i)]
 \end{align}
 where the last calculation follows from (\ref{Elogdet_Omega}).
 
@@ -495,8 +495,8 @@ Here as above, inference for the latents $z_{tk}$ can be done via the forward-ba
 
 The expression in the bottleneck model is different than that for $\nu_{tk}$ and $F$ calculated in the model without $\eta$ above. In this case, it results from the term in $\mathcal{L}$
 \begin{equation}
-    - \frac{1}{2} \sum_{tu} \mathbb{E}_q \left[
-    (\eta - \overline{\eta})^\top \Sigma_\varepsilon^{-1}(\eta - \overline{\eta}) \right]
+    - \frac{1}{2} \sum_{t} \mathbb{E}_q \left[
+    (\eta_t - \overline{\eta}_t)^\top \Sigma_\varepsilon^{-1}(\eta_t - \overline{\eta}_t) \right]
 \end{equation}
 which (momentarily ignoring expectations) has the following terms involving $z$:
 \begin{equation}
@@ -508,7 +508,7 @@ for which the expectation over variables other than $z_{tk}$ reduces to:
     \left[-2\left((\mu_\eta)_{tu'} - (\mu_a)_{u'} - \sum_r (\mu_b)_{ru'} x_{tr}\right)
     (\mu_c)_{ku} + \right. \\
     \left.
-    \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u'} + (\Sigma_c)_{kk'}\delta_{uu'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
+    \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u'} + (\Sigma_c)_{ukk'}\delta_{uu'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]z_{tk}
 \end{multline}
 where we have made use of the fact that $z^2 = z$ in deriving th term proportional to $\delta_{kk'}$.\footnote{Note that while it appears that the term in brackets depends on $\xi_{tk} = \mathbb{E}[z_{tk}]$, a simple calculation shows that it only depends on terms with $k' \neq k$.}
 
@@ -527,7 +527,7 @@ yielding
     \right)
     (\mu_c)_{ku} \right .\\
     \left.
-     -\frac{1}{2} \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u} + (\Sigma_c)_{kk'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
+     -\frac{1}{2} \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u} + (\Sigma_c)_{ukk'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]
 \end{multline}
 where $\tau_u \equiv \mathbb{E}[\sigma_u^{-2}]$.
 Note that here, we have taken $\psi$ here as $T \times K$ rather than $T \times 2 \times K$, with one entry for each state. This is because only \emph{relative} log probabilities are needed for the forward-backward algorithm, so for each chain $k$, we can take $\log \psi_t$ as a two-column matrix with the first column all 0s.

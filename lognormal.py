@@ -115,9 +115,6 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
     T, U = N.shape
     M, K = pi_prior.shape
 
-    ###### noise pre-calculations ############
-    # tau = alpha_eps / beta_eps  # noise precisions (tau ~ Ga(alpha, beta))
-
     ###### HMM pre-calculations ############
     log_psi, xi, Xi, logZ = HMM_inference(xi0, mu_eps, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post)
 
@@ -125,7 +122,7 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
 
     # effective log firing rates
-    elbo = elbo + log_bottleneck_variables(mu_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, xi)
+    elbo = elbo + log_bottleneck_variables(mu_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, eta_eps, xi)
     elbo = elbo + mvnormal_entropy(mu_eta, Sig_eta)
 
     # baselines
@@ -156,8 +153,6 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
             Elog_pi[..., k], xi[..., k], Xi[..., k], logZ[k])
 
     # noise
-    # elbo = elbo + expected_log_inverse_gamma(a_eps, b_eps, alpha_eps, beta_eps)
-    # elbo = elbo + inverse_gamma_entropy(alpha_eps, beta_eps)
     elbo = elbo + expected_log_gamma(m_eps, v_eps, mu_eps, ups_eps)
     elbo = elbo + gamma_entropy(mu_eps, ups_eps)
     elbo = elbo + expected_log_LKJ(h_eps, eta_eps, U)
@@ -214,13 +209,14 @@ def log_observed_spikes(N, mu, Sig):
     return np.sum(out)
 
 def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
-    mu_c, Sig_c, xi):
+    mu_c, Sig_c, eta_eps, xi):
     """
     E[log p(eta)] where
     eta_{.t} ~ MvNormal(m, S)
     m_{ut} = a_u + \sum_r b_{ru} x_{tr} + \sum_k c_{ku} z_{tk}
     """
     T, R = X.shape
+    _, U = mu_eta.shape
     xi1 = xi[:, 1, :]
 
     diag_Sig_eta = np.diagonal(Sig_eta, axis1=-1, axis2=-2)
@@ -234,7 +230,11 @@ def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
     W = np.diagonal(Sig_c, axis1=-1, axis2=-2) + mu_c**2
     out = out + np.sum(np.einsum('u,tk,uk->t', tau, v, W))
 
-    out = out + np.sum(np.linalg.slogdet(Sig_eta)[1])
+    # logdet Omega terms
+    out = out + T * U * (U - 1) * np.log(2)
+    out = out - T * np.sum(np.log(tau))
+    out = out + 2 * T * Elogdet_LKJ(eta_eps, U)
+
     return -0.5 * out
 
 
@@ -246,7 +246,7 @@ def log_emission_probs(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, xi):
     T, U = mu_eta.shape
     _, K = mu_c.shape
 
-    mu_eff = mu_eta - mu_a - np.einsum('ur,tr->tu', mu_b, X)
+    mu_eff = mu_eta - mu_a - np.dot(X, mu_b.T)
 
     lpsi = np.einsum('u,tu,uk->tk', tau, mu_eff, mu_c)
     lpsi = lpsi - 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
@@ -478,6 +478,14 @@ def expected_log_LKJ(h, eta, d):
     b = LKJ_to_beta_pars(h, d)
     beta = LKJ_to_beta_pars(eta, d)
     return expected_log_beta(b, b, beta, beta)
+
+def Elogdet_LKJ(eta, d):
+    """
+    E[log |A|] where
+    A ~ LKJ(eta) of dimension d
+    """
+    beta = LKJ_to_beta_pars(eta, d)
+    return np.sum(digamma(beta) - digamma(2 * beta))
 
 def LKJ_entropy(eta, d):
     beta = LKJ_to_beta_pars(eta, d)
