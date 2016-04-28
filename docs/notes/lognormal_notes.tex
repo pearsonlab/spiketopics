@@ -430,7 +430,7 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
     \sum_{tu} \mathbb{E}_q[N_{tu} \eta_{tu} - e^{\eta_{tu}}]
     - \frac{1}{2} \sum_{t} \mathbb{E}_q \left[
     (\eta_t - \overline{\eta}_t)^\top \Sigma_\varepsilon^{-1}(\eta_t - \overline{\eta}_t)
-    - \frac{1}{2} \log |\Sigma_\varepsilon| \right]\\
+    + \log |\Sigma_\varepsilon| \right]\\
     &= \sum_{tu} \left[ N_{tu} \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
     \label{eta_cov}
@@ -467,10 +467,10 @@ We can also simplify the $\log |\Sigma_\varepsilon|$ term by noting that
     -\frac{T}{2}\mathbb{E}_q[\log |\Sigma_\varepsilon|] &=
     -\frac{T}{2}\mathbb{E}_q[\log S + \log |\Omega|] \\
     &= -\frac{T}{2}\mathbb{E}_q[\sum_u \log \sigma^2_u + \log |\Omega|] \\
-    &= \frac{T}{2}\sum_u \log \tau_u - \frac{T}{2}\mathbb{E}_q[\log |\Omega|] \\
-    &= \frac{T}{2}\sum_u \log \tau_u - T\sum_{u} (U - u)[\psi(\beta_u) - \psi(2\beta_i)]
+    &= \frac{T}{2}\sum_u \mathbb{E}_q[-\log \sigma_u^2] - \frac{T}{2}\mathbb{E}_q[\log |\Omega|] \\
+    &= \frac{T}{2}\sum_u \overline{-\log \sigma_u^2}  - T\sum_{u} (U - u)[\psi(\beta_u) - \psi(2\beta_i)]
 \end{align}
-where the last calculation follows from (\ref{Elogdet_Omega}).
+where the last calculation follows from (\ref{Elogdet_Omega}) and if $\sigma^2 \sim \text{Inv-Ga}(a, b)$, $1/\sigma^2 \sim \mathrm{Ga}(a, b)$ and $\overline{-\log \sigma_u^2} = \psi(a) - \log b$.
 
 We can then ask what happens when we look for local minima of this objective with respect to $\mu_\eta$ and $\Sigma_\eta$:
 \begin{align}
