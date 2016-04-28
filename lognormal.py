@@ -54,23 +54,23 @@ def transform_inputs(eta_cov_chol, log_sig_a, Sig_b_chol, Sig_c_chol, log_A_post
 
     return eta_cov, sig_a, Sig_b, Sig_c, A_post, pi_post, mu_eps, ups_eps, eta_eps
 
-def update_xi0(parvec, xi0, X, dimlist):
+def get_xi(parvec, X, dimlist):
     """
     Use current parameter vector (parvec) to update current best estimate of
-    xi (xi0), since this is not itself a tunable parameter, but a function
+    xi, since this is not itself a tunable parameter, but a function
     of tunable parameters that needs to be known in advance in order to
     "bootstrap" the computation of L.
     """
     pars = unpack(parvec, dimlist)
     mu_eta, mu_a, mu_b = pars[0:5:2]
-    mu_c, Sig_c_fact, log_A_post, log_pi_post, log_mu_eps, log_ups_eps = pars[6:-1]
+    mu_c, Sig_c_fact, log_psi, log_A_post, log_pi_post, log_mu_eps, log_ups_eps = pars[6:-1]
 
     Sig_c = covs_from_factors(Sig_c_fact)
     A_post = np.exp(log_A_post)
     pi_post = np.exp(log_pi_post)
     tau = np.exp(log_mu_eps)
 
-    return HMM_inference(xi0, tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post, permuted=True)[1]
+    return HMM_inference(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, log_psi, A_post, pi_post, permuted=True)[0]
 
 def stack_last(arglist):
     """
@@ -79,9 +79,9 @@ def stack_last(arglist):
     nd = arglist[0].ndim
     return np.transpose(np.array(arglist), tuple(range(1, nd + 1)) + (0,))
 
-def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
-    v_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, A_post,
-    pi_post, mu_eps, ups_eps, eta_eps):
+def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
+    v_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, mu_c, Sig_c, log_psi,
+    A_post, pi_post, mu_eps, ups_eps, eta_eps):
     """
     Evidence lower bound for model:
 
@@ -92,7 +92,7 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
         b_{.u} ~ MvNormal(m_b, S_b)
         c_{.u} ~ MvNormal(m_c, S_c)
         x_{tr} ~ Given
-        z_{.k} ~ HMM(A_k, pi_k)
+        z_{.k} ~ MarkovChain(A_k, pi_k)
         A_k ~ MarkovMatrix(A_prior) (i.e., Dirichlet on cols)
         pi_k ~ Dirichlet(pi_prior)
         Sig_eps = diag(sig_eps) * Omega * diag(sig_eps)
@@ -105,7 +105,7 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
         a_u ~ Normal(mu_a_{u}, sig_a_{u})
         b_{.u} ~ MvNormal(mu_b_{u}, sig_b_{u})
         c_{.u} ~ MvNormal(mu_c_{u}, sig_c_{u})
-        z_{.k} ~ HMM(A_post, pi_post)
+        z_{.k} ~ HMM(psi, A_post, pi_post)
         Sig_eps = diag(sig_eps) * Omega * diag(sig_eps)
         tau_eps ~ Gamma(mu_eps, ups_eps)  (mean, variance parameterization)
         sig_eps^2 = 1/tau_eps
@@ -116,13 +116,14 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
     M, K = pi_prior.shape
 
     ###### HMM pre-calculations ############
-    log_psi, xi, Xi, logZ = HMM_inference(xi0, mu_eps, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post)
+    xi, Xi, logZ = HMM_inference(mu_eps, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, log_psi, A_post, pi_post)
 
     # observations
     elbo = log_observed_spikes(N, mu_eta, Sig_eta)
 
     # effective log firing rates
-    elbo = elbo + log_bottleneck_variables(mu_eps, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, eta_eps, xi)
+    log_tau = mean_log_gamma(mu_eps, ups_eps)
+    elbo = elbo + log_bottleneck_variables(mu_eps, log_tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X, mu_c, Sig_c, eta_eps, xi)
     elbo = elbo + mvnormal_entropy(mu_eta, Sig_eta)
 
     # baselines
@@ -160,10 +161,8 @@ def L(N, X, xi0, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
 
     return elbo
 
-def HMM_inference(xi0, tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post, permuted=False):
-    K = xi0.shape[-1]
-
-    log_psi = log_emission_probs(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, xi0)
+def HMM_inference(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, log_psi, A_post, pi_post, permuted=False):
+    K = log_psi.shape[-1]
 
     # "effective" A and pi for the HMM are exp(mean(log(.)))
     Elog_A = mean_log_markov(A_post)
@@ -190,7 +189,7 @@ def HMM_inference(xi0, tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, A_post, pi_post,
     Xi = stack_last(Xi_l)
     logZ = np.array(logZ_l)
 
-    return log_psi, xi, Xi, logZ
+    return xi, Xi, logZ
 
 def log_observed_spikes(N, mu, Sig):
     """
@@ -208,7 +207,7 @@ def log_observed_spikes(N, mu, Sig):
 
     return np.sum(out)
 
-def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
+def log_bottleneck_variables(tau, log_tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
     mu_c, Sig_c, eta_eps, xi):
     """
     E[log p(eta)] where
@@ -232,41 +231,41 @@ def log_bottleneck_variables(tau, mu_eta, Sig_eta, mu_a, sig_a, mu_b, Sig_b, X,
 
     # logdet Omega terms
     out = out + T * U * (U - 1) * np.log(2)
-    out = out - T * np.sum(np.log(tau))
+    out = out - T * np.sum(log_tau)
     out = out + 2 * T * Elogdet_LKJ(eta_eps, U)
 
     return -0.5 * out
 
 
-def log_emission_probs(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, xi):
-    """
-    Calculate log psi, where psi \propto p(obs|z)
-    """
-    xi1 = xi[:, 1, :]
-    T, U = mu_eta.shape
-    _, K = mu_c.shape
-
-    mu_eff = mu_eta - mu_a - np.dot(X, mu_b.T)
-
-    lpsi = np.einsum('u,tu,uk->tk', tau, mu_eff, mu_c)
-    lpsi = lpsi - 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
-    lpsi = lpsi - 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
-    lpsi = lpsi - 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
-    diag_Sig_c = np.diagonal(Sig_c, axis1=-1, axis2=-2)
-    lpsi = lpsi - 0.5 * np.einsum('u,uk,tk->tk', tau, diag_Sig_c, 1 - xi1)
-
-    # this is a dirty, dirty hack to make autograd work:
-    # 1. We can't do the reasonable thing -- assigning to an array of 0s
-    #   for z = 1 slice -- because autograd doesn't handle slice assignment
-    # 2. **However**, only *relative* psi is important, so we make
-    #   log p(D|z=0) = -log p(D|z=1) such that their difference is correct
-    log_psi = 0.5 * np.transpose(np.array([-lpsi, lpsi]), (1, 0, 2))
-
-    if np.any(np.isnan(log_psi)):
-        raise ValueError('NaNs appear in emission probabilities')
-
-    return log_psi
-
+# def log_emission_probs(tau, mu_eta, mu_a, mu_b, X, mu_c, Sig_c, xi):
+#     """
+#     Calculate log psi, where psi \propto p(obs|z)
+#     """
+#     xi1 = xi[:, 1, :]
+#     T, U = mu_eta.shape
+#     _, K = mu_c.shape
+#
+#     mu_eff = mu_eta - mu_a - np.dot(X, mu_b.T)
+#
+#     lpsi = np.einsum('u,tu,uk->tk', tau, mu_eff, mu_c)
+#     lpsi = lpsi - 0.5 * np.einsum('u,uk,uj,tj->tk', tau, mu_c, mu_c, xi1)
+#     lpsi = lpsi - 0.5 * np.einsum('u,ukj,tj->tk', tau, Sig_c, xi1)
+#     lpsi = lpsi - 0.5 * np.einsum('u,uk,uk,tk->tk', tau, mu_c, mu_c, 1 - xi1)
+#     diag_Sig_c = np.diagonal(Sig_c, axis1=-1, axis2=-2)
+#     lpsi = lpsi - 0.5 * np.einsum('u,uk,tk->tk', tau, diag_Sig_c, 1 - xi1)
+#
+#     # this is a dirty, dirty hack to make autograd work:
+#     # 1. We can't do the reasonable thing -- assigning to an array of 0s
+#     #   for z = 1 slice -- because autograd doesn't handle slice assignment
+#     # 2. **However**, only *relative* psi is important, so we make
+#     #   log p(D|z=0) = -log p(D|z=1) such that their difference is correct
+#     log_psi = 0.5 * np.transpose(np.array([-lpsi, lpsi]), (1, 0, 2))
+#
+#     if np.any(np.isnan(log_psi)):
+#         raise ValueError('NaNs appear in emission probabilities')
+#
+#     return log_psi
+#
 def expected_log_normal(m, s, mu, sig):
     """
     E[log p(x)] where
@@ -311,10 +310,10 @@ def mvnormal_entropy(mu, Sig):
 
     return out
 
-def hmm_entropy(log_psi, Elog_A, Elog_pi, xi, Xi, logZ):
+def hmm_entropy(Elog_psi, Elog_A, Elog_pi, xi, Xi, logZ):
     """
     Entropy of Hidden Markov Model with parameters
-    log_psi: (T, M) -- log evidence
+    Elog_psi: (T, M) -- log evidence
     Elog_A: (M, M) -- expected log Markov transition matrix
     Elog_pi: (M,) -- expected log initial state probability
     xi: (T, M) -- q(z_t)  (posterior marginal)
@@ -323,7 +322,7 @@ def hmm_entropy(log_psi, Elog_A, Elog_pi, xi, Xi, logZ):
     xi, Xi, and logZ come from calling forward-backward on the first
     three arguments
     """
-    emission_piece = np.sum(xi * log_psi)
+    emission_piece = np.sum(xi * Elog_psi)
     initial_piece = np.dot(xi[0], Elog_pi)
     transition_piece = np.sum(Xi * Elog_A)
     logq = emission_piece + initial_piece + transition_piece
@@ -447,6 +446,18 @@ def gamma_entropy(mu, ups):
     beta = mu / ups
     H = alpha - np.log(beta) + gammaln(alpha) + (1 - alpha) * digamma(alpha)
     return np.sum(H)
+
+def mean_log_gamma(m, v):
+    """
+    E[log x] where
+    x ~ Gamma(a, b)
+    E[x] = m = a/b
+    var[x] = v = a/b**2
+    => a = m**2/v, b = m/v
+    """
+    a = m**2/v
+    b = m/v
+    return digamma(a) - np.log(b)
 
 def expected_log_beta(a, b, alpha, beta):
     """
