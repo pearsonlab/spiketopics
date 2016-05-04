@@ -336,10 +336,10 @@ We will assume the following priors for the parameters:
     a_u &\sim \mathcal{N}(m_a, s_a^2) \\
     b_{\cdot u} &\sim \mathcal{N}(m_b, S_b) \\
     c_{\cdot u} &\sim \mathcal{N}(m_c, S_c) \\
-    z_{\cdot k} &\sim \mathrm{HMM}(A_k, \pi_k) \\
+    z_{\cdot k} &\sim \mathrm{MM}(A_k, \pi_k) \\
     \Sigma_\varepsilon &\sim \text{Inv-Wishart}
 \end{align}
-That is, the coefficients $a$, $b$, and $c$ for each unit are drawn from population normal distributions (perhaps with nontrivial covariance), while the hidden binary variables $z$ are drawn from separate hidden Markov models.
+That is, the coefficients $a$, $b$, and $c$ for each unit are drawn from population normal distributions (perhaps with nontrivial covariance), while the hidden binary variables $z$ are drawn from separate Markov models.
 
 Now, the variational posterior $q$ can be chosen as a product of the following:
 \begin{align}
@@ -347,7 +347,7 @@ Now, the variational posterior $q$ can be chosen as a product of the following:
     a_u &\sim \mathcal{N}(\mu^u_a, (\sigma^u_a)^2) \\
     b_{\cdot u} &\sim \mathcal{N}(\mu^u_b, \Sigma^u_b) \\
     c_{\cdot u} &\sim \mathcal{N}(\mu^u_c, \Sigma^u_c) \\
-    z_{\cdot k} &\sim \mathrm{HMM}(\tilde{A}_k, \tilde{\pi}_k) \\
+    z_{\cdot k} &\sim \mathrm{HMM}(\tilde{\psi}, \tilde{A}_k, \tilde{\pi}_k) \\
     \Sigma_\varepsilon &\sim \text{Inv-Wishart}
 \end{align}
 
@@ -531,6 +531,40 @@ yielding
 \end{multline}
 where $\tau_u \equiv \mathbb{E}[\sigma_u^{-2}]$.
 Note that here, we have taken $\psi$ here as $T \times K$ rather than $T \times 2 \times K$, with one entry for each state. This is because only \emph{relative} log probabilities are needed for the forward-backward algorithm, so for each chain $k$, we can take $\log \psi_t$ as a two-column matrix with the first column all 0s.
+
+\subsubsection{A note on HMM parameterization}
+Above, we parameterized the posterior over latents as
+\begin{equation}
+    z \sim \mathrm{HMM}(\tilde{\psi}, \tilde{A}, \tilde{\pi})
+\end{equation}
+or
+\begin{equation}
+    \log q(z) = \sum_ t \left[\tilde{\psi}_t \cdot z_t + z_{t + 1}^\top \cdot \tilde{A} \cdot z_t + \tilde{\pi} \cdot z_0\right] - \log Z
+\end{equation}
+Now, we know from Beal that variational (coordinate ascent) updates will prescribe $\tilde{A} = \mathbb{E}[\log A]$ plus prior terms, with similar conclusions for $\tilde{\pi}$ and $\tilde{\psi}$. Thus, the columns of $e^{\tilde{A}}$ and $e^{\tilde{\pi}}$ are subnormalized (i.e., do not add to 1).
+
+More generally, though, we would like to know how much freedom exists to parameterize the HMM. That is, what are the constraints on the parameters $\tilde{\psi}$, $\tilde{A}$, and $\tilde{\pi}$? More specifically, what transformations of these parameters \emph{cannot} be compensated by a change in $\log Z$ (i.e., do not simply rescale the unnormalized density)?
+
+The easiest case is that of $\tilde{\pi}$. For a perturbation (not necessarily small) $\tilde{\pi} \rightarrow \tilde{\pi} + \varepsilon$, we want
+\begin{equation}
+    \varepsilon \cdot z_0 = \text{constant} \; \Rightarrow \varepsilon = \epsilon \mathbf{1}
+\end{equation}
+since $\mathbf{1} \cdot z = 1$.
+
+For $\tilde{\psi}_t \rightarrow \tilde{\psi}_t + \varepsilon_t$ we also require
+\begin{equation}
+    \varepsilon_t \cdot z_t = \text{constant} \; \Rightarrow \varepsilon_t = \epsilon_t \mathbf{1}
+\end{equation}
+That is, $\psi_t$ need only be defined up to an overall constant at each time, which is equivalent to saying that only \emph{relative} values of $p(obs|z_t)$ matter.
+Finally, we consider $\tilde{A} \rightarrow \tilde{A} + \varepsilon$. Here, we need $\sum_t z^\top_{t + 1} \varepsilon z_t = \text{constant}$. Differentiating this condition and keeping in mind that $z_M = 1 - \sum_{j = 1}^{M - 1} z_j$ at each time then gives
+\begin{equation}
+    (\varepsilon^\top \cdot z_{t + 1})_k
+    - (\varepsilon^\top \cdot z_{t + 1})_M
+    = 0
+\end{equation}
+$\forall k < M, t$ which has the solution $\varepsilon = (\mathbf{1} \otimes \mathbf{1}) D$, with $D$ a diagonal matrix. That is, $\varepsilon$ is matrix with constant columns. Clearly, this is analogous with the case of $\tilde{\pi}$ and suggests that each column of $\tilde{A}$ can be normalized separately.
+
+    {\bf To summarize:} Since none of the HMM parameters need to be properly normalized --- or more correctly, their normalizations can be absorbed into $Z$ --- it is feasible to treat all these as unconstrained free parameters.
 
 \subsubsection{DEPRECATED: Solving for $\mu$}
 The above transcendental equation for $\mu$ can be solved by using the Lambert W function, which satisfiex $z = W(z)e^{W(z)}$. That is, $y = W(z)$ is the solution to $ye^y = z$. Moreover, the equation
