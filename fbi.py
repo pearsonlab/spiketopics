@@ -15,10 +15,10 @@ def fb_infer(A, pi, psi):
     such that the end result using the given psi will be properly normalized
     when using the returned value of Z
     """
-    if np.any(A > 1):
-        raise ValueError('Transition matrix probabilities > 1')
-    if np.any(pi > 1):
-        raise ValueError('Initial state probabilities > 1')
+    # if np.any(A > 1):
+    #     raise ValueError('Transition matrix probabilities > 1')
+    # if np.any(pi > 1):
+    #     raise ValueError('Initial state probabilities > 1')
 
     T = psi.shape[0]
     M = A.shape[0]
