@@ -64,7 +64,7 @@ def get_xi(parvec, X, dimlist):
     pars = unpack(parvec, dimlist)
     psi, A_tilde, pi_tilde = pars[8:11]
 
-    return HMM_inference(psi, A_tilde, pi_tilde, permuted=False)[0]
+    return HMM_inference(psi, A_tilde, pi_tilde)[0]
 
 def stack_last(arglist):
     """
@@ -157,7 +157,7 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
 
     return elbo
 
-def HMM_inference(psi, A_tilde, pi_tilde, permuted=False):
+def HMM_inference(psi, A_tilde, pi_tilde):
     K = psi.shape[-1]
 
     # psi to get forward-backward params
