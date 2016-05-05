@@ -49,11 +49,11 @@ class Test_Forwards_Backwards:
         2 rows x K columns
         Row 0 contains 0 -> 1 transition probability
         Row 1 contains 1 -> transition probability
-        """ 
+        """
         # want 0 -> to be rare, 1 -> 1 to be a little less so
         v0 = stats.beta.rvs(1, 200, size=self.K)
         v1 = stats.beta.rvs(100, 1, size=self.K)
-        self.trans_probs = np.vstack([v0, v1]).T 
+        self.trans_probs = np.vstack([v0, v1]).T
 
     @classmethod
     def _make_initial_states(self):
@@ -78,7 +78,7 @@ class Test_Forwards_Backwards:
         for t in xrange(1, self.T):
             p_trans_to_1 = self.trans_probs[range(self.K), chain[:, t - 1]]
             chain[:, t] = stats.bernoulli.rvs(p_trans_to_1)
-            
+
         # add a baseline that's always turned on
         chain[0, :] = 1
 
@@ -109,7 +109,7 @@ class Test_Forwards_Backwards:
 
     @classmethod
     def _calc_emission_probs(self):
-        logpsi = np.sum(self.N_test[:, :, np.newaxis] * 
+        logpsi = np.sum(self.N_test[:, :, np.newaxis] *
             np.log(self.mu_test[np.newaxis, ...]), axis=1)
         self.psi_test = np.exp(logpsi)
 
@@ -135,9 +135,9 @@ class Test_Forwards_Backwards:
     def test_rescaling_psi_compensated_by_Z(self):
         offset = np.random.normal(size=self.T)
         psi_r = np.exp(np.log(self.psi_test) + offset[:, np.newaxis])
-        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
 
-        gammar, logZr, Xir = gp.fb_infer(self.A_test, self.pi0_test, psi_r)
+        gammar, logZr, Xir = fb.fb_infer(self.A_test, self.pi0_test, psi_r)
 
         npt.assert_allclose(gammar, gamma)
         npt.assert_allclose(logZr, logZ + np.sum(offset))
@@ -146,9 +146,9 @@ class Test_Forwards_Backwards:
     def test_rescaling_pi_compensated_by_Z(self):
         offset = np.random.normal()
         pi_r = np.exp(np.log(self.pi0_test) + offset)
-        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
 
-        gammar, logZr, Xir = gp.fb_infer(self.A_test, pi_r, self.psi_test)
+        gammar, logZr, Xir = fb.fb_infer(self.A_test, pi_r, self.psi_test)
 
         npt.assert_allclose(gammar, gamma)
         npt.assert_allclose(logZr, logZ + offset)
@@ -157,9 +157,9 @@ class Test_Forwards_Backwards:
     def test_rescaling_A_compensated_by_Z(self):
         offset = np.random.normal()
         A_r = np.exp(np.log(self.A_test) + offset)
-        gamma, logZ, Xi = gp.fb_infer(self.A_test, self.pi0_test, self.psi_test)
+        gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
 
-        gammar, logZr, Xir = gp.fb_infer(A_r, self.pi0_test, self.psi_test)
+        gammar, logZr, Xir = fb.fb_infer(A_r, self.pi0_test, self.psi_test)
 
         npt.assert_allclose(gammar, gamma)
         npt.assert_allclose(logZr, logZ + (self.T - 1) * offset)
@@ -193,6 +193,5 @@ class Test_Forwards_Backwards:
 
     def fb_infer_integration_test(self):
         gamma, logZ, Xi = fb.fb_infer(self.A_test, self.pi0_test, self.psi_test)
-        npt.assert_allclose(self.z_test.astype('float')[5:], 
+        npt.assert_allclose(self.z_test.astype('float')[5:],
             gamma[5:, 1], atol=1e-3)
-        
