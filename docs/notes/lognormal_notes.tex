@@ -560,11 +560,13 @@ Finally, we consider $\tilde{A} \rightarrow \tilde{A} + \varepsilon$. Here, we n
 \begin{equation}
     (\varepsilon^\top \cdot z_{t + 1})_k
     - (\varepsilon^\top \cdot z_{t + 1})_M
+    + (\varepsilon \cdot z_{t - 1})_k
+    - (\varepsilon \cdot z_{t - 1})_M
     = 0
 \end{equation}
-$\forall k < M, t$ which has the solution $\varepsilon = (\mathbf{1} \otimes \mathbf{1}) D$, with $D$ a diagonal matrix. That is, $\varepsilon$ is matrix with constant columns. Clearly, this is analogous with the case of $\tilde{\pi}$ and suggests that each column of $\tilde{A}$ can be normalized separately.
+$\forall k < M, t$ which has the solution $\varepsilon = \epsilon(\mathbf{1} \otimes \mathbf{1})$. That is, $\varepsilon$ is matrix of all 1s. Note that this is not to say that the forward-backward algorithm will not properly calculate the posterior for an arbitrary $\tilde{A}$, only that the equivalence class of $\tilde{A}$s (defined as equivalence up to $Z$ rescaling) allows allows for a single overall scale degree of freedom. ({\bf Note:} while Beal notes that the posteriors calculated by forward-backward with subnormalized probabilities are fine provided with calculate $\log Z$ appropriately, \emph{the two-slice marginals are not}. This stems from the fact that $\Xi$ (unnormalized) relies on $e^{\tilde{A}}$ for its calculation, and this must be normalized \emph{separately} by columns. That is, the numbers in different columns are \emph{not comparable}, even though $\Xi$ is supposed to be normalized over all of them. Ultimately, if not handled, this will produce incorrect results.)
 
-    {\bf To summarize:} Since none of the HMM parameters need to be properly normalized --- or more correctly, their normalizations can be absorbed into $Z$ --- it is feasible to treat all these as unconstrained free parameters.
+{\bf To summarize:} Since none of the HMM parameters need to be properly normalized --- or more correctly, their normalizations can be absorbed into $Z$ --- it is feasible to treat all these (at least $\tilde{\psi}$ and $\tilde{\pi}$) as unconstrained free parameters. $\tilde{A}$ should be normalized correctly before passing to the forward-backward algorithm.
 
 \subsubsection{DEPRECATED: Solving for $\mu$}
 The above transcendental equation for $\mu$ can be solved by using the Lambert W function, which satisfiex $z = W(z)e^{W(z)}$. That is, $y = W(z)$ is the solution to $ye^y = z$. Moreover, the equation
