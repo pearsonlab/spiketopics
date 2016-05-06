@@ -5,7 +5,7 @@ Hidden Markov Models.
 from __future__ import division
 import autograd.numpy as np
 
-def fb_infer(A_b, pi, psi):
+def fb_infer(A, pi, psi):
     """
     Implement the forward-backward inference algorithm.
     A is a matrix of transition probabilities that acts to the right:
