@@ -5,7 +5,7 @@ Hidden Markov Models.
 from __future__ import division
 import autograd.numpy as np
 
-def fb_infer(A, pi, psi):
+def fb_infer(A_b, pi, psi):
     """
     Implement the forward-backward inference algorithm.
     A is a matrix of transition probabilities that acts to the right:
@@ -49,16 +49,17 @@ def fb_infer(A, pi, psi):
 
     alpha = np.array(alpha)
     beta = np.array(beta)
+    logZ = np.array(logZ)
 
     # posterior
-    gamma = alpha * beta
-    gamma = gamma / np.sum(gamma, axis=1, keepdims=True)
+    gamma_un = alpha * beta
+    gamma = gamma_un / np.sum(gamma_un, axis=1, keepdims=True)
 
     # calculate 2-slice marginal
-    Xi = ((beta[1:] * psi[1:])[:, np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis]
+    Xi_un = ((beta[1:] * psi[1:])[:, :, np.newaxis] * alpha[:(T - 1), np.newaxis, :]) * A[np.newaxis]
 
     #normalize
-    Xi = Xi / np.sum(Xi, axis=(1, 2), keepdims=True)
+    Xi = Xi_un / np.sum(Xi_un, axis=(1, 2), keepdims=True)
 
     if np.any(np.isnan(gamma)):
         raise ValueError('NaNs appear in posterior')
