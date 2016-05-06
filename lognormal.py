@@ -8,6 +8,7 @@ from autograd.scipy.special import digamma, gammaln
 import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd import grad
+from autograd.scipy.misc import logsumexp
 from fbi import fb_infer
 
 def pack(*args):
@@ -34,7 +35,7 @@ def unpack(x, dimlist):
 
     return varlist
 
-def transform_inputs(eta_cov_chol, log_sig_a, Sig_b_chol, Sig_c_chol, log_A_post, log_pi_post, log_mu_eps, log_ups_eps, log_eta_eps):
+def transform_inputs(eta_cov_chol, log_sig_a, Sig_b_chol, Sig_c_chol, A_tilde, pi_tilde, log_A_post, log_pi_post, log_mu_eps, log_ups_eps, log_eta_eps):
     """
     Transform unconstrained variables used by gradient to constrained variables
     used by L.
@@ -46,13 +47,15 @@ def transform_inputs(eta_cov_chol, log_sig_a, Sig_b_chol, Sig_c_chol, log_A_post
     sig_a = np.exp(log_sig_a)
     Sig_b = covs_from_factors(Sig_b_chol)
     Sig_c = covs_from_factors(Sig_c_chol)
+    A_tilde_norm = A_tilde - logsumexp(A_tilde, axis=0, keepdims=True)
+    pi_tilde_norm = pi_tilde - logsumexp(pi_tilde, axis=0, keepdims=True)
     A_post = np.exp(log_A_post)
     pi_post = np.exp(log_pi_post)
     mu_eps = np.exp(log_mu_eps)
     ups_eps = np.exp(log_ups_eps)
     eta_eps = np.exp(log_eta_eps - 1)
 
-    return eta_cov, sig_a, Sig_b, Sig_c, A_post, pi_post, mu_eps, ups_eps, eta_eps
+    return eta_cov, sig_a, Sig_b, Sig_c, A_tilde_norm, pi_tilde_norm, A_post, pi_post, mu_eps, ups_eps, eta_eps
 
 def get_xi(parvec, X, dimlist):
     """
@@ -141,11 +144,11 @@ def L(N, X, m_a, s_a, m_b, S_b, m_c, S_c, A_prior, pi_prior, h_eps, m_eps,
     elbo = elbo + dirichlet_entropy(pi_post)
 
     # HMMs
-    Elog_A = mean_log_markov(A_post)
-    Elog_pi = mean_log_dirichlet(pi_post)
     for k in range(K):
+        Elog_A = mean_log_markov(A_post[..., k])
+        Elog_pi = mean_log_dirichlet(pi_post[..., k])
         elbo = elbo + expected_log_state_sequence(xi[..., k], Xi[..., k],
-            Elog_A[..., k], Elog_pi[..., k])
+            Elog_A, Elog_pi)
         elbo = elbo + hmm_entropy(psi[..., k], A_tilde[..., k],
             pi_tilde[..., k], xi[..., k], Xi[..., k], logZ[k])
 
