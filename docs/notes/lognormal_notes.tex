@@ -337,7 +337,7 @@ We will assume the following priors for the parameters:
     b_{\cdot u} &\sim \mathcal{N}(m_b, S_b) \\
     c_{\cdot u} &\sim \mathcal{N}(m_c, S_c) \\
     z_{\cdot k} &\sim \mathrm{MM}(A_k, \pi_k) \\
-    \Sigma_\varepsilon &\sim \text{Inv-Wishart}
+    \Sigma_\varepsilon &\sim \text{Inv-Wishart}(P, n)
 \end{align}
 That is, the coefficients $a$, $b$, and $c$ for each unit are drawn from population normal distributions (perhaps with nontrivial covariance), while the hidden binary variables $z$ are drawn from separate Markov models.
 
@@ -348,7 +348,7 @@ Now, the variational posterior $q$ can be chosen as a product of the following:
     b_{\cdot u} &\sim \mathcal{N}(\mu^u_b, \Sigma^u_b) \\
     c_{\cdot u} &\sim \mathcal{N}(\mu^u_c, \Sigma^u_c) \\
     z_{\cdot k} &\sim \mathrm{HMM}(\tilde{\psi}, \tilde{A}_k, \tilde{\pi}_k) \\
-    \Sigma_\varepsilon &\sim \text{Inv-Wishart}
+    \Sigma_\varepsilon &\sim \text{Inv-Wishart}(\Psi, \nu)
 \end{align}
 
 Some notes:
@@ -431,14 +431,15 @@ Then the only non-conjugate terms, as noted above, are related to $\eta$:
     - \frac{1}{2} \sum_{t} \mathbb{E}_q \left[
     (\eta_t - \overline{\eta}_t)^\top \Sigma_\varepsilon^{-1}(\eta_t - \overline{\eta}_t)
     + \log |\Sigma_\varepsilon| \right]\\
+    \label{eta_opt}
     &= \sum_{tu} \left[ N_{tu} \mu_{\eta tu} -
     \exp\left(\mu_{\eta tu} + \frac{1}{2} \Sigma_{\eta tuu} \right)\right] \\
-    \label{eta_cov}
+    \nonumber
     &- \frac{1}{2} \sum_{t} \mathrm{Tr}\left(
     \mathbb{E}_q[\Sigma_\varepsilon^{-1}]
     \left[ \Sigma_{\eta t} + (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])
     (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])^\top
-    + \mathrm{Cov}[\overline{\eta}]_{t}\right] \right) \\
+    + \mathrm{Cov}[\overline{\eta}_{t}]\right] \right) \\ \nonumber
     &- \frac{T}{2} \mathbb{E}_q[\log |\Sigma_\varepsilon|] + const
 \end{align}
 with $\overline{\eta} \equiv a + bx + cz$ and
@@ -450,7 +451,7 @@ with $\overline{\eta} \equiv a + bx + cz$ and
     &= \sum_{kk'}\left[\left(\delta_{uu'}\Sigma^c_{kk'} + \mu^c_{ku} \mu^c_{k'u'} \right)\left(\delta_{kk'}\xi_{tk}(1 - \xi_{tk}) + \xi_{tk}\xi_{tk'}\right) - \mu^c_{ku}\mu^c_{k'u'}\xi_{tk}\xi_{tk'} \right] \\
     &= \delta_{uu'}\left(\sum_k \Sigma^c_{kku} \xi_{tk} (1 - \xi_{tk}) + \xi_t^\top \Sigma_u^c \xi_t\right) + \sum_k \mu^c_{ku}\mu^c_{ku'}\xi_{tk}(1 - \xi_{tk})
 \end{align}
-In the case of the LKJ prior on $\Sigma_\varepsilon$ discussed above, this can be further simplified, since $\mathbb{E}_q[\Sigma_\varepsilon^{-1}] = \mathbb{E}_q[\mathrm{diag}(\boldsymbol{\sigma}^{-2})] \equiv \boldsymbol{\tau}$. Since this matrix is diagonal, (\ref{eta_cov}) simplifies to
+In the case of the LKJ prior on $\Sigma_\varepsilon$ discussed above, this can be further simplified, since $\mathbb{E}_q[\Sigma_\varepsilon^{-1}] = \mathbb{E}_q[\mathrm{diag}(\boldsymbol{\sigma}^{-2})] \equiv \boldsymbol{\tau}$. Since this matrix is diagonal, (\ref{eta_opt}) simplifies to
 \begin{align}
     & -\frac{1}{2} \sum_{tu}\tau_u \left[ \Sigma^\eta_{tuu} +
     \left(\mu^\eta_{tu} - \mu^a_{u} - \sum_r \mu^b_{ru} x_{tr} - \sum_k \mu^c_{ku} \xi_{tk}\right)^2
@@ -504,7 +505,7 @@ which (momentarily ignoring expectations) has the following terms involving $z$:
 \end{equation}
 for which the expectation over variables other than $z_{tk}$ reduces to:
 \begin{multline}
-    -\frac{1}{2}\sum_{uu'k}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right]
+    -\frac{1}{2}\sum_{uu'k'}\mathbb{E}_q\left[\left(\Sigma_\varepsilon\right)^{-1}_{uu'}\right]
     \left[-2\left((\mu_\eta)_{tu'} - (\mu_a)_{u'} - \sum_r (\mu_b)_{ru'} x_{tr}\right)
     (\mu_c)_{ku} + \right. \\
     \left.
@@ -568,38 +569,142 @@ $\forall k < M, t$ which has the solution $\varepsilon = \epsilon(\mathbf{1} \ot
 
 {\bf To summarize:} Since none of the HMM parameters need to be properly normalized --- or more correctly, their normalizations can be absorbed into $Z$ --- it is feasible to treat all these (at least $\tilde{\psi}$ and $\tilde{\pi}$) as unconstrained free parameters. $\tilde{A}$ should be normalized correctly before passing to the forward-backward algorithm.
 
-\subsubsection{DEPRECATED: Solving for $\mu$}
-The above transcendental equation for $\mu$ can be solved by using the Lambert W function, which satisfiex $z = W(z)e^{W(z)}$. That is, $y = W(z)$ is the solution to $ye^y = z$. Moreover, the equation
-\begin{equation}
-    p^{ax + b} = cx + d
-\end{equation}
-has the solution
-\begin{equation}
-    x = \frac{-W\left(-\frac{a \log p}{c}
-    p^{b - \frac{ad}{c}} \right)}{a \log p} - \frac{d}{c}
-\end{equation}
-Thus, we can substitute
+\subsection{Conjugate updates}
+\subsubsection{Bottleneck variables}
+As noted above, these variables are not conjugate, but must solve the optimization problem in (\ref{eta_opt}).
+\subsubsection{Noise variance}
+Here, in contrast to the above, we return to the Inverse-Wishart parameterization for $\Sigma_\varepsilon$, $\Sigma_\varepsilon \sim \mathrm{IW}(\Psi, \nu)$ or $\Lambda_\varepsilon = \Sigma^{-1}_\varepsilon \sim W(\Psi^{-1}, \nu)$. Note that, as a result
 \begin{align}
-    p &= e \\
-    a &= 1 \\
-    b &= \frac{1}{2} \sigma^2 \\
-    c &= -\tau \\
-    d &= N + 1 + \tau \mathbb{E}_q[\overline{\eta}]
+    \mathbb{E}[\Sigma^{-1}] &= \mathbb{E}[\Lambda] = \nu \Psi^{-1} \\
+    \mathbb{E}[\log |\Sigma|] &= -\mathbb{E}[\log |\Lambda|] = -(\psi_d(\nu/2) + d \log 2 + \log |\Psi^{-1}|)
 \end{align}
-into the above to yield
+with $d$ the dimension of the matrix variable. We have also used $\log |A^{-1}| = -\log |A|$ since $\det A^{-1} = 1/\det(A)$. For the entropy of these distributions, we have from Wikipedia
 \begin{equation}
-    \mu = N\tau^{-1} + \mathbb{E}_q[\overline{\eta}] -
-    W\left(\tau^{-1} \exp \left(
-    \frac{1}{2}\sigma^2 + N\tau^{-1} + \mathbb{E}_q[\overline{\eta}]
-    \right)\right)
+    \mathcal{H}[\Lambda] = \frac{d + 1}{2}\log |\Psi^{-1}| + \frac{d(d+1)}{2} \log 2
+    + \log \Gamma_d(\nu/2) - \frac{\nu - d - 1}{2} \psi_d(\nu/2) + \frac{\nu d}{2}
 \end{equation}
-Moreover, we note that when $x \gg 1$, $W(x) \approx \log x - \log \log x + o(1)$.
+and can straightforwardly derive
+\begin{align}
+    \mathcal{H}[\Sigma] &= -\frac{\nu}{2}\log |\Psi| + \frac{\nu d}{2} \log 2
+    + \log \Gamma_d(\nu/2) + \frac{\nu + d + 1}{2} \mathbb{E}[\log |\Sigma|] \\
+    &+ \frac{1}{2} \mathbb{E}[\mathrm{Tr}\left(\Psi \Sigma^{-1} \right)] \\
+    &= -\frac{\nu}{2}\log |\Psi| + \frac{\nu d}{2} \log 2
+    + \log \Gamma_d(\nu/2) \\
+    &- \frac{\nu + d + 1}{2}\left(\psi_d(\nu/2) + d \log 2 - \log |\Psi|\right) \\
+    &+ \frac{1}{2}\mathrm{Tr}\left(\Psi \mathbb{E}[\Sigma^{-1}] \right) \\
+    &= \frac{d + 1}{2}\log |\Psi| - \frac{d(d + 1)}{2} \log 2 + \log \Gamma_d(\nu/2) \\
+    &- \frac{\nu + d + 1}{2}\psi_d(\nu/2)
+    + \frac{\nu}{2} \mathrm{Tr}\left(\Psi \Psi^{-1} \right) \\
+    &=\frac{d + 1}{2}\log |\Psi| - \frac{d(d + 1)}{2} \log 2 + \log \Gamma_d(\nu/2) - \frac{\nu + d + 1}{2}\psi_d(\nu/2)
+    + \frac{\nu d}{2}
+\end{align}
 
-\subsubsection{DEPRECATED: Solving for $\sigma^2$}
-For $\sigma^2$, we have the condition
-\begin{equation}
-    \sigma^2 = \frac{1}{\tau + \exp\left(\mu + \frac{1}{2}\sigma^2 \right)}
-\end{equation}
-Solving this is similar to solving the fixed point equation $x = f(x)$ with $f$ the ($x$-reversed) logistic function. This equation can potentially solved by iteration, but one must be careful of the constants involved (so the approximation converges).
+Moreover, it is clear that if the prior on $\Sigma_\varepsilon$ is $\Sigma_\varepsilon \sim \mathrm{IW}(P, n)$, as above, then we have for the posterior conjugate updates
+\begin{align}
+    \nu &= n + T \\
+    \Psi &= P + \sum_t \mathbb{E}_q[(\eta_t - \overline{\eta}_t) (\eta_t - \overline{\eta}_t)^\top] \\
+    &= P + \sum_t \left[\Sigma_{\eta t} + (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])
+    (\mu_{\eta t} - \mathbb{E}_q[\overline{\eta}_{t}])^\top
+    + \mathrm{Cov}[\overline{\eta}_{t}]\right]
+\end{align}
+and $\mathrm{Cov[\overline{\eta}]}$ calculated above.
 
+\subsubsection{Latents}
+This is mostly covered above, but if $z_{\cdot k} \sim \mathrm{HMM}(\tilde{\psi}_k, \tilde{A}_k, \tilde{\pi}_k)$, we have the update equations
+\begin{align}
+    \tilde{\psi}_{tk} &= -\frac{1}{2}\sum_{uu'k'} \Psi^{-1}_{uu'}
+    \left[-2\left((\mu_\eta)_{tu'} - (\mu_a)_{u'} - \sum_r (\mu_b)_{ru'} x_{tr}\right)
+    (\mu_c)_{ku} + \right. \\
+    &+
+    \left.
+    \sum_{k'}((\mu_c)_{ku}(\mu_c)_{k'u'} + (\Sigma_c)_{ukk'}\delta_{uu'})(\xi_{tk'} + (1 - \xi_{tk'})\delta_{kk'})\right]\\
+    \tilde{A}_k &= \overline{\log A_k} \\
+    \tilde{\pi}_k &= \overline{\log \pi_k}
+\end{align}
+
+\subsubsection{Markov Chain parameters}
+Assume that the $\pi_k$ and the columns of the $A_k$ are all Dirichlet distributed, with priors:
+\begin{align}
+    \pi_k &\sim \mathrm{Dir}(a_{\pi k}) \\
+    (A_k)_j &\sim \mathrm{Dir}(a_{A jk})
+\end{align}
+and posteriors
+\begin{align}
+    \pi_k &\sim \mathrm{Dir}(\alpha_{\pi k}) \\
+    (A_k)_j &\sim \mathrm{Dir}(\alpha_{A jk})
+\end{align}
+with $(A_k)_j$ the $j$th column of $A_k$.
+These parameters are updated according to the sufficient statistics $\xi_{tk}$ and $\Xi_{tk}$ of the Hidden Markov Model by
+\begin{align}
+    \alpha_{\pi k} &= a_{\pi k} + \xi_{0k} \\
+    \alpha_{A j k} &= a_{A j k} + \sum_t (\Xi_{tk})_j
+\end{align}
+
+\subsubsection{Baselines}
+In the canonical exponential family form for the normal distribution with potential $\theta$ and precision $\tau$, if we have
+\begin{align}
+    a &\sim \mathcal{N}(h, P) \quad \text{(prior)} \\
+    a &\sim \mathcal{N}(\theta, \Lambda) \quad \text{(posterior)}
+\end{align}
+we have the updates
+\begin{align}
+    \theta_u &= h_u + \nu \sum_{tu'} \Psi^{-1}_{uu'} \left(
+        (\mu_\eta)_{tu}
+        - \sum_r x_{tr} (\mu_b)_{ru'}
+        - \sum_k \xi_{tk} (\mu_c)_{ku'}
+    \right) \\
+    \Lambda_{uu'} &= P_{uu'} + \nu T (\Psi^{-1})_{uu'}
+\end{align}
+
+\subsubsection{Regressors}
+Let
+\begin{align}
+    b &\sim \mathcal{N}(h, P) \quad \text{(prior)} \\
+    b &\sim \mathcal{N}(\theta, \Lambda) \quad \text{(posterior)}
+\end{align}
+where we assume $b = [b_{ru}]$ is a vector given by $\mathrm{vec}(b)$. However, it is equivalent, and in the sequel we will use, the 2-tensor representation of $b$ as carrying indices $u$ and $r$.
+In this case, the updates take the form
+\begin{align}
+    \theta_{ru} &= h_{ru} + \nu \sum_{tu'} \Psi^{-1}_{uu'} \left(
+        (\mu_\eta)_{tu}
+        - a_u
+        - \sum_k \xi_{tk} (\mu_c)_{ku'}
+    \right) x_{tr} \\
+    \Lambda_{uu'rr'} &= P_{uu'rr'} + \nu (\Psi^{-1})_{uu'} \sum_t x_{tr} x_{tr'}
+\end{align}
+Note that if the prior precision $P$ is small compared to the second term, the posterior precision $\Lambda$ factorizes as $\Lambda = \nu \Psi^{-1} \otimes \Lambda_r$ with $\Lambda_r \equiv [\sum_t x_{tr}x_{tr'}]$. At any rate, the precision $\Lambda$ is likely to be of very low rank.
+
+\subsubsection{Responses to latents}
+Just as with the regressors, we have
+\begin{align}
+    c &\sim \mathcal{N}(h, P) \quad \text{(prior)} \\
+    c &\sim \mathcal{N}(\theta, \Lambda) \quad \text{(posterior)}
+\end{align}
+giving updates
+\begin{align}
+    \theta_{ku} &= h_{ku} + \nu \sum_{tu'} \Psi^{-1}_{uu'} \left(
+        (\mu_\eta)_{tu}
+        - a_u
+        - \sum_r x_{tr} (\mu_b)_{ru'}
+    \right) \xi_{tk} \\
+    \Lambda_{uu'rr'} &= P_{uu'kk'} + \nu (\Psi^{-1})_{uu'} \sum_t \xi_{tk} \xi_{tk'}
+\end{align}
+
+\subsubsection{Lower-rank posteriors}
+Above, we assumed that the posterior precision matrices $\Lambda$ had full rank, since this allows for full conjugate updates. In the case that we want lower-rank approximations (e.g., for baselines), the posterior updates are modified as below:
+\begin{align}
+    a_u &\sim \mathcal{N}(\theta_u, \tau_u) \\
+    \theta_u &= h_u + \nu \sum_{tu'} \Psi^{-1}_{uu'} \left(
+        (\mu_\eta)_{tu}
+        - (1 - \delta_{uu'})(\mu_a)_u'
+        - \sum_r x_{tr} (\mu_b)_{ru'}
+        - \sum_k \xi_{tk} (\mu_c)_{ku'}
+    \right) \\
+    \tau_{u} &= P_{u} + \nu T (\Psi^{-1})_{uu}
+\end{align}
+That is, if we don't allow covariance between the posteriors for different $a_u$, the estimate for $\theta$ must take into account (and average over) the couplings with other $u$s induced by $\Psi^{-1}$.
+
+Likewise for $b$ and $c$, if we wish to ignore covariance between units in the posterior, we should insert analogous terms proportional to $(1 - \delta_{uu'})$ in the appropriate places.
+
+\emph{Note also:} since the updates for unit $u$ now depend on the means for every other unit $u'$, one must choose between performing all such updates using the previous parameters (in which case, they are not an exact solution, since conjugacy only holds elementwise) or loop through updates (in which case one might want to randomize order).
 \end{document}
