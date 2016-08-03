@@ -77,8 +77,8 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-4 * np.ones((K,))
-    fr_shape_shape = 1. * np.ones((K,))
-    fr_shape_rate = 1 * np.ones((K,))
+    # fr_shape_shape = 1. * np.ones((K,))
+    # fr_shape_rate = 1 * np.ones((K,))
     fr_mean_shape = 1 * U * np.ones((K,))
     fr_mean_rate = 1 * U * np.ones((K,))
     # fr_mean_shape = 1 * np.ones((K,))
