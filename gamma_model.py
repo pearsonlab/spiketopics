@@ -7,7 +7,7 @@ import spiketopics.nodes as nd
 from numba import autojit, jit
 
 
-class GammaModel:
+class GammaModel(object):
 
     """
     This class fits a Poisson observation model using a product of Gamma-
