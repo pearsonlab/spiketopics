@@ -10,13 +10,13 @@
 We assume a Poisson process with $T$ observation times, $N$ observation units, and $K$ latent states. The counts for each unit at each time are then given by
 
 \begin{equation}
-    N_{tu} \sim \mathrm{Poisson}(\mu_{tu})
+    N_{tu} \sim \mathrm{Poisson}(e^{\mu_{tu}})
 \end{equation}
 with
 \begin{equation}
    \mu_{tu} = (ZB)_{tu} = \sum_k z_{tk} b_{ku}
 \end{equation}
-wit $z$ the time series of latent states (assumed binary) and $b$ the regression coefficients. In addition, we assume the $z_t$ have independent Markov transition dynamics within each latent state (see below).
+with $z$ the time series of latent states (assumed binary) and $b$ the regression coefficients. In addition, we assume the $z_t$ have independent Markov transition dynamics within each latent state (see below).
 
 In addition, it will be more convenient for our purposes to rewrite the above expression using $b_{ku} = \log \lambda_{ku}$, so that
 \begin{equation}
@@ -34,7 +34,7 @@ Clearly, if we treat $N$ and $z$ as constants, we have
 \section{Hidden Markov Model}
 Here, we assume a hidden Markov model for each latent state. That is, we take
 \begin{align}
-    A_{ij} &\equiv p(z_{t+1}=i|z_t = j) \\
+    A_{ji} &\equiv p(z_{t+1}=j|z_t = i) \\
     \pi_i &\equiv p(z_0 = i)
 \end{align}
 (Note that this means that the \emph{columns} of $A$ sum to 1, which is the opposite of the usual convention. In other words, in matrix notation, $z_{t+1} = A \cdot z_t$.)
