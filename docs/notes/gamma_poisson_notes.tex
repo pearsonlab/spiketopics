@@ -276,17 +276,17 @@ All other updates should remain unchanged.
 \subsection{Fluctuation in natural time}
 Here we consider the correlation of firing rates in consequential natural time slots. Different from the discussion above, we include the moment-by-moment fluctuation in the firing rate of each unit:
 \begin{equation}
-    (\lambda_{\mathrm{eff}})_{tu} = \prod_k \theta_{\tau(t)u} \lambda_{ku}^{z_{tk}}
+    (\lambda_{\mathrm{eff}})_{tu} = \prod_k \theta_{\tau u} \lambda_{ku}^{z_{tk}}
 \end{equation}
-where $\tau(t)$ is the natural time when movie clip $t$ is played.
+where $\tau$ is the natural time when movie clip is played.
 
-Further, we assume the overdispersion parameter $\theta_{\tau(t)u} = \phi_{\tau u} \theta_{\tau(t) - 1, u}$ is modulated by $\phi$ from the last moment. Let $\phi_{0u} = \theta_{0(t), u}$, then we have $\theta_{\tau(t)u} = \prod_{\tau' \le \tau} \phi_{\tau' u}$.
+Further, we assume the overdispersion parameter $\theta_{\tau u} = \phi_{\tau u} \theta_{\tau - 1, u}$ is modulated by $\phi$ from the last moment. Let $\phi_{0u} = \theta_{0, u}$, then we have $\theta_{\tau u} = \prod_{\tau' \le \tau} \phi_{\tau' u}$.
 
 Therefore, the terms that contains $\lambda$ in ELBO can be modified as follows. One term that corresponds to $N\log(\lambda_{\mathrm{}})$ is:
 \begin{align*}
     \sum_{tu} N_{tu} \log(\lambda_{\mathrm{eff}})_{tu}
     % = \sum_{tu} N_{tu} \log \left(\prod_{\tau' \le \tau} \phi_{\tau' u}  \prod_k \lambda_{ku}^{z_{tk}} \right) \\
-    &= \sum_{\tau u} N_{\tau(t) u} \sum_{\tau' \le \tau} \log\phi_{\tau' u} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \\
+    &= \sum_{\tau u} N_{\tau u} \sum_{\tau' \le \tau} \log\phi_{\tau' u} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \\
     &= \sum_{\tau u} \log\phi_{\tau u} \sum_{j \ge \tau}N_{ju} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \\
     &= \log\phi_{ju} \sum_{j' \ge \tau}N_{j'u} + \sum_{u, \tau \ne j} \log\phi_{\tau u} \sum_{j' \ge \tau}N_{j'u} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku}
 \end{align*}
@@ -331,7 +331,7 @@ Assume that the correlation over all natural time is always present. Therefore, 
 By comparing the terms that involves $\log \phi_{\tau u}$ and $\phi_{\tau u}$ in the ELBO, we can write down the updates for $\omega_{j u}$ and $\zeta_{j u}$ in gradient ascent as
 \begin{align*}
     \omega_{j u} &\leftarrow s_u + \sum_{j' \ge j} N_{j'u} \\
-    \zeta_{j u} &\leftarrow r_u + \sum_{u, \tau \ge j} F_{t(\tau)u} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}} 
+    \zeta_{j u} &\leftarrow r_u + \sum_{u, \tau \ge j} F_{t(\tau)u} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}}
 \end{align*}
 
 where $j \in \{1, 2, \ldots, T \}$ and $F_{t(\tau)u} \equiv \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)$.
