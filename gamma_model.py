@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.optimize import minimize
 import numexpr as ne
 import spiketopics.nodes as nd
-from numba import autojit, jit
+from numba import jit
 
 
 class GammaModel(object):
@@ -237,7 +237,7 @@ class GammaModel(object):
 
         return logpsi
 
-    @autojit
+    @jit
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
@@ -386,7 +386,7 @@ class GammaModel(object):
 
         return self
 
-    @autojit
+    @jit
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
@@ -429,7 +429,7 @@ class GammaModel(object):
         else:
             return self._F
 
-    @autojit
+    @jit
     def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
@@ -629,7 +629,7 @@ class GammaModel(object):
                               maxiter=maxiter, delayed_iters=[])
 
 
-@autojit
+@jit
 def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
@@ -644,7 +644,7 @@ def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     return np.log(-elbo), grad.ravel() / elbo
 
 
-@autojit(nopython=True, nogil=True)
+@jit(nopython=True, nogil=True)
 def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
