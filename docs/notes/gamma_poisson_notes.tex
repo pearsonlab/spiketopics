@@ -336,6 +336,16 @@ By comparing the terms that involves $\log \phi_{\tau u}$ and $\phi_{\tau u}$ in
 
 where $j \in \{1, 2, \ldots, T \}$ and $F_{t(\tau)u} \equiv \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)$.
 
+Similarly, the update for the local emission probability, $\eta$ now becomes:
+
+\begin{align*}
+    \eta_{tk} \leftarrow
+    \begin{pmatrix}
+        -\sum_{u, \tau: \, t(\tau) = t} F_{t(\tau)ku} \prod_{\tau' \le \tau}\frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \\
+        \sum_u N_{tu} \overline{\log \lambda_{ku}} - \sum_{u, \tau: \, t(\tau) = t} F_{t(\tau)ku} \frac{\alpha_{ku}}{\beta_{ku}} \prod_{\tau' \le \tau}\frac{\omega_{\tau' u}}{\zeta_{\tau' u}}
+    \end{pmatrix}
+\end{align*}
+
 \section{External covariates}
 \subsection{Gamma priors}
 In addition, we might also want to include external covariates $X(t)$ with an effect on firing rate. Thus we will include an $X$-dependent gain change of firing rate:
