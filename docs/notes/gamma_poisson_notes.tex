@@ -305,9 +305,9 @@ Assume the error correlation $\phi$ follows a gamma distribution for every natur
 
 Take expectation with respect to $q(\phi)$, we have:
 \begin{align}
-    \mathbb{E}_{q}[\cdot] &= \mathbb{E}_{q} \left[\sum_{\tau u} \log\phi_{\tau u} (\sum_{j \ge \tau}N_{ju}) \right]
+    \mathbb{E}_{q}[\cdot] &= \mathbb{E}_{q} \left[\sum_{\tau u} \log\phi_{\tau u} (\sum_{\tau' \ge \tau}N_{\tau' u}) \right]
     + \mathbb{E}_{q}\left[\sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \right] \\
-    &= \sum_{\tau u}\overline{\log\phi_{\tau u}} \sum_{j \ge \tau}N_{ju} + \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}}
+    &= \sum_{\tau u}\overline{\log\phi_{\tau u}} \sum_{\tau' \ge \tau}N_{\tau' u} + \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}}
 \end{align}
 
 For the second term, assume that $\phi_{\tau u}$ is independent of $\lambda_{ku}$, and follows a Gamma distribution as stated above:
@@ -319,18 +319,18 @@ For the second term, assume that $\phi_{\tau u}$ is independent of $\lambda_{ku}
 
 Then in the formula of ELBO, the piece that contributes to $\lambda$ now becomes:
 \begin{align*}
-    \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} + \sum_{\tau u} \overline{\log\phi_{\tau u}} \sum_{j \ge \tau} N_{ju} \\
+    \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} + \sum_{\tau u} \overline{\log\phi_{\tau u}} \sum_{\tau' \ge \tau} N_{\tau' u} \\
     - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow - \sum_{\tau u} \prod_{\tau' \le \tau} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)
 \end{align*}
 
 Assume that the correlation over all natural time is always present. Therefore, we have
 \begin{equation}
-    \mathbb{E}_{q(\phi)} = \left[ \log \frac{p(\phi)}{q(\phi)} \right] &= \sum_{\tau u} [(s_u - 1) \overline{\log \phi_{\tau u}} - r_u \overline{\phi_{\tau u}} + H_g(\omega_u, \zeta_u)]
+    \mathbb{E}_{q(\phi)} = \left[ \log \frac{p(\phi)}{q(\phi)} \right] &= \sum_{\tau u} [(s_u - 1) \overline{\log \phi_{\tau u}} - r_u \overline{\phi_{\tau u}} + H_g(\omega_{\tau u}, \zeta_{\tau u})]
 \end{equation}
 
 By comparing the terms that involves $\log \phi_{\tau u}$ and $\phi_{\tau u}$ in the ELBO, we can write down the updates for $\omega_{j u}$ and $\zeta_{j u}$ in gradient ascent as
 \begin{align*}
-    \omega_{j u} &\leftarrow s_u + \sum_{j' \ge j} N_{j'u} \\
+    \omega_{j u} &\leftarrow s_u + \sum_{\tau' \ge j} N_{\tau' u} \\
     \zeta_{j u} &\leftarrow r_u + \sum_{u, \tau \ge j} F_{t(\tau)u} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}}
 \end{align*}
 
