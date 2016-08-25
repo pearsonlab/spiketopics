@@ -4,27 +4,36 @@ Fit Gamma-Poisson topic model to McMahon-Leopold dataset.
 from __future__ import division
 import numpy as np
 import pandas as pd
-import spiketopics.gamma_model as gp
-from spiketopics.helpers import jitter_inits
+import gamma_model as gp
+from helpers import jitter_inits
 import argparse
 import cPickle as pickle
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description="Run latent topic discovery using a Gamma-Poisson model")
-    parser.add_argument("input", help="name of input file")
-    parser.add_argument("-s", "--seed", help="random number seed",
-        default=12345)
+    # Modified by Xin
+    # parser = argparse.ArgumentParser(description="Run latent topic discovery using a Gamma-Poisson model")
+    # parser.add_argument("input", help="name of input file")
+    # parser.add_argument("-s", "--seed", help="random number seed",
+    #     default=12345)
+    #
+    # args = parser.parse_args()
+    #
+    # # set random seed
+    # np.random.seed(args.seed)
+    #
+    # # load up data
+    # datfile = args.input
+    # print "Reading data..."
+    # df = pd.read_csv(datfile)
 
-    args = parser.parse_args()
-
-    # set random seed
-    np.random.seed(args.seed)
-
-    # load up data
-    datfile = args.input
+    ###########################################
+    # For testing only
+    # Modified by Xin
+    # Need not to input datafile in the argument
+    np.random.seed(101)
     print "Reading data..."
-    df = pd.read_csv(datfile)
+    df = pd.read_csv("data/prepped_data.csv")
 
     ####### for testing only ################
     # print "Subsetting for testing..."
@@ -36,8 +45,9 @@ if __name__ == '__main__':
     # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin
     dt = 0.3  # 300 ms bins
 
+    # Modified by Xin
     # juggle columns
-    df = df[['time', 'unit', 'count']]
+    # df = df[['time', 'unit', 'count']]
 
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
@@ -49,6 +59,8 @@ if __name__ == '__main__':
     K = 10
     D = 100  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
+    time_natural = int(T / (12 * 8))  # the number of natural time bins within each trial
+    od_natural = True  # flag for overdispersion_natural
 
     #################### priors and initial values
 
@@ -187,6 +199,18 @@ if __name__ == '__main__':
                 'post_rate': np.ones((M,))
                 })
 
+
+    ############ overdispersion natural time: Xin ####################
+    od_natural_shape = 6.
+    od_natural_rate = 5.
+    od_natural_dict = ({
+                'prior_shape': od_natural_shape * np.ones((M,)),
+                'prior_rate': od_natural_rate * np.ones((M,)),
+                'post_shape': np.ones((M,)),
+                'post_rate': np.ones((M,))
+                })
+
+
     ############ initialize model ####################
     numstarts = 5
     fitobjs = []
@@ -198,11 +222,18 @@ if __name__ == '__main__':
         gpm.initialize_fr_latents(**jitter_inits(fr_latent_dict, 0.15))
         gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
         # gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
-        gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
+
+        # Modified by Xin
+        if not od_natural:
+            gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
+        else:
+            gpm.initialize_overdispersion_natural(**jitter_inits(od_natural_dict, 0.25))
+            gpm.time_natural = time_natural
+
         gpm.finalize()
 
         print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-4, verbosity=2)
+        gpm.do_inference(tol=1e-3, verbosity=3)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
