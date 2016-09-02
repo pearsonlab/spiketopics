@@ -2,13 +2,12 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
-#import numexpr as ne
-import nodes as nd
-#from numba import jit
+import numexpr as ne
+import spiketopics.nodes as nd
+from numba import jit
 
 
 class GammaModel(object):
-
     """
     This class fits a Poisson observation model using a product of Gamma-
     distributed variables to model the rates.
@@ -143,7 +142,6 @@ class GammaModel(object):
 
         return self
 
-    ########## Modified by Xin Chen (0) #########
     def initialize_overdispersion_natural(self, **kwargs):
         """
         Set up trial-to-trial overdispersion natural time on firing rates.
@@ -168,14 +166,15 @@ class GammaModel(object):
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
-        ########## Modified by Xin Chen (1) #########
         elif self.overdispersion_natural:
-            od = self.nodes['overdispersion_natural'].expected_x()
+            # cumulated products of expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
+
         else:
             od = 1
 
         F = self.F_prod()
-
         G = self.G_prod()
         allprod = od * F * G
         eff_rate = pd.DataFrame(allprod).groupby(uu).sum().values.squeeze()
@@ -183,7 +182,6 @@ class GammaModel(object):
         node.post_shape = (node.prior_shape.expected_x() +
                            nn.groupby(uu).sum().values)
         node.post_rate = node.prior_rate.expected_x() + eff_rate
-
 
     def update_fr_latents(self, idx):
         uu = self.Nframe['unit']
@@ -196,9 +194,10 @@ class GammaModel(object):
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
-        ########## Modified by Xin Chen (2) #########
         elif self.overdispersion_natural:
-            od = self.nodes['overdispersion_natural'].expected_x()
+            # cumulated products of expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
         else:
             od = 1
 
@@ -233,18 +232,16 @@ class GammaModel(object):
         correct up to an overall constant.
         """
         logpsi = np.empty((self.T, 2))
-
         N = self.Nframe
         nn = N['count']
         uu = N['unit']
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
-        ########## Modified by Xin Chen (3) #########
         elif self.overdispersion_natural:
-            od_natural = self.nodes['overdispersion_natural'].expected_x()
-            ####### Modified by Xin (14)  working ###########
-            od = np.cumprod(od_natural.reshape(-1, self.time_natural), axis=1).ravel()
+            # cumulated products of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
         else:
             od = 1
         bl = self.nodes['baseline'].expected_x()[uu]
@@ -264,7 +261,7 @@ class GammaModel(object):
 
         return logpsi
 
-    #@jit
+    @jit
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
@@ -309,21 +306,34 @@ class GammaModel(object):
             bar_lam = node.expected_x()
 
             Elogp += np.sum(nn * bar_log_lam)
+            # Modified by Xin to compare distributions of bar_lam
+            # print "Min, Mean, Max of bar_lam: {}\t{}\t{}".format(
+            #     np.min(bar_lam), np.mean(bar_lam), np.max(bar_lam))
+
             eff_rate *= bar_lam
-        
-        ########## Modified by Xin Chen (4) #########
+            # print "Min, Mean, Max of eff_rate: {}\t{}\t{}!!!!!!".format(
+            #     np.min(eff_rate), np.mean(eff_rate), np.max(eff_rate))
+
         if self.overdispersion_natural:
+            #print "compute overdispersion natural!"
             node = self.nodes['overdispersion_natural']
             bar_log_phi = node.expected_log_x()
             bar_phi = node.expected_x()
+            time_nat = self.time_natural
 
-            cnt_array = self.Nframe.groupby(['unit', 'trial', 'time'])['count'].sum().values
-            cnt_cumsum = np.cumsum(cnt_array.reshape(-1, self.time_natural)[:, ::-1], axis=1
+            cnt_array = self.Nframe.sort_values(['unit', 'trial', 'time'])['count'].values
+            cnt_cumsum = np.cumsum(cnt_array.reshape(-1, time_nat)[:, ::-1], axis=1
                                    )[:, ::-1].ravel()
             Elogp += np.sum(cnt_cumsum * bar_log_phi)
 
-            prod_array = np.cumprod(bar_phi.reshape(-1, self.time_natural), axis=1).ravel()
+            prod_mat = bar_phi.reshape(-1, time_nat)
+            prod_array = np.cumprod(prod_mat, axis=1).ravel()
+            # print "\nMin, Mean, Max of product array:  {}\t{}\t{}".format(
+            #     np.min(prod_array), np.mean(prod_array), np.max(prod_array))
+
             eff_rate *= prod_array
+            # print "Min, Mean, Max of effective rate: {}\t{}\t{}!!!!!!".format(
+            #     np.min(eff_rate), np.mean(eff_rate), np.max(eff_rate))
 
         Elogp += -np.sum(eff_rate)
 
@@ -357,9 +367,10 @@ class GammaModel(object):
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
-        ########## Modified by Xin Chen (5) #########
         elif self.overdispersion_natural:
-            od = self.nodes['overdispersion_natural'].expected_x()
+            # cumulated products of expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
         else:
             od = 1
 
@@ -392,44 +403,77 @@ class GammaModel(object):
 
         if node.has_parents:
             node.post_shape = node.prior_shape.expected_x()[uu] + np.array(nn)
-            node.post_rate = node.prior_rate.expected_x(
-            )[uu] + np.array(bl * F * G)
+            node.post_rate = node.prior_rate.expected_x()[uu] + np.array(bl * F * G)
         else:
             node.post_shape = node.prior_shape + np.array(nn)
             node.post_rate = node.prior_rate + np.array(bl * F * G)
+            # print "Min, Mean, Max of post shape: {}\t{}\t{}******".format(np.min(node.post_shape),
+            #                                                               np.mean(node.post_shape),
+            #                                                               np.max(node.post_shape))
+            # print "Min, Mean, Max of post rate:  {}\t{}\t{}******".format(np.min(node.post_rate),
+            #                                                               np.mean(node.post_rate),
+            #                                                               np.max(node.post_rate))
 
-
-    ########## Modified by Xin Chen (6) Working #########
     def update_overdispersion_natural(self):
         node = self.nodes['overdispersion_natural']
-        #nn = self.Nframe['count']
         uu = self.Nframe['unit']
         bl = self.nodes['baseline'].expected_x()[uu]
         F = self.F_prod()
         G = self.G_prod()
+        time_nat = self.time_natural
 
         # update of post_shape
-        cnt_array = self.Nframe.groupby(['unit', 'trial', 'time'])['count'].sum().values
-        cnt_cumsum = np.cumsum(cnt_array.reshape(-1, self.time_natural)[:, ::-1], axis=1
-                               )[:, ::-1].ravel()
+        cnt_array = self.Nframe.sort_values(['unit', 'trial', 'time'])['count'].values
+        cnt_cumsum = np.cumsum(cnt_array.reshape(-1, time_nat)[:, ::-1], axis=1)[:, ::-1]
 
-        # update of post_rate
-        rate_bar = node.expected_x()
-        # prod_array = np.cumprod(rate_bar.reshape(-1, self.time_natural), axis=1).ravel()
+        ####### Correct! Cross-validated by simple loops ###################
+        expected_phi = node.expected_x()
 
-        prod_array = np.cumprod(rate_bar.reshape(-1, self.time_natural), axis=1).ravel()
-        F_natural = np.cumsum((prod_array * F).reshape(-1, self.time_natural)[:, ::-1], axis=1
-                              )[:, ::-1].ravel() / rate_bar
+        cumprod_phi = np.cumprod(expected_phi.reshape(-1, time_nat), axis=1)
+        prod_phi_F = cumprod_phi / expected_phi.reshape(-1, time_nat) * \
+                     (bl.reshape(-1, time_nat) * F.reshape(-1, time_nat) * G)
 
+        cumsum_phi_F = np.cumsum(prod_phi_F[:, ::-1], axis=1)[:, ::-1]
 
-        # Modified by Xin
+        reg_prod = np.ones(cumsum_phi_F.reshape(-1, time_nat).shape[0])
+        new_zeta = node.post_rate.reshape(-1, time_nat).copy()
+        new_omega = node.post_shape.reshape(-1, time_nat).copy()
+        # print "Old zeta: {}, {}, {}".format(new_zeta.min(),
+        #                                     new_zeta.mean(),
+        #                                     new_zeta.max())
+        # print "Old omega: {}, {}, {}".format(new_omega.min(),
+        #                                      new_omega.mean(),
+        #                                      new_omega.max())
+
         if node.has_parents:
-            node.post_shape = node.prior_shape.expected_x()[uu] + cnt_cumsum
-            node.post_rate = node.prior_rate.expected_x()[uu] + np.array(bl * F_natural * G)
-        else:
-            node.post_shape = node.prior_shape + cnt_cumsum
-            node.post_rate = node.prior_rate + np.array(bl * F_natural * G)
+            print "Overdispersion_natural has parents!"
+            prior_rate = node.prior_rate.expected_x()[uu]
+            prior_shape = node.prior_shape.expected_x()[uu]
 
+            for i in range(time_nat):
+                new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + prior_rate.reshape(-1, time_nat)[:, i]
+                new_omega[:, i] = cnt_cumsum[:, i] + prior_shape.reshape(-1, time_nat)[:, i]
+
+                reg_prod *= (node.post_rate.reshape(-1, time_nat)[:, i] /
+                             node.post_shape.reshape(-1, time_nat)[:, i]) * (new_omega[:, i] / new_zeta[:, i])
+
+        else:
+            for i in range(time_nat):
+                new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + node.prior_rate.reshape(-1, time_nat)[:, i]
+                new_omega[:, i] = cnt_cumsum[:, i] + node.prior_shape.reshape(-1, time_nat)[:, i]
+
+                reg_prod *= (node.post_rate.reshape(-1, time_nat)[:, i] /
+                             node.post_shape.reshape(-1, time_nat)[:, i]) * (new_omega[:, i] / new_zeta[:, i])
+
+        # update post shape and post rate
+        node.post_shape = new_omega.ravel()
+        # print "Min, Mean, Max of post shape: {}\t{}\t{}******".format(np.min(node.post_shape),
+        #                                                               np.mean(node.post_shape),
+        #                                                               np.max(node.post_shape))
+        node.post_rate = new_zeta.ravel()
+        # print "Min, Mean, Max of post rate:  {}\t{}\t{}******".format(np.min(node.post_rate),
+        #                                                               np.mean(node.post_rate),
+        #                                                               np.max(node.post_rate))
 
     def finalize(self):
         """
@@ -444,7 +488,6 @@ class GammaModel(object):
             self.F_prod(update=True)
             self.nodes['fr_latents'].update = self.update_fr_latents
 
-##################################################
             self.nodes['HMM'].update_finalizer = (
                 lambda idx: self.F_prod(idx, update=True))
         else:
@@ -463,7 +506,6 @@ class GammaModel(object):
         else:
             self.overdispersion = False
 
-        ########## Modified by Xin Chen (7) #########
         if 'overdispersion_natural' in self.nodes:
             self.overdispersion_natural = True
             self.nodes['overdispersion_natural'].update = self.update_overdispersion_natural
@@ -472,7 +514,7 @@ class GammaModel(object):
 
         return self
 
-    #@jit
+    @jit
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
@@ -515,7 +557,7 @@ class GammaModel(object):
         else:
             return self._F
 
-    #@jit
+    @jit
     def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
@@ -628,24 +670,21 @@ class GammaModel(object):
                 self.nodes['baseline'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                # assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print "         updated baselines: L = {}".format(Lval)
 
         if self.latents:
             # for k in np.random.permutation(self.K):
-            ###### IMPORTANT! Modified by Xin: Need to change back
-            # for k in xrange(self.K):
-            for k in xrange(1):
-
+            for k in xrange(self.K):
                 # M step
                 self.nodes['fr_latents'].update(k)
                 if self.nodes['fr_latents'].has_parents:
                     self.nodes['fr_latents'].update_parents(k)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                    # assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                    assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
                     print("chain {}: updated firing rate effects: L = {}"
@@ -656,7 +695,7 @@ class GammaModel(object):
                 self.nodes['HMM'].update(k, logpsi)
                 if calc_L:
                     Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                    # assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                    assert((Lval >= lastL) | np.isclose(Lval, lastL))
                     lastL = Lval
                 if doprint:
                     print "chain {}: updated z: L = {}".format(k, Lval)
@@ -667,7 +706,7 @@ class GammaModel(object):
                 self.nodes['fr_regressors'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                # assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print "         updated regressor effects: L = {}".format(Lval)
@@ -678,20 +717,19 @@ class GammaModel(object):
                 self.nodes['overdispersion'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                # assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print("         updated overdispersion effects: L = {}"
                       ).format(Lval)
 
-        ########## Modified by Xin Chen (8) #########
         if self.overdispersion_natural:
             self.nodes['overdispersion_natural'].update()
             if self.nodes['overdispersion_natural'].has_parents:
                 self.nodes['overdispersion_natural'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                # assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print("         updated overdispersion_natural effects: L = {}"
@@ -719,7 +757,7 @@ class GammaModel(object):
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) /
                      np.abs(self.Lvalues[-1]))
-            # assert((delta > 0) | np.isclose(delta, 0))
+            assert((delta > 0) | np.isclose(delta, 0))
             idx += 1
 
         # now redo inference, this time including all variables that
@@ -731,7 +769,7 @@ class GammaModel(object):
                               maxiter=maxiter, delayed_iters=[])
 
 
-#@jit
+@jit
 def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
@@ -741,12 +779,12 @@ def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     G = np.zeros(M)
 
     elbo = _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X)
-    assert(np.isfinite(np.log(-elbo)))
+    assert (np.isfinite(np.log(-elbo)))
 
     return np.log(-elbo), grad.ravel() / elbo
 
 
-#@jit(nopython=True, nogil=True)
+@jit(nopython=True, nogil=True)
 def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
