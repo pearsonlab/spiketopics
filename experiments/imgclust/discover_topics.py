@@ -4,36 +4,35 @@ Fit Gamma-Poisson topic model to McMahon-Leopold dataset.
 from __future__ import division
 import numpy as np
 import pandas as pd
-import gamma_model as gp
-from helpers import jitter_inits
+import spiketopics.gamma_model as gp
+from spiketopics.helpers import jitter_inits
 import argparse
 import cPickle as pickle
 
 if __name__ == '__main__':
 
     # Modified by Xin
-    # parser = argparse.ArgumentParser(description="Run latent topic discovery using a Gamma-Poisson model")
-    # parser.add_argument("input", help="name of input file")
-    # parser.add_argument("-s", "--seed", help="random number seed",
-    #     default=12345)
-    #
-    # args = parser.parse_args()
-    #
-    # # set random seed
-    # np.random.seed(args.seed)
-    #
-    # # load up data
-    # datfile = args.input
-    # print "Reading data..."
-    # df = pd.read_csv(datfile)
+    parser = argparse.ArgumentParser(description="Run latent topic discovery using a Gamma-Poisson model")
+    parser.add_argument("input", help="name of input file")
+    parser.add_argument("-s", "--seed", help="random number seed",
+        default=12345)
+    
+    args = parser.parse_args()
+    
+    # set random seed
+    np.random.seed(args.seed)
+    
+    # load up data
+    datfile = args.input
+    print "Reading data..."
+    df = pd.read_csv(datfile)
 
     ###########################################
     # For testing only
-    # Modified by Xin
-    # Need not to input datafile in the argument
-    np.random.seed(101)
-    print "Reading data..."
-    df = pd.read_csv("data/prepped_data.csv")
+    # No Need to input datafile in the argument
+    # np.random.seed(101)
+    # print "Reading data..."
+    # df = pd.read_csv("data/prepped_data.csv")
 
     ####### for testing only ################
     # print "Subsetting for testing..."
@@ -42,10 +41,9 @@ if __name__ == '__main__':
 
     # set up params
     print "Calculating parameters..."
-    # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin
-    dt = 0.3  # 300 ms bins
 
-    # Modified by Xin
+    # Modified by Xin: since we also need the trial info 
+    # to compute natural time correlations
     # juggle columns
     # df = df[['time', 'unit', 'count']]
 
@@ -60,6 +58,8 @@ if __name__ == '__main__':
     D = 100  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
     time_natural = int(T / (12 * 8))  # the number of natural time bins within each trial
+    # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin
+    dt = 900 / time_natural  # 300 ms bins
     od_natural = True  # flag for overdispersion_natural
 
     #################### priors and initial values
@@ -233,7 +233,7 @@ if __name__ == '__main__':
         gpm.finalize()
 
         print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-3, verbosity=3)
+        gpm.do_inference(tol=1e-4, verbosity=3)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
