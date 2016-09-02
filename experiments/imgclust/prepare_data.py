@@ -28,6 +28,9 @@ evt = evt.set_index('TR')
 spk = datmat['s'][0][0]
 Nt, _, Nu = spk.shape
 
+# set number of time slots in each trial (choose from 3 and 6)
+kk = 3
+
 # make a list of categories for the stims:
 categories = ['Faces', 'Animals', 'Bodies', 'Fruit', 'Natural', 'Manmade', 'Scene', 'Pattern']
 
@@ -45,13 +48,17 @@ Obs = namedtuple('Obs', names)
 tuplist = []  # accumulate observations here
 for t in evt.itertuples():
     trial = int(t.Index)
-    epochs = [(t.T_PRE, t.T_STIMON), (t.T_STIMON, t.T_STIMOFF),
-    (t.T_STIMOFF, t.T_POST)]
+    # given kk, set epochs for each trial
+    if kk == 3:
+        epochs = [(t.T_PRE, t.T_STIMON), (t.T_STIMON, t.T_STIMOFF), (t.T_STIMOFF, t.T_POST)]
+    elif kk == 6:
+        epochs = [(t.T_PRE, t.T_PRE/2), (t.T_PRE/2, t.T_STIMON), (t.T_STIMON, t.T_STIMOFF/2), (t.T_STIMOFF/2, t.T_STIMOFF), (t.T_STIMOFF, t.T_STIMOFF + (t.T_POST - t.T_STIMOFF)/2), (t.T_STIMOFF + (t.T_POST - t.T_STIMOFF)/2, t.T_POST)]
+
     for unit in range(Nu):
         for epnum, ep in enumerate(epochs):
             t_spk = spk[trial - 1, :, unit]
             Nspk = np.sum((t_spk >= ep[0]) & (t_spk <= ep[1]))
-            cat = categories[(int(t.STIM) - 1) // 12]
+            cat = categories[(int(t.STIM) - 1) // 12] # 12 is fixed for # of categories
             if epnum == 0:  # baseline has no category
                 cat = 'Baseline'
             tuplist.append(Obs(trial, epnum, unit, Nspk, int(t.STIM), cat))
@@ -62,10 +69,10 @@ df = df.sort_values(by=['movie', 'frame', 'trial', 'unit'])
 
 print('Getting movie start/stop times...')
 Nstim = len(np.unique(df.movie))
-N_uniq_times = 3 * Nstim
+N_uniq_times = kk * Nstim
 # every stim is 3 epochs
-part_frame = pd.DataFrame({'start': range(0, N_uniq_times, 3),
-                           'end': range(2, N_uniq_times, 3)})
+part_frame = pd.DataFrame({'start': range(0, N_uniq_times, kk),
+                           'end': range(kk - 1, N_uniq_times, kk)})
 part_frame.to_csv('data/trial_start_end_times.csv', index=False)
 
 # now transform (stimulus, time) pairs to unique times
