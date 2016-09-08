@@ -58,9 +58,10 @@ if __name__ == '__main__':
     D = 100  # maximum semi-Markov duration
     Mz = 2  # number of levels of each latent state
     time_natural = int(T / (12 * 8))  # the number of natural time bins within each trial
+    print "There are {} time bins per trial".format(time_natural)
     # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin
-    dt = 900 / time_natural  # 300 ms bins
-    od_natural = True  # flag for overdispersion_natural
+    dt = 900 / time_natural  # 300 or 150 ms bins
+    od_natural = False  # flag for overdispersion_natural
 
     #################### priors and initial values
 
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     A_prior = np.tile(A_cat, (1, 1, K))
 
     ###### pi ###############
-    pi_off = 15000.
+    pi_off = 150.
     pi_on = 1.
     pi_prior = np.tile(np.r_[pi_off, pi_on].reshape(2, 1), (1, K))
 
@@ -145,7 +146,7 @@ if __name__ == '__main__':
 
     # E[z]
     # initialize pretty much at random (10% 1's)
-    rand_frac = 0.1
+    rand_frac = 0.01
     xi_mat = (rand_frac >= np.random.rand(T, K))
     xi_mat = xi_mat.astype('float')
     z_prior = np.dstack([1 - xi_mat, xi_mat]).transpose((2, 0, 1))
@@ -156,7 +157,8 @@ if __name__ == '__main__':
 
     # for parallel processing, we need a list of tuples defining start and
     # end times of chunks
-    movie_df = pd.read_csv('data/trial_start_end_times.csv')
+    movie_df = pd.read_csv('data/trial_start_end_times{}.csv'.
+        format(str(time_natural)))
     chunklist = zip(movie_df['start'], movie_df['end'])
 
     # now make sure entries in Xi corresponding to p(z_start, z_previous_stim) don't count in Xi
@@ -192,9 +194,9 @@ if __name__ == '__main__':
 
     ############ overdispersion ####################
     od_shape = 6.
-    od_rate = 5.
-    od_dict = ({'prior_shape': od_shape * np.ones((M,)),
-                'prior_rate': od_rate * np.ones((M,)),
+    od_rate = 6.
+    od_dict = ({'prior_shape': od_shape * 10 * np.ones((M,)),
+                'prior_rate': od_rate * 10 * np.ones((M,)),
                 'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
@@ -202,17 +204,19 @@ if __name__ == '__main__':
 
     ############ overdispersion natural time: Xin ####################
     od_natural_shape = 6.
-    od_natural_rate = 5.
+    od_natural_rate = 6.
     od_natural_dict = ({
-                'prior_shape': od_natural_shape * np.ones((M,)),
-                'prior_rate': od_natural_rate * np.ones((M,)),
+                'prior_shape': od_natural_shape * (np.ones(
+                    (M,)).reshape(-1, 3) * np.array([1, 10, 20])).ravel(),
+                'prior_rate': od_natural_rate * (np.ones(
+                    (M,)).reshape(-1, 3) * np.array([1, 10, 20])).ravel(),
                 'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
 
 
     ############ initialize model ####################
-    numstarts = 5
+    numstarts = 10
     fitobjs = []
     Lvals = []
     for idx in xrange(numstarts):
@@ -233,7 +237,7 @@ if __name__ == '__main__':
         gpm.finalize()
 
         print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-4, verbosity=3)
+        gpm.do_inference(tol=1e-5, verbosity=3)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
@@ -265,6 +269,6 @@ if __name__ == '__main__':
 
     print "Writing to disk..."
     # fstub = '_{}K_{}S'.format(K, numstarts)
-    fstub = ''
+    fstub = str(time_natural)
     outfile = 'data/fitted_model_object{}.pkl'.format(fstub)
     pickle.dump(gpm, open(outfile, 'wb'))

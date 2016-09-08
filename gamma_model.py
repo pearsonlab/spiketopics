@@ -51,7 +51,7 @@ class GammaModel(object):
         self.nodes = {}  # dict for variable nodes in graphical model
 
         # maximum number of iterations for regressor optimization step
-        self.maxiter = 1000
+        self.maxiter = 2000
 
         self.log = {'L': []}  # for debugging
         self.Lvalues = []  # for recording optimization objective each iter
@@ -169,7 +169,8 @@ class GammaModel(object):
         elif self.overdispersion_natural:
             # cumulated products of expectation of phi
             expected_phi = self.nodes['overdispersion_natural'].expected_x()
-            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
+            od = np.exp(np.cumsum(np.log(expected_phi).reshape(-1, 
+                self.time_natural), axis=1)).ravel()
 
         else:
             od = 1
@@ -197,7 +198,8 @@ class GammaModel(object):
         elif self.overdispersion_natural:
             # cumulated products of expectation of phi
             expected_phi = self.nodes['overdispersion_natural'].expected_x()
-            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
+            od = np.exp(np.cumsum(np.log(expected_phi).reshape(-1, 
+                self.time_natural), axis=1)).ravel()
         else:
             od = 1
 
@@ -241,7 +243,8 @@ class GammaModel(object):
         elif self.overdispersion_natural:
             # cumulated products of phi
             expected_phi = self.nodes['overdispersion_natural'].expected_x()
-            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
+            od = np.exp(np.cumsum(np.log(expected_phi).reshape(-1, 
+                self.time_natural), axis=1)).ravel()
         else:
             od = 1
         bl = self.nodes['baseline'].expected_x()[uu]
@@ -327,7 +330,7 @@ class GammaModel(object):
             Elogp += np.sum(cnt_cumsum * bar_log_phi)
 
             prod_mat = bar_phi.reshape(-1, time_nat)
-            prod_array = np.cumprod(prod_mat, axis=1).ravel()
+            prod_array = np.exp(np.cumsum(np.log(prod_mat), axis=1)).ravel()
             # print "\nMin, Mean, Max of product array:  {}\t{}\t{}".format(
             #     np.min(prod_array), np.mean(prod_array), np.max(prod_array))
 
@@ -370,7 +373,8 @@ class GammaModel(object):
         elif self.overdispersion_natural:
             # cumulated products of expectation of phi
             expected_phi = self.nodes['overdispersion_natural'].expected_x()
-            od = np.cumprod(expected_phi.reshape(-1, self.time_natural), axis=1).ravel()
+            od = np.exp(np.cumsum(np.log(expected_phi).reshape(-1, 
+                self.time_natural), axis=1)).ravel()
         else:
             od = 1
 
@@ -429,15 +433,17 @@ class GammaModel(object):
         ####### Correct! Cross-validated by simple loops ###################
         expected_phi = node.expected_x()
 
-        cumprod_phi = np.cumprod(expected_phi.reshape(-1, time_nat), axis=1)
-        prod_phi_F = cumprod_phi / expected_phi.reshape(-1, time_nat) * \
-                     (bl.reshape(-1, time_nat) * F.reshape(-1, time_nat) * G)
+        cumprod_phi = np.cumsum(np.log(expected_phi).reshape(-1, time_nat), axis=1)
+        prod_phi_F = cumprod_phi - np.log(expected_phi).reshape(-1, time_nat) + \
+                     (np.log(bl).reshape(-1, time_nat) + np.log(F).reshape(-1, time_nat) + np.log(G))
 
-        cumsum_phi_F = np.cumsum(prod_phi_F[:, ::-1], axis=1)[:, ::-1]
+        cumsum_phi_F = np.cumsum(np.exp(prod_phi_F)[:, ::-1], axis=1)[:, ::-1]
 
-        reg_prod = np.ones(cumsum_phi_F.reshape(-1, time_nat).shape[0])
+        #reg_prod = np.ones(cumsum_phi_F.reshape(-1, time_nat).shape[0])
+        reg_prod = np.ones(node.prior_rate.reshape(-1, time_nat).shape[0])
         new_zeta = node.post_rate.reshape(-1, time_nat).copy()
         new_omega = node.post_shape.reshape(-1, time_nat).copy()
+            
         # print "Old zeta: {}, {}, {}".format(new_zeta.min(),
         #                                     new_zeta.mean(),
         #                                     new_zeta.max())
@@ -450,30 +456,43 @@ class GammaModel(object):
             prior_rate = node.prior_rate.expected_x()[uu]
             prior_shape = node.prior_shape.expected_x()[uu]
 
-            for i in range(time_nat):
-                new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + prior_rate.reshape(-1, time_nat)[:, i]
-                new_omega[:, i] = cnt_cumsum[:, i] + prior_shape.reshape(-1, time_nat)[:, i]
+            # update post shape and post rate
+            node.post_shape, node.post_rate = _reg_omega_zeta(time_nat, 
+                node.post_shape.reshape(-1, time_nat), node.post_rate.reshape(-1, time_nat), 
+                new_omega, new_zeta, prior_shape, prior_rate, cnt_cumsum, cumsum_phi_F, reg_prod)
 
-                reg_prod *= (node.post_rate.reshape(-1, time_nat)[:, i] /
-                             node.post_shape.reshape(-1, time_nat)[:, i]) * (new_omega[:, i] / new_zeta[:, i])
+            # for i in range(time_nat):
+            #     new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + prior_rate.reshape(-1, time_nat)[:, i]
+            #     new_omega[:, i] = cnt_cumsum[:, i] + prior_shape.reshape(-1, time_nat)[:, i]
+
+            #     reg_prod *= (node.post_rate.reshape(-1, time_nat)[:, i] /
+            #                  node.post_shape.reshape(-1, time_nat)[:, i]) * (new_omega[:, i] / new_zeta[:, i])
 
         else:
-            for i in range(time_nat):
-                new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + node.prior_rate.reshape(-1, time_nat)[:, i]
-                new_omega[:, i] = cnt_cumsum[:, i] + node.prior_shape.reshape(-1, time_nat)[:, i]
+        #     for i in range(time_nat):
+        #         new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + node.prior_rate.reshape(-1, time_nat)[:, i]
+        #         new_omega[:, i] = cnt_cumsum[:, i] + node.prior_shape.reshape(-1, time_nat)[:, i]
 
-                reg_prod *= (node.post_rate.reshape(-1, time_nat)[:, i] /
-                             node.post_shape.reshape(-1, time_nat)[:, i]) * (new_omega[:, i] / new_zeta[:, i])
+        #         reg_prod *= (node.post_rate.reshape(-1, time_nat)[:, i] /
+        #                      node.post_shape.reshape(-1, time_nat)[:, i]) * (new_omega[:, i] / new_zeta[:, i])
 
-        # update post shape and post rate
-        node.post_shape = new_omega.ravel()
+        # node.post_shape = new_omega.ravel()
+        # node.post_rate = new_zeta.ravel()
+
+            # update post shape and post rate
+            node.post_shape, node.post_rate = _reg_omega_zeta(time_nat, 
+                node.post_shape.reshape(-1, time_nat), node.post_rate.reshape(-1, time_nat), 
+                new_omega, new_zeta, 
+                node.prior_shape.reshape(-1, time_nat), node.prior_rate.reshape(-1, time_nat),
+                reg_prod, cnt_cumsum, cumsum_phi_F)
+
         # print "Min, Mean, Max of post shape: {}\t{}\t{}******".format(np.min(node.post_shape),
         #                                                               np.mean(node.post_shape),
         #                                                               np.max(node.post_shape))
-        node.post_rate = new_zeta.ravel()
         # print "Min, Mean, Max of post rate:  {}\t{}\t{}******".format(np.min(node.post_rate),
         #                                                               np.mean(node.post_rate),
         #                                                               np.max(node.post_rate))
+
 
     def finalize(self):
         """
@@ -513,6 +532,7 @@ class GammaModel(object):
             self.overdispersion_natural = False
 
         return self
+
 
     @jit
     def F_prod(self, k=None, update=False):
@@ -729,11 +749,14 @@ class GammaModel(object):
                 self.nodes['overdispersion_natural'].update_parents()
             if calc_L:
                 Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
-                assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                if not (Lval >= lastL) | np.isclose(Lval, lastL):
+                    print "!!!!!!ERROR ERROR ERROR ERROR ERROR!!!!!!"
+                # assert((Lval >= lastL) | np.isclose(Lval, lastL))
                 lastL = Lval
             if doprint:
                 print("         updated overdispersion_natural effects: L = {}"
                       ).format(Lval)
+
 
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False,
                      maxiter=np.inf, delayed_iters=[]):
@@ -757,7 +780,13 @@ class GammaModel(object):
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) /
                      np.abs(self.Lvalues[-1]))
-            assert((delta > 0) | np.isclose(delta, 0))
+            if not (delta > 0) | np.isclose(delta, 0):
+                print "!!!!!!ERROR ERROR ERROR ERROR ERROR!!!!!!"
+                print "Lval previous, Lval current: {}, {}".format(
+                    self.Lvalues[-2], self.Lvalues[-1])
+                print "delta value: {}".format(delta)
+                return
+            #assert((delta > 0) | np.isclose(delta, 0))
             idx += 1
 
         # now redo inference, this time including all variables that
@@ -818,3 +847,16 @@ def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
             grad[uu[m], r] -= FblodG * X[m, r]
 
     return elbo
+
+
+@jit(nopython=True, nogil=True)
+def _reg_omega_zeta(time_nat, omega, zeta, new_omega, new_zeta, prior_shape, prior_rate, 
+    reg_prod, cnt_cumsum, cumsum_phi_F):
+    
+    for i in xrange(time_nat):
+        new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + prior_rate[:, i]
+        new_omega[:, i] = cnt_cumsum[:, i] + prior_shape[:, i]
+
+        for j in xrange(reg_prod.shape[0]):
+            reg_prod[j] *= (zeta[j, i] / omega[j, i]) * (new_omega[j, i] / new_zeta[j, i])
+    return new_omega.ravel(), new_zeta.ravel()
