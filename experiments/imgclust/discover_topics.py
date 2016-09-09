@@ -126,7 +126,7 @@ if __name__ == '__main__':
     A_prior = np.tile(A_cat, (1, 1, K))
 
     ###### pi ###############
-    pi_off = 150.
+    pi_off = 15000.
     pi_on = 1.
     pi_prior = np.tile(np.r_[pi_off, pi_on].reshape(2, 1), (1, K))
 
@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     # E[z]
     # initialize pretty much at random (10% 1's)
-    rand_frac = 0.01
+    rand_frac = 0.1
     xi_mat = (rand_frac >= np.random.rand(T, K))
     xi_mat = xi_mat.astype('float')
     z_prior = np.dstack([1 - xi_mat, xi_mat]).transpose((2, 0, 1))
@@ -205,18 +205,20 @@ if __name__ == '__main__':
     ############ overdispersion natural time: Xin ####################
     od_natural_shape = 6.
     od_natural_rate = 6.
+    init_array = np.array(xrange(1, time_natural+1))
+    # init_array = np.ones(time_natural)
     od_natural_dict = ({
                 'prior_shape': od_natural_shape * (np.ones(
-                    (M,)).reshape(-1, time_natural) * np.array([1, 10, 20])).ravel(),
+                    (M,)).reshape(-1, time_natural) * init_array).ravel(),
                 'prior_rate': od_natural_rate * (np.ones(
-                    (M,)).reshape(-1, time_natural) * np.array([1, 10, 20])).ravel(),
+                    (M,)).reshape(-1, time_natural) * init_array).ravel(),
                 'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
 
 
     ############ initialize model ####################
-    numstarts = 5
+    numstarts = 10
     fitobjs = []
     Lvals = []
     for idx in xrange(numstarts):
@@ -236,8 +238,8 @@ if __name__ == '__main__':
 
         gpm.finalize()
 
-        print "Start {} -----------------------".format(idx)
-        gpm.do_inference(tol=1e-5, verbosity=3)
+        print "Start {} ------------------------------------------------------".format(idx)
+        gpm.do_inference(tol=1e-4, verbosity=1)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
