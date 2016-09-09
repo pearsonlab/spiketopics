@@ -61,7 +61,7 @@ if __name__ == '__main__':
     print "There are {} time bins per trial".format(time_natural)
     # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin
     dt = 900 / time_natural  # 300 or 150 ms bins
-    od_natural = False  # flag for overdispersion_natural
+    od_natural = True  # flag for overdispersion_natural
 
     #################### priors and initial values
 
@@ -195,8 +195,8 @@ if __name__ == '__main__':
     ############ overdispersion ####################
     od_shape = 6.
     od_rate = 6.
-    od_dict = ({'prior_shape': od_shape * 10 * np.ones((M,)),
-                'prior_rate': od_rate * 10 * np.ones((M,)),
+    od_dict = ({'prior_shape': od_shape * np.ones((M,)),
+                'prior_rate': od_rate * np.ones((M,)),
                 'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
@@ -207,16 +207,16 @@ if __name__ == '__main__':
     od_natural_rate = 6.
     od_natural_dict = ({
                 'prior_shape': od_natural_shape * (np.ones(
-                    (M,)).reshape(-1, 3) * np.array([1, 10, 20])).ravel(),
+                    (M,)).reshape(-1, time_natural) * np.array([1, 10, 20])).ravel(),
                 'prior_rate': od_natural_rate * (np.ones(
-                    (M,)).reshape(-1, 3) * np.array([1, 10, 20])).ravel(),
+                    (M,)).reshape(-1, time_natural) * np.array([1, 10, 20])).ravel(),
                 'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
 
 
     ############ initialize model ####################
-    numstarts = 10
+    numstarts = 5
     fitobjs = []
     Lvals = []
     for idx in xrange(numstarts):
