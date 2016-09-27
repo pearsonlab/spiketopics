@@ -263,15 +263,6 @@ In addition, to enforce parsimony in the inferred features, we put sparse hierar
 \end{align}
 That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around gain 1 (no effect). And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified covariate responses, $\lambda_{xu}$, we model the unit effects non-hierarchially, using independent Gamma priors for each unit.
 
-\subsection*{Latent state model}
-We model each of the latent states $z_{tk}$ as an independent Markov process for each feature $k$. That is, each $k$ indexes an independent Markov chain with initial state probability $\pi_k\sim \text{Dir}(\alpha_\pi)$ and transition matrix $A_k\sim \text{Dir}(\alpha_A)$. For the semi-Markov case, we assume that the dwell times in each state are distributed independently for each chain according to an integer-valued, truncated lognormal distribution with support on the integers $1\dots D$:
-\begin{align}
-    \label{semi-markov}
-    p_k(d|z = j) &= \text{Log-Normal}(d|m_{jk}, s^2_{jk}) / W_{jk}  &
-    W_{jk} &= \sum_{d = 1}^D \text{Log-Normal}(d|m_{jk}, s^2_{jk}) 
-\end{align}
-Note that we have allowed the dwell time distribution to depend on both the feature $k$ and the state of the Markov chain $j$. In addition, we put indpendent Normal-Gamma priors on the mean $(m_{kj})$ and precision $(\tau_{kj} \equiv s_{kj}^{-2})$ parameters of the distribution: $(m, \tau) \sim \text{NG}(\mu, \lambda, \alpha, \beta)$.
-
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
     \center
@@ -394,26 +385,6 @@ We fit a model with $K = 10$ features and $U = 27$ units to neural responses fro
 	A: Actual and recovered binary features during the stimulus presentation period. Note that model features 5 -- 8 are unused and that feature 0 closely tracks the Out feature of the data, albeit delayed. B: Actual and predicted firing rates for the stimulus period. Note that the model infers stimulus categories from the data, including appropriate timing of differentiation between categories.
 	\label{roitman}
 \end{figure}
-
-
-\subsection*{Movie data}
-Finally, we applied our model to a data set comprising single neuron recordings made in macaque monkeys as they freely viewed movies of primate social interactions in the wild%\cite{adams_inprep}
- . These video clips, collected from a rhesus macaque research field site, effectively represent the range of behaviorally relevant stimuli for macaques, including the four ``F''s of animal behavior: fighting, fleeing, foraging, and reproduction. Thus this dataset represents a rare opportunity for exploratory feature selection based on neural responses.
-
-On each trial of the experiment, monkeys viewed a random 5-second clip from a movie database ($T \approx 5$h, $dt = 30$ frames/s). On the following trial, monkeys were given a two-alternative choices with options chosen from the set \{repeat clip, continue clip, blank screen, new clip\}. Since each neuron saw only a subset of clips within the database, and these clips began at with random offsets, observations were sparse, with total number of observations $N_{obs} = 7.42 \times 10^6$ and $\overline{M} = N_{obs}/T \approx 14$. These data form a particularly intriguing application of our model, since the neurons recorded were located in the orbitofrontal and dorsolateral prefrontal cortices, areas not normally associated with low-level visual processing. In fact, there is reason to believe that the relevant features encoded in these areas for such naturalistic stimuli are behavioral and social \cite{watson2012social}.
-
-Because the behaviors of interest in these stimuli potentially span a large range of time scales, we used semi-Markov dynamics with a maximum duration of $D = 500$ on the latent states\footnote{We also allowed for self-transitions, potentially capturing behavior on even longer timescales.}. We fit a model with $K=10$ features and the same hierarchical priors on baselines and latent firing rate effects as in previous experiments. In addition, because many neurons in the data set exhibited a transitory increase in firing with movie onset on each trial (independent of movie content), we include this movie onset response as an external covariate $x(t)$ specific to each neuron. We calculated this separately for each recorded unit by averaging spike counts (relative to stimulus onset) across trials, smoothing, and taking the log so that $x(t)$ was coded as a multiplicative rather than an additive effect on firing. This can be loosely viewed as a means of preprocessing our data, in which we account for a large known effect by specifying it as a covariate in the model.
-
-% Place figure captions after the first paragraph in which they are cited.
-\begin{figure}[!h]
-    \center
-    \includegraphics[width=\linewidth]{figures/movie_data}
-	\caption{\bf Inferred states of the movie dataset.}
-	A: Maximum \emph{a posterior} inferred features for the Markov and semi-Markov models. Plotted data are for the same stimulus for $\approx 17$s of data. B: Estimated dwell time distributions for off (0) and on (1) states in the Markov and semi-Markov models. Dwell times include self-transitions. Dwell times for the Markov case (blue) are clearly lower than those for the semi-Markov case (green).
-	\label{movie_results}
-\end{figure}
-
-Figure \ref{movie_results} shows a comparison of Markov and semi-Markov models applied to feature detection in the stimulus set. Labels were calculated as maxima of posterior marginals, independently for each time bin. Clearly, the semi-Markov model captures the rich heterogeneity in the durations of stimulus-driven features in neural spiking, particularly in the on (1) state. This is also visible in the kernel density estimates, which show event durations on the order of tens of seconds for the semi-Markov model, as opposed to mere seconds in the Markov case. Thus semi-Markov models (and other models that take into account multiple timescales) will likely be necessary to capture variations in neural activity on the timescales relevant to natural behaviors.
 
 
 \section*{Discussion}
