@@ -394,8 +394,8 @@ class GammaModel(object):
             prod_unsort = self._unsort_values(ind_mat, prod_array)
 
             eff_rate *= prod_unsort
-            print "Min, Mean, Max of effective rate: {}\t{}\t{} ~~~~~~".format(
-                np.min(eff_rate), np.mean(eff_rate), np.max(eff_rate))
+            # print "Min, Mean, Max of effective rate: {}\t{}\t{} ~~~~~~".format(
+            #     np.min(eff_rate), np.mean(eff_rate), np.max(eff_rate))
 
         Elogp += -np.sum(eff_rate)
 
