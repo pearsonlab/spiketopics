@@ -5,21 +5,21 @@
 %
 % -- IMPORTANT NOTE
 %
-% This template contains comments intended 
-% to minimize problems and delays during our production 
+% This template contains comments intended
+% to minimize problems and delays during our production
 % process. Please follow the template instructions
 % whenever possible.
 %
-% % % % % % % % % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % % % % % % % %
 %
-% Once your paper is accepted for publication, 
-% PLEASE REMOVE ALL TRACKED CHANGES in this file 
-% and leave only the final text of your manuscript. 
+% Once your paper is accepted for publication,
+% PLEASE REMOVE ALL TRACKED CHANGES in this file
+% and leave only the final text of your manuscript.
 % PLOS recommends the use of latexdiff to track changes during review, as this will help to maintain a clean tex file.
 % Visit https://www.ctan.org/pkg/latexdiff?lang=en for info or contact us at latex@plos.org.
 %
 %
-% There are no restrictions on package use within the LaTeX files except that 
+% There are no restrictions on package use within the LaTeX files except that
 % no packages listed in the template may be deleted.
 %
 % Please do not include colors or graphics in the text.
@@ -33,8 +33,8 @@
 % Please include tables/figure captions directly after the paragraph where they are first cited in the text.
 %
 % DO NOT INCLUDE GRAPHICS IN YOUR MANUSCRIPT
-% - Figures should be uploaded separately from your manuscript file. 
-% - Figures generated using LaTeX should be extracted and removed from the PDF before submission. 
+% - Figures should be uploaded separately from your manuscript file.
+% - Figures generated using LaTeX should be extracted and removed from the PDF before submission.
 % - Figures containing multiple panels/subfigures must be combined into one image file before submission.
 % For figure citations, please use "Fig" instead of "Figure".
 % See http://journals.plos.org/plosone/s/figures for PLOS figure guidelines.
@@ -58,15 +58,15 @@
 %
 % Do not include text that is not math in the math environment. For example, CO2 should be written as CO\textsubscript{2} instead of CO$_2$.
 %
-% Please add line breaks to long display equations when possible in order to fit size of the column. 
+% Please add line breaks to long display equations when possible in order to fit size of the column.
 %
 % For inline equations, please do not include punctuation (commas, etc) within the math environment unless this is part of the equation.
 %
-% When adding superscript or subscripts outside of brackets/braces, please group using {}.  For example, change "[U(D,E,\gamma)]^2" to "{[U(D,E,\gamma)]}^2". 
+% When adding superscript or subscripts outside of brackets/braces, please group using {}.  For example, change "[U(D,E,\gamma)]^2" to "{[U(D,E,\gamma)]}^2".
 %
 % Do not use \cal for caligraphic font.  Instead, use \mathcal{}
 %
-% % % % % % % % % % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % % % % % % % % %
 %
 % Please contact latex@plos.org with any questions.
 %
@@ -125,13 +125,13 @@
 
 
 % Remove comment for double spacing
-%\usepackage{setspace} 
+%\usepackage{setspace}
 %\doublespacing
 
 % Text layout
 \raggedright
 \setlength{\parindent}{0.5cm}
-\textwidth 5.25in 
+\textwidth 5.25in
 \textheight 8.75in
 
 % Bold the 'Figure #' in the caption and separate it from the title/caption with a period
@@ -183,19 +183,20 @@
 \newline
 % Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
 \\
-Xin (Cindy) Chen\textsuperscript{1},
-Jeffrey M. Beck\textsuperscript{2},
-John M. Pearson\textsuperscript{1*},
+Xin (Cindy) Chen\textsuperscript{1,3},
+Jeffrey M. Beck\textsuperscript{2,3},
+John M. Pearson\textsuperscript{1,3*},
 \\
 \bigskip
 \textbf{1} Duke Institute for Brain Sciences, Duke University, Durham, North Carolina, USA
 \\
 \textbf{2} Department of Neurobiology, Duke University Medical Center, Durham, North Carolina, USA
 \\
+\textbf{3} Center for Cognitive Neuroscience, Duke University, Durham, North Carolina, USA
 \bigskip
 
 % Insert additional author notes using the symbols described below. Insert symbol callouts after author names as necessary.
-% 
+%
 % Remove or comment out the author notes below if they aren't used.
 %
 % Primary Equal Contribution Note
@@ -210,13 +211,13 @@ John M. Pearson\textsuperscript{1*},
 \end{flushleft}
 % Please keep the abstract below 300 words
 \section*{Abstract}
-Experiments that study neural encoding of stimuli at the level of individual neurons typically choose a small set of features present in the world --- contrast and luminance for vision, pitch and intensity for sound --- and assemble a stimulus set that systematically (and preferably exhaustively) varies along these dimensions. Neuronal responses in the form of firing rates are then examined for modulation with respect to these features via some form of regression. This approach requires that experimenters know (or guess) in advance the relevant features coded by a given population of neurons. Unfortunately, for domains as complex as social interaction or natural movement, the relevant feature space is poorly understood, and an arbitrary \emph{a priori} choice of feature sets may give rise to confirmation bias. Here, we present a Bayesian model for exploratory data analysis that is capable of automatically identifying the features present in unstructured stimuli based solely on neuronal responses. Our approach is unique within the class of latent state space models of neural activity in that it assumes that firing rates of neurons are sensitive to multiple discrete time-varying features tied to the \emph{stimulus}, each of which has Markov (or semi-Markov) dynamics. That is, we are modeling stimulus dynamics as driven by neural activity, rather than intrinsic neural dynamics.  We derive a fast variational Bayesian inference algorithm and show that it correctly recovers hidden features in synthetic data, as well as ground-truth stimulus features in a prototypical neural dataset. To demonstrate the utility of the algorithm, we also apply it to an exploratory analysis of prefrontal cortex recordings performed while monkeys watched naturalistic videos of primate social activity.
+Experiments that study neural encoding of stimuli at the level of individual neurons typically choose a small set of features present in the world --- contrast and luminance for vision, pitch and intensity for sound --- and assemble a stimulus set that systematically varies along these dimensions. Subsequent analysis of neural responses to these stimuli typically focuses on regression models, with experimenter-controlled features as inputs and spike counts or firing rates as responses. Unfortunately, this approach requires that experimenters know (or guess) in advance the relevant features coded by a given population of neurons. For domains as complex as social interaction or natural movement, however, the relevant feature space is poorly understood, and an arbitrary \emph{a priori} choice of feature sets may give rise to confirmation bias. Here, we present a Bayesian model for exploratory data analysis that is capable of automatically identifying the features present in unstructured stimuli based solely on neuronal responses. Our approach is unique within the class of latent state space models of neural activity in that it assumes that firing rates of neurons are sensitive to multiple discrete time-varying features tied to the \emph{stimulus}, each of which has Markov (or semi-Markov) dynamics. That is, we are neural activity as driven by multiple simultaneous stimulus features rather than intrinsic neural dynamics.  We derive a fast variational Bayesian inference algorithm and show that it correctly recovers hidden features in synthetic data, as well as ground-truth stimulus features in a prototypical neural dataset. To demonstrate the utility of the algorithm, we also apply it to cluster neural responses to a set of images and demonstrate successful recovery of features corresponding to monkeys and faces.
 
 %% Please keep the Author Summary between 150 and 200 words
-%% Use first person. PLOS ONE authors please skip this step. 
-%% Author Summary not valid for PLOS ONE submissions.   
-%\section*{Author Summary}
-%Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur eget porta erat. Morbi consectetur est vel gravida pretium. Suspendisse ut dui eu ante cursus gravida non sed sem. Nullam sapien tellus, commodo id velit id, eleifend volutpat quam. Phasellus mauris velit, dapibus finibus elementum vel, pulvinar non tellus. Nunc pellentesque pretium diam, quis maximus dolor faucibus id. Nunc convallis sodales ante, ut ullamcorper est egestas vitae. Nam sit amet enim ultrices, ultrices elit pulvinar, volutpat risus.
+%% Use first person. PLOS ONE authors please skip this step.
+%% Author Summary not valid for PLOS ONE submissions.
+\section*{Author Summary}
+Many neuroscience experiments begin with a set of reduced stimuli designed to vary only along a small set of variables. Yet many phenomena of interest --- natural movies, objects --- are not easily parameterized by a small number of dimensions. Here, we develop a novel Bayesian model for clustering stimuli based solely on neural responses, allowing us to discover which latent features of complex stimuli actually drive neural activity. We demonstrate that this model allows us to recover key features of neural responses in a pair of well-studied paradigms.
 
 \linenumbers
 
@@ -228,9 +229,9 @@ For example, in vision, methods like reverse correlation have proven successful 
 
 More recently, Gallant and collaborators have tackled this problem in the context of fMRI, demonstrating that information present in the blood oxygen level-dependent (BOLD) signal is sufficient to classify and map the representation of natural movie stimuli across the brain \cite{Vu2011-da,Huth2012-cj,Stansbury2013-nm}. These studies have used a number of modeling frameworks, from latent dirichlet allocation for categorizing scene contents \cite{Stansbury2013-nm} to regularized linear regression \cite{Huth2012-cj} to sparse nonparametric models \cite{Vu2011-da} in characterizing brain encoding of stimuli, but in each case, models were built on pre-labeled training data. Clearly, a method that could infer stimulus structure directly from neural data themselves could extend such work to include less easily characterized stimulus sets like those depicting social interactions.
 
-Another recent line of work, this one focused on latent Poisson processes, has addressed the task of modeling the low dimensional dynamics of neural populations\cite{Pillow2008-em,Vogelstein2009-ax,Park2014-el,Buesing2014-ta}. Using generalized linear models and latent linear dynamical systems as building blocks, these models have proven able to infer (functional) connectivity \cite{Pillow2008-em}, estimate spike times from a calcium images\cite{Vogelstein2009-ax}, and identify subgroups of neurons that share response dynamics\cite{Buesing2014-ta}. Inference in thsese models is generally performed via expectation maximization, though \cite{Ulrich2014-zc} and \cite{Putzky2014-up} also used a variational Bayesian approach. Our work is distinct from those models, however, in that both were concerned with modeling and discriminating \emph{internal} states based on neural responses, while this work focuses on detecting features in \emph{external} stimuli. 
+Another recent line of work, this one focused on latent Poisson processes, has addressed the task of modeling the low dimensional dynamics of neural populations\cite{Pillow2008-em,Vogelstein2009-ax,Park2014-el,Buesing2014-ta,Archer2015-ec, Zhao2016-bw,Gao2016-ck}. Using generalized linear models and latent linear dynamical systems as building blocks, these models have proven able to infer (functional) connectivity \cite{Pillow2008-em}, estimate spike times from a calcium images\cite{Vogelstein2009-ax}, and identify subgroups of neurons that share response dynamics\cite{Buesing2014-ta,Zhao2016-bw,Gao2016-ck}. Inference in these models is generally performed via expectation maximization, though \cite{Ulrich2014-zc,Putzky2014-up,Archer2015-ec, Zhao2016-bw,Gao2016-ck} also used a variational Bayesian approach. Our work is distinct from those models, however, in that those were concerned with modeling and discriminating \emph{internal} states based on neural responses, while this work focuses on detecting features in \emph{external} stimuli. Moreover, in contrast to \cite{Buesing2014-ta,Archer2015-ec,Zhao2016-bw,Gao2016-ck}, we focus on multiple binary latent states as a means of ``tagging" a finite number of overlapping stimulus features.
 
-Our model sits at the intersection of these regression and latent variable approaches. We utilize a Poisson observation model that shares many of the same features as the commonly used generalized linear models for Poisson regression. We also assume that the latent features modulating neural activity are time-varying and Markov. However, we make 3 additional unique assumptions: First, we assume that the activity of each neuron is modulated by a combination of multiple independent latent features governed by semi-Markov dynamics. This allows for latents to evolve over multiple timescales with non-trivial duration distributions, much like the hand-labeled features in social interaction data sets. Second, we assume that these latents are tied to stimulus presentation. That is, when identical stimuli are presented, the same latents are also present. This allows us to model the daynamics of latent features of the \emph{stimulus} that drive neural activity, rather than intrinsic neural dynamics. Finally, we enforce a sparse hierarchical prior on modulation strength that effectively limits the number of latent features to which the population of neurons is selective. This allows for a parsimonious explanation of the firing rates of single units in terms of a small set of stimulus features. Finally, we perform full variational Bayesian inference on all model parameters and take advantage of conditional conjugacy to generate coordinate ascent update rules, nearly all of which are explicit. Combined with forward-backward inference for latent states, our algorithm is exceptionally fast, automatically implements Occam's razor, and facilitates proper model comparisons using the variational lower bound.
+Our model sits at the intersection of these regression and latent variable approaches. We utilize a Poisson observation model that shares many of the same features as the commonly used generalized linear models for Poisson regression. We also assume that the latent features modulating neural activity are time-varying and Markov. However, we make 3 additional unique assumptions: First, we assume that the activity of each neuron is modulated by a combination of multiple independent latent features governed by (semi-)Markov dynamics. This allows for latents to evolve over multiple timescales with non-trivial duration distributions, much like the hand-labeled features in social interaction data sets. Second, we assume that these latents are tied to stimulus presentation. That is, when identical stimuli are presented, the same latents are also present. This allows us to model the daynamics of latent features of the \emph{stimulus} that drive neural activity, rather than intrinsic neural dynamics. Finally, we enforce a sparse hierarchical prior on modulation strength that effectively limits the number of latent features to which the population of neurons is selective. This allows for a parsimonious explanation of the firing rates of single units in terms of a small set of stimulus features. Finally, we perform full variational Bayesian inference on all model parameters and take advantage of conditional conjugacy to generate coordinate ascent update rules, nearly all of which are explicit. Combined with forward-backward inference for latent states, our algorithm is exceptionally fast, automatically implements Occam's razor, and facilitates proper model comparisons using the variational lower bound.
 
 
 
@@ -238,30 +239,34 @@ Our model sits at the intersection of these regression and latent variable appro
 \label{model_sec}
 
 \subsection*{Observation model}
-Consider a population of $U$ spiking neurons exposed to a series of stimuli indexed by a (unique) time index $t\in \lbrace 1\ldots T\rbrace$. Each neuron is exposed to each stimulus $M_{tu}$ times, where we do not assume either that each neuron observes each stimulus time or that consecutive times are observed by the same sets of neurons. That is $M_{tu}$ may have many 0s. For each observation $m$ (a unique unit, time pair), we then observe a spike count, $N_m$. We model these spike counts as arising from a Poisson process with time-dependent rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
+Consider a population of $U$ spiking neurons exposed to a series of stimuli indexed by a time index $t\in \lbrace 1\ldots T\rbrace$. We assume that this time index is unique across all stimuli, such that a particular $t$ represents a unique moment in a particular stimulus. In order to model repeated presentations of the same stimulus to the same neuron, we further assume that each neuron is exposed to a stimulus $M_{tu}$ times, though we do not assume any relationship among the $M_{tu}$. That is, neuron A might be exposed to stimulus A 15 times, while neuron B views stimulus A 17 times. We also do not assume that neuron A views stimulus times $t$ and $t + 1$ an equal number of times, as would happen, for example when partially overlapping movie clips are selected from a database. It is thus typical, but not required, that $M_{tu}$ be sparse, containing many 0s.
+
+For each observation $m$ (a unique (unit, time) pair), we then observe a spike count, $N_m$. We model these spike counts as arising from a Poisson process with time-dependent rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
 \begin{align}
     \label{obs_model}
     N_{m} &\sim \text{Pois}(\Lambda_{t(m), u(m)} \theta_m) &
     \theta_m &\sim \text{Ga}(s_{u(m)}, s_{u(m)})
 \end{align}
-Note that both the unit and time are functions of the observation index, $m$, and that the distribution of the overdispersion for each observation is specific to the unit observed. 
+That is, for a given stimulus presentation, the spiking response is governed by the firing rate $\Lambda$, specific to the stimulus and unit, along with a trial-specific noise in the unit's gain, $\theta_m$. In practice, we model this noise as independent across observations, though it is possible to weaken this assumption, allowing for $\theta_m$ to be autocorrelated in time (see Supplement). Note that both the unit and time are functions of the observation index, $m$, and that the distribution of the overdispersion for each observation may be specific to the unit observed.
 
 \subsection*{Firing rate model}
-At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ observed covariates $x_{tr}$. We further assume that each unit's firing rate response at each time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit, (2) a product of responses to each latent state, and (3) a product of responses to each observed covariate:
+At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ observed covariates $x_{tr}$. The binary latent states can be thought of as time-varying ``tags" of each stimulus --- for example, content labels for movie frames --- and are modeled as Markov chains with initial state probabilities $\pi_k$ and transition matrices $A_k$, while the observed covariates may include contrast, motion energy, or any other \emph{a priori} variable of interest known to the experimenter.
+
+We further assume that each unit's firing rate at a particular point in time can be modeled as arising from the product of three effects: (1) a baseline firing rate specific to each unit ($\lambda_0$), (2) a product of responses to each latent state ($\lambda_z$), and (3) a product of responses to each observed covariate ($\lambda_x$):
 \begin{equation}
     \label{fr_model}
-    \Lambda_{tu} = \lambda_{0u} \prod_{k = 1}^K \lambda_{zuk}^{z_{tk}}  
-    \prod_{r = 1}^R \lambda_{xur}^{x_{tr}}   
-\end{equation} 
-Note that this is conceptually similar to the generalized linear model for firing rates (in which we model $\log \Lambda$) with the identification $\beta = \log \lambda$. However, by modeling the firing rate as a product and placing Gamma priors on the individual effects, we will be able to take advantage of closed-form variational updates resulting from conjugacy that avoid explicit optimization (see below). 
+    \Lambda_{tu} = \lambda_{0u} \prod_{k = 1}^K (\lambda_{zuk})^{z_{tk}}
+    \prod_{r = 1}^R (\lambda_{xur})^{x_{tr}}
+\end{equation}
+Note that this is conceptually similar to the generalized linear model for firing rates (in which we model $\log \Lambda$) with the identification $\beta = \log \lambda$. However, by modeling the firing rate as a product and placing Gamma priors on the individual effects, we will be able to take advantage of closed-form variational updates resulting from conjugacy that avoid explicit optimization (see below). Note also, that because we assume the $z_{tk}$ are binary, the second term in the product above simply represents the cumulative product of the gain effects for those features present in the stimulus at a given moment in time.
 
-In addition, to enforce parsimony in the inferred features, we put sparse hierarchical priors with hyperparameters $\gamma = (c, d)$ on the $\lambda_z$ terms:
+In addition, to enforce parsimony in our feature inference, we place sparse hierarchical priors with hyperparameters $\gamma = (c, d)$ on the $\lambda_z$ terms:
 \begin{align}
     \label{hierarchy}
     \lambda_{zuk} &\sim \text{Ga}(c_{zk}, c_{zk} d_{zk}) & c_{zk} &\sim \text{Ga}(a_{ck}, b_{ck})
     & d_{zk} &\sim \text{Ga}(a_{dk}, b_{dk})
 \end{align}
-That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around gain 1 (no effect). And once again, this choice of priors will lead to closed-form updates in our variational approximation. Finally, for the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model, while for the specified covariate responses, $\lambda_{xu}$, we model the unit effects non-hierarchially, using independent Gamma priors for each unit.
+That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-1}$, so for $c$ large and $d\sim \mathcal{O}(1)$, the prior for firing rate response to each latent feature will be strongly concentrated around gain 1 (no effect). More importantly, this particular choice of priors leads to closed-form updates in our variational approximation. For the baseline terms, $\lambda_{0u}$, we use a non-sparse version of the same model; for the covariate responses, $\lambda_{xu}$, we model the unit effects non-hierarchially, using independent Gamma priors for each unit.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -274,71 +279,66 @@ That is, $\mathbb{E}[\lambda_u] = d^{-1}$ and $\text{var}[\lambda_u] = (cd^2)^{-
 
 
 \section*{Inference}
-
-We perform variational inference for the posteriors over the model parameters $\Theta = (\lambda_0, \lambda_z, \lambda_x, A, \pi, c_0, d_0, c_z, d_z, s)$ and latents $Z=(z_{kt},\theta_m)$. In addition, for the semi-Markov case, we include $(m, \tau)$, the parameters for the state dwell time distribution. That is, we wish to approximate the joint posterior density, 
+Given a sequence of stimulus presentations $(t(m),u(m))$ and observed spike counts $N_m$, we want to infer both the model parameters $\Theta = (\lambda_0, \lambda_z, \lambda_x, A, \pi, c_0, d_0, c_z, d_z, s)$ and latents variables  $Z=(z_{kt},\theta_m)$. That is, we wish to calculate the joint posterior density,
 \begin{equation}
-    p(\Theta,Z|N) \propto p(N, Z |\lambda, A, \pi, \theta, \gamma) 
+    p(\Theta,Z|N) \propto p(N, Z |\lambda, A, \pi, \theta, \gamma)
     p(\lambda|\gamma) p(\gamma)
     p(A)p(\pi)p(\theta|s)p(s)
 \end{equation}
-
-by a variational posterior $q_\Theta(\Theta)q_Z(Z)$ that factorizes over parameters and latents but is nonetheless close to $p$ as measured by the Kullback-Leibler divergence \cite{Wainwright2008-ii}. Equivalently, we wish to maximize the variational objective
-
+In general, calculating the normalization constant for this posterior is computationally intractable. Instead, we will use a variational approach to approximate $p(\Theta, Z|N)$ by a variational posterior $q_\Theta(\Theta)q_Z(Z)$ that factorizes over parameters and latents but is nonetheless close to $p$ as measured by the Kullback-Leibler divergence \cite{Wainwright2008-ii}. Equivalently, we wish to maximize the variational objective
 \begin{equation}
     \mathcal{L} \equiv \mathbb{E}_q \left[\log \frac{p(\Theta,Z|N)}{q_\Theta(\Theta)q_Z(Z,\theta)} \right] = \mathbb{E}_q \left[\log p(\Theta,Z|N) \right] + \mathcal{H}[q_\Theta(\Theta)] + \mathcal{H}[q_Z(Z)]
 \end{equation}
-
-with $\mathcal{H}$ the entropy. Following the factorial HMM work of \cite{ghahramani1997factorial}, we also assume that the posterior factorizes over each latent time series $z_{\bullet k}$ and the overdispersion factor $\theta_m$, as well as the rate parameters $\lambda_{\bullet u \bullet}$ associated with each Markov process.  This factorization results in a variational posterior of the form:
-
+with $\mathcal{H}$ the entropy. Following the factorial HMM work of \cite{ghahramani1997factorial}, we also assume that the posterior factorizes over each latent time series $z_{\bullet k}$ and the overdispersion factor $\theta_m$, as well as the rate parameters $\lambda_{\bullet u \bullet}$ associated with each Markov process. This factorization results in a variational posterior of the form:
 \begin{multline}
-    q(\Theta,Z) = q(c_0)q(d_0)\prod_m q(\theta_m) \prod_u q(s_u) q(\lambda_{0u}) \prod_r q(\lambda_{xur}) \times \\ 
-    \prod_k q(c_k) q(d_k) 
+    q(\Theta,Z) = q(c_0)q(d_0)\prod_m q(\theta_m) \prod_u q(s_u) q(\lambda_{0u}) \prod_r q(\lambda_{xur}) \times \\
+    \prod_k q(c_k) q(d_k)
     q(\lambda_{zuk}) q(c_{zk}) q(d_{zk}) q(z_k) q(\pi_k) q(A_k)
 \end{multline}
-With this ansatz, the variational objective decomposes in a natural way, and choices are available for many of the $q$s that lead to closed-form updates.
+With this ansatz, the variational objective decomposes in a natural way, and choices are available for nearly all of the $q$s that lead to closed-form updates.
 
 \subsection*{Variational posterior}
 From Equations \ref{obs_model} and \ref{fr_model} above, we can write the probability of the observed data $N$ as
 \begin{multline}
     \label{log_evidence}
-    \log p(N, z|x, \Theta) = \sum_{mkr} \left[ 
+    \log p(N, z|x, \Theta) = \sum_{mkr} \left[
         N_m \left( \log \theta_m +
             \log \lambda_{0u(m)} +
-            z_{t(m) k} \log \lambda_{zu(m) k} + 
+            z_{t(m) k} \log \lambda_{zu(m) k} +
             x_{t(m) r} \log \lambda_{xu(m) r}
             \right)
     \right] \\
-    - \sum_m \theta_m \Lambda_{t(m) u(m)} + 
-    \sum_{mk} \log (A_k)_{z_{t(m)+1, k}, z_{t(m), k}} + 
+    - \sum_m \theta_m \Lambda_{t(m) u(m)} +
+    \sum_{mk} \log (A_k)_{z_{t(m)+1, k}, z_{t(m), k}} +
     \sum_k \log (\pi_k)_{z_{0k}} + \text{constant,}
 \end{multline}
-where again, $m$ indexes observations of (time, unit) pairs and the last two nontrivial terms represent the probability of the Markov sequence given by $z_{tk}$. Given that \ref{log_evidence} is of an exponential family form for $\theta$ and $\lambda$ conditioned on all other variables, free-form variational arguments \cite{Wainwright2008-ii} suggest variational posteriors:
+where again, $m$ indexes observations of (time, unit) pairs and the last two nontrivial terms represent the probability of the Markov sequence given by $z_{tk}$. Given that \ref{log_evidence} is of an exponential family form for $\theta$ and $\lambda$ when conditioned on all other variables, free-form variational arguments \cite{Wainwright2008-ii} suggest variational posteriors:
 \begin{align}
     \lambda_{0u} &\sim \text{Ga}(\alpha_{0u}, \beta_{0u}) &
     \lambda_{zuk} &\sim \text{Ga}(\alpha_{zuk}, \beta_{zuk}) &
     \lambda_{xur} &\sim \text{Ga}(\alpha_{xur}, \beta_{xur})
 \end{align}
-For the first of these two, updates in terms of expected sufficient statistics involving expectations of $\gamma = (c, d)$ are straightforward (see Supplement). However, this relies on the fact that $z_t \in \lbrace0, 1\rbrace$. The observed covariates $x_t$ follow no such restriction, which results in a transcendental equation for the $\beta_x$ updates which we solve using an explicit BFGS optimization on each iteration. Moreover, we place non-hierarchical Gamma priors on these effects: $\lambda_{xur} \sim \text{Ga}(a_{xur}, b_{xur})$.
+For the first of these two, updates in terms of expected sufficient statistics involving expectations of $\gamma = (c, d)$ are straightforward (see Supplement). However, this relies on the fact that $z_t \in \lbrace0, 1\rbrace$. The observed covariates $x_t$ follow no such restriction, which results in a transcendental equation for the $\beta_x$ updates. In our implementation of the model, we solve this using an explicit BFGS optimization on each iteration. Moreover, we place non-hierarchical Gamma priors on these effects: $\lambda_{xur} \sim \text{Ga}(a_{xur}, b_{xur})$.
 
-As stated above, we place hierarchical priors on $\lambda_0$, $\lambda_z$, and $\theta$ of the form Eq. \ref{hierarchy} that tie the hyperparameters for rate parameters $\lambda$ and overdispersion effects $\theta$ across units.  This involves multiple terms in the expected log evidence of the form
+As stated above, for the latent states and baselines, we assume hierarchical priors. This allows us to model each neuron's firing rate response to a particular stimulus as being drawn from a population response to that same stimulus. We also assume that the moment-to-moment noise in firing rates, $\theta_m$, follows a neuron-specific distribution. As a result of the form of this hierarchy given in \ref{hierarchy}, the first piece in \ref{log_evidence} contains multiple terms of the form
 \begin{equation}
-    \mathbb{E}_q \left[\sum_u \log p(\lambda_u|c, d)\right] = \sum_u \mathbb{E}_q \left[ 
-    (c - 1) \log \lambda_u - cd\lambda_u + c \log cd - \log \Gamma(c) 
-    \right] 
+    \mathbb{E}_q \left[\sum_u \log p(\lambda_u|c, d)\right] = \sum_u \mathbb{E}_q \left[
+    (c - 1) \log \lambda_u - cd\lambda_u + c \log cd - \log \Gamma(c)
+    \right]
 \end{equation}
-In order to calculate the expectation, we make use of the inequality %\cite{abramowitz1964handbook}
+In order to calculate the expectation, we make use of the inequality \cite{abramowitz1964handbook}
 \begin{equation}
     \sqrt{2\pi} \le \frac{z!}{z^{z+\frac{1}{2}} e^{-z}} \le e
 \end{equation}
 to lower bound the negative gamma function and approximate the above as
 \begin{equation}
-    \log p(\lambda) \ge \sum_u \left[ 
+    \log p(\lambda) \ge \sum_u \left[
     (c - 1) (\log \lambda_u + 1) - cd\lambda_u + c \log d + \frac{1}{2}\log c\right]
 \end{equation}
 Clearly, the conditional probabilities for $c$ and $d$ are gamma in form, so that if we use priors $c \sim \text{Ga}(a_c, b_c)$ and $d\sim \text{Ga}(a_d, b_d)$ the posteriors have the form
 \begin{align}
-    c &\sim \text{Ga}\left(a_c + \frac{U}{2}, 
-    b_c + \sum_u\mathbb{E}_q 
+    c &\sim \text{Ga}\left(a_c + \frac{U}{2},
+    b_c + \sum_u\mathbb{E}_q
         \left[d \lambda_u - \log \lambda_u - \log d - 1\right]\right) \\
     d &\sim \text{Ga}\left(
         a_d + U\mathbb{E}_q[c], b_d + \sum_u \mathbb{E}_q [c \lambda_u]
@@ -347,52 +347,51 @@ Clearly, the conditional probabilities for $c$ and $d$ are gamma in form, so tha
 This basic form, with appropriate indices added, gives the update rules for the hyperparameter posteriors for $\lambda_0$ and $\lambda_z$. For $\theta$, we simply set $c = s_u$ and $d = 1$.
 
 \subsection*{Latent state inference}
-For Hidden Markov Models, given the observation model \ref{log_evidence}, inference for $z$, $A$, and $\pi$ for each latent feature can be performed efficiently via conjugate updates and the well-known forward-backward algorithm \cite{beal2003variational}. For the case of semi-Markov dynamics, we additionally need to perform inference on the parameters $(m, \tau)$ of the dwell time distributions for each state. In the case of continuous dwell times, our model \ref{semi-markov} would have $W = 1$ and be conjugate to the Normal-Gamma prior on $(m, \tau)$, but the restriction to discrete dwell times requires us to again lower bound the variational objective:
-\begin{equation}
-    \mathbb{E}_q\left[-\log W_{jk} \right] = 
-    \mathbb{E}_q\left[- \log \left( \sum_{d=1}^D p(d|j)\right) \right]
-    \ge -\log \sum_{d = 1}^D \mathbb{E}_q\left[p(d|j)\right]
-\end{equation}
-This correction for trunction must then be added to $\mathbb{E}_q[p(z|\Theta)]$. For inference in the semi-Markov case, we use an extension of the forward-backward algorithm\cite{Yu2006-bb}, at the expense of computational complexity $\mathcal{O}(SDT)$ $(S = 2)$ per latent state, to calculate $q(z_k)$ (see Supplement). For the $4SK$ hyperparameters of the Normal-Gamma distribution, we perform an explicit BFGS optimization on the $4S$ parameters of each chain on each iteration.
-
+For each latent variable $z$, the Markov Chain parameters $\pi_k$ and $A_k$, together with the observation model \ref{log_evidence} determine a Hidden Markov Model, for which inference can be performed efficiently via conjugate updates and the well-known forward-backward algorithm \cite{beal2003variational}. More explicitly, given $\pi$, $A$, and the emission probablities for the observations, $\log p(N|z)$, the forward-backward algorithm returns the probabilities $p(z_t=s)$ (posterior marginal), $p(z_{t+1} =s', z_t=s)$ (two-slice marginal) and $\log Z$ (normalizing constant).
 
 \section*{Experiments}
 \subsection*{Synthetic data}
-We generated synthetic data from the model in Section \ref{model_sec} for $U=100$ neurons for $T=10,000$ time bins of $dt=0.0333s$ ($\approx 6$min). Assumed firing rates and effect sizes were realistic for cortical neurons, with mean baseline rates of 10 spikes/s and firing rate effects given by a $\text{Ga}(1, 1)$ distribution for $K_{\text{data}}=3$ latent features. In addition, we included $R=3$ known covariates generated according to Markov dynamics. For this experiment, we assumed that each unit was presented once with the stimulus time series, so that $M = 1$. That is, we tested a case in which inference was driven primarily by variabiliy in population responses across stimuli rather than pooling of data across repetitions of the same stimulus. Moreover, to test the model's ability to parsimoniously infer features, we set $K=5$. That is, we asked the model to recover more features than were present in the data. Finally, we placed hierarchical priors on unit baseline firing rates and sparse hierarchical priors on firing rate effects of latent states. We used 5 random restarts and iterated over parameter updates until the fractional change in $\mathcal{L}$ dropped below $10^{-4}$.
+We generated synthetic data from the model in Section \ref{model_sec} for $U=100$ neurons for $T=10,000$ time bins of $dt=0.0333s$ ($\approx 6$min of movie at 30 frames per second). Assumed firing rates and effect sizes were realistic for cortical neurons, with mean baseline rates of 10 spikes/s and firing rate effects given by a $\text{Ga}(1, 1)$ distribution for $K_{\text{data}}=3$ latent features. In addition, we included $R=3$ known covariates generated according to Markov dynamics. For this experiment, we assumed that each unit was presented once with the stimulus time series, so that $M_{tu} = 1$. That is, we tested a case in which inference was driven primarily by variabiliy in population responses across stimuli rather than pooling of data across repetitions of the same stimulus. Moreover, to test the model's ability to parsimoniously infer features, we set $K=5$. That is, we asked the model to recover more features than were present in the data. Finally, we placed hierarchical priors on neurons' baseline firing rates and sparse hierarchical priors on firing rate effects of latent states. We used 5 random restarts and iterated over parameter updates until the fractional change in $\mathcal{L}$ dropped below $10^{-4}$.
 
 As seen in Figure \ref{synthetic}, the model correctly recovers only the features present in the original data. We quantified this by calculating the normalized mutual information $\hat{I}\equiv I(X, Y)/\sqrt{H(X)H(Y)}$, between the actual states and the inferred states, with $H(Z)$ and $I$ estimated by averaging the variational posteriors (both absolute and conditioned on actual states) across time. Note that superfluous features in the model have high posterior uncertainty for $z_k$ and high posterior confidence for $\lambda_{zk}$ around 1 (no effect). In addition, the model correctly recovers coefficients for the observed covariates, and when limited to fewer features than in the generating model, recovers a subset of the features accurately rather than blending features together (see Supplement).
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
-    \center
     \includegraphics[width=\linewidth]{figures/synthetic}
-	\caption{\bf Comparison of actual and inferred states of the synthetic data.}
-	A: Actual and recovered binary features for a subset of stimulus times in the dataset. Note that inferred feature 3 is the inverse of actual feature 0, and that unused features are in gray, indicating a high posterior uncertainty in the model. B: Population posterior distributions for $\lambda_z$. Features 0 and 1 are effectively point masses around gain 1 (no effect), while features 2--4 approximate the $\text{Ga}(1, 1)$ data-generating model. C: Normalized mutual information between actual and inferred states.
+	\caption{\bf Comparison of actual and inferred states of the synthetic data.} A: Actual and recovered binary features for a subset of stimulus times in the dataset. Note that inferred feature 3 is the inverse of actual feature 0, and that unused features are in gray, indicating a high posterior uncertainty in the model. B: Population posterior distributions for $\lambda_z$. Features 0 and 1 are effectively point masses around gain 1 (no effect), while features 2--4 approximate the $\text{Ga}(1, 1)$ data-generating model. C: Normalized mutual information between actual and inferred states.
 	\label{synthetic}
 \end{figure}
 
 
 \subsection*{Labeled neural data}
-We applied our model to a well-studied neural data set comprising single neuron recordings from macaque area LIP during the performance of a perceptual discrimination task \cite{roitman2002response}\footnote{Data available at \texttt{https://www.shadlenlab.columbia.edu/resources/RoitmanDataCode.html}}. In the experiment, stimuli consisting of randomly moving dots, some percentage of which moved coherently in either the preferred or anti-preferred direction of motion for each neuron. The animal's task was to report the direction of motion. Thus, in addition to 5 coherence levels, each trial also varied based on whether the motion direction corresponed to the target in or out of the response field as depicted in Fig. \ref{roitman}.\footnote{In the case of 0\% coherence, the direction of motion was inherently ambiguous and coded according to the monkey's eventual choice.}
+We applied our model to a well-studied neural data set comprising single neuron recordings from macaque area LIP during the performance of a perceptual discrimination task \cite{roitman2002response}\footnote{Data available at \texttt{https://www.shadlenlab.columbia.edu/resources/RoitmanDataCode.html}}. In the experiment, stimuli consisted of randomly moving dots, some percentage of which moved coherently in either the preferred or anti-preferred direction of motion for each neuron. The animal's task was to report the direction of motion. Thus, in addition to 5 coherence levels, each trial also varied based on whether the motion direction corresponed to the target in or out of the response field as depicted in Fig. \ref{roitman}.\footnote{In the case of 0\% coherence, the direction of motion was inherently ambiguous and coded according to the monkey's eventual choice.}
 
-We fit a model with $K = 10$ features and $U = 27$ units to neural responses from the 1-second stimulus presentation period of the task. Spike counts corresponded to bins of $dt = 20$ms. In this case, each unit experienced a different number of presentations of each stimulus condition, resulting in a ragged observation matrix. Figure \ref{roitman} shows the experimental labels from the concatenated stimulus periods, along with labels inferred by our model. Once again, the model has left some features unused, but correctly discerned differences between stimuli in the unlabeled data. Even more importantly, though given ten distinct stimulus classes, the model has clearly inferred the factorial design of the experiment, with the two most prominent features, $z_0$ and $z_1$, capturing the two levels of the crossed factor with the largest effect size: whether or not the relevant target is inside or outside the receptive field of the neuron. Moreover, the model correctly discriminates between two identical stimulus conditions (0\% coherence) based on the monkey's eventual decision (In vs Out). In addition, the model correctly captures the initial 200ms ``dead time'' during the stimulus period, in which firing rates remain at pre-stimulus baseline. Finally, the model uses the same features to describe stimuli with similar firing rates, as well as roughly capturing the time course of stimulus differentiation. As a result, mismatch between the ground truth labels and model-inferred features reflects fundamental ambiguities in the neural data, with the model's latent states taking into account features of spiking response not necessarily known in advance by experimenters.
+We fit a model with $K = 10$ features and $U = 27$ units to neural responses from the 1-second stimulus presentation period of the task. Spike counts corresponded to bins of $dt = 20$ms. For this experiment, units were individually recorded, so each unit experienced a different number of presentations of each stimulus condition, implying a ragged observation matrix. As a result, this dataset tests the model's ability to leverage shared task structure across multiple sessions of recording, demonstrating that simultaneously recorded units are not required for inference of latent states.
+
+Figure \ref{roitman} shows the experimental labels from the concatenated stimulus periods, along with labels inferred by our model. Once again, the model has left some features unused, but correctly discerned differences between stimuli in the unlabeled data. Even more importantly, though given ten distinct stimulus classes, the model has clearly inferred the factorial design of the experiment, with the two most prominent features, $Z_0$ and $Z_1$, capturing complementary values of the variable with the largest effect size: whether or not the relevant target was inside our outside the receptive field of the neuron. This difference can be observed in both the averaged experimental data (B) and the predicted data from the model (C) of Figure \ref{roitman}, where the largest differences are between the dotted and solid lines.
+
+But the model also reproduces less obvious features: it correctly discriminates between two identical stimulus conditions (0\% coherence) based on the monkey's eventual decision (In vs Out). In addition, the model correctly captures the initial 200ms ``dead time'' during the stimulus period, in which firing rates remain at pre-stimulus baseline. Finally, the model resists detection of features with little support in the experimental data. For instance, while feature $Z_4$ captures the large difference between 50\% coherence and other stimuli, the model does not infer a difference between intermediate coherence levels that are indistinguishable in this particular dataset. That is, mismatches between ground truth labels and model-inferred features here reflect underlying ambiguities in the neural data, while the model's inferred features correctly pick out those combinations of variables most responsible for differences in spiking across conditions.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
-    \center
     \includegraphics[width=\linewidth]{figures/roitman}
 	\caption{\bf Comparison of actual and inferred states of the Roitman dataset.}
 	A: Actual and recovered binary features during the stimulus presentation period. Note that model features 5 -- 8 are unused and that feature 0 closely tracks the Out feature of the data, albeit delayed. B: Actual and predicted firing rates for the stimulus period. Note that the model infers stimulus categories from the data, including appropriate timing of differentiation between categories.
 	\label{roitman}
 \end{figure}
 
+\subsection*{Visual category data}
+As a second test of our model, we applied our algorithm to a dataset comprising $U = 56$ neurons from macaque inferotemporal cortex \cite{McMahon2014-qq}. These neurons were repeatedly presented with 96 stimuli comprising monkey faces, monkey bodies, whole monkeys, natural scenes, food, manmade objects, and patterns (Figure {\bf cite XX}). Data consisted of spike time series, which we binned into a 300ms pre-stimulus baseline, a 300ms stimulus presentation period, and a 300ms post-stimulus period. To maximize interpretability of the results, we placed strong priors on the $\pi_k$ to encode the assumption that all features were off during the baseline period. We also modeled overdispersion with extremely weak priors to encourage the model to attribute fluctuations in firing to noise in preference to feature detection. We again fit $K = 10$ features with sparse hierarchical priors on population responses.
+
+{\bf Results are shown }
+
 
 \section*{Discussion}
-Here, we have proposed and implemented a method for learning features in stimuli via the responses of populations of spiking neurons. This work addresses a growing trend in systems neuroscience --- the increasing use of rich and unstructured stimulus sets --- without requiring either expert labeling or a metric on the stimulus space. As such, we expect it to be of particular use in disciplines like social neuroscience, olfaction, and other areas in which the real world is complex and strong hypotheses about the forms of the neural code are lacking. By learning features of interest to neural populations directly from neural data, we stand to generate unexpected, more potentially more accurate (less biased) hypotheses regarding the neural representation of the external world.  
 
-We have shown that our model is capable of parsimoniously and correctly inferring features in the low signal-to-noise regime of cortical activity, even in the case of independently recorded neurons. Moreover, by employing a fully variational, Bayesian approach to inference, we gain three key advantages: First, we gain the advantages of Bayesianism in general: estimates of confidence in inferences, parsimony and regularization via priors, and the ability to do principled model comparison. Second, variational methods scale well to large datasets. Finally, variational methods are fast, in that they typically converge within only a few tens of iterations and in many case (such as ours) require mostly simple coordinate updates. %Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
+Here, we have proposed and implemented a method for learning features in stimuli via the responses of populations of spiking neurons. This work addresses a growing trend in systems neuroscience --- the increasing use of rich and unstructured stimulus sets --- without requiring either expert labeling or a metric on the stimulus space. As such, we expect it to be of particular use in disciplines like social neuroscience, olfaction, and other areas in which the real world is complex and strong hypotheses about the forms of the neural code are lacking. By learning features of interest to neural populations directly from neural data, we stand to generate unexpected, more accurate (less biased) hypotheses regarding the neural representation of the external world.
 
-Future directions include augmenting the model of overdispersion via an autoregressive process to take into account slow variations in neural activity not driven by the stimulus; adding non-trivial temporal dependence to latent variables in a manner consistent with kernels typically used with Poisson regression models; and an implementation of the model using stochastic variational inference for application to larger, next-generation neural data sets.
+We have shown that our model is capable of parsimoniously and correctly inferring features in the low signal-to-noise regime of cortical activity, even in the case of independently recorded neurons. Moreover, by employing a fully variational, Bayesian approach to inference, we gain three key advantages: First, we gain the advantages of Bayesianism in general: estimates of confidence in inferences, parsimony and regularization via priors, and the ability to do principled model comparison. Second, variational methods scale well to large datasets. Finally, variational methods are fast, in that they typically converge within only a few tens of iterations and in many case (such as ours) require mostly simple coordinate updates. Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
+
 
 
 
@@ -440,119 +439,8 @@ Cras egestas velit mauris, eu mollis turpis pellentesque sit amet. Interdum et m
 % Compile your BiBTeX database using our plos2015.bst
 % style file and paste the contents of your .bbl file
 % here.
-% 
-\begin{thebibliography}{10}
+%
 
-\bibitem{steveninck1988realtime}
-R. D. R. V. Steveninck and W. Bialek.
-\newblock Real-time performance of a movement-sensitive neuron in the blowfly visual system: Coding and information transfer in short spike sequences.
-\newblock Proceedings of the Royal Society of London B: Biological Sciences, vol. 234, no. 1277, pp. 379--414, 1988.
-
-\bibitem{ringach2004reverse}
-D. Ringach and R. Shapley.
-\newblock Reverse correlation in neurophysiology.
-\newblock Cognitive Science. vol. 28, no. 2, pp. 147--166, 2004.
-
-\bibitem{ringach2002receptive}
-D. L. Ringach, M. J. Hawken, and R. Shapley.
-\newblock Receptive field structure of neurons in monkey primary visual cortex revealed by stimulation with natural image sequences.
-\newblock Journal of vision. vol. 2, no. 1, p. 2, 2002.
-
-\bibitem{sharpee2004analyzing}
-T. Sharpee, N. C. Rust, and W. Bialek.
-\newblock Analyzing neural responses to natural signals: maximally informative dimensions.
-\newblock Neural computation, vol. 16, no. 2, pp. 223--250, 2004.
-
-\bibitem{Vinje2000-dx}
-W. E. Vinje and J. L. Gallant.
-\newblock Sparse coding and decorrelation in primary visual cortex during natural vision.
-\newblock Science. vol. 287, pp. 1273--1276, 18 Feb. 2000.
-
-\bibitem{Williamson2013-rg}
-R. S. Williamson, M. Sahani, and J. W. Pillow.
-\newblock The equivalence of information-theoretic and likelihood-based methods for neural dimensionality reduction. 
-\newblock16 Aug. 2013.
-
-\bibitem{Vu2011-da}
-V. Q. Vu, P. Ravikumar, T. Naselaris, K. N. Kay, J. L. Gallant, and B. Yu.
-\newblock Encoding and decoding v1 fmri responses to natural images with sparse nonparametric models.
-\newblock Ann. Appl. Stat. vol. 5, pp. 1159--1182, June 2011.
-
-\bibitem{Huth2012-cj}
-A. G. Huth, S. Nishimoto, A. T. Vu, and J. L. Gallant.
-\newblock A continuous semantic space describes the representation of thousands of object and action categories across the human brain.
-\newblock Neuron. vol. 76, pp. 1210--1224, 20 Dec. 2012.
-
-\bibitem{Stansbury2013-nm}
-D. E. Stansbury, T. Naselaris, and J. L. Gallant.
-\newblock Natural scene statistics account for the representation of scene categories in human visual cortex.
-\newblock Neuron. vol. 79, pp. 1025--1034, 8 Aug. 2013.
-
-\bibitem{Pillow2008-em}
-J. W. Pillow, J. Shlens, L. Paninski, A. Sher, A. M. Litke, E. J. Chichilnisky, and E. P. Simoncelli.
-\newblock Spatio-temporal correlations and visual signalling in a complete neuronal population.
-\newblock Nature. vol. 454, pp. 995--999, 23 July 2008.
-
-\bibitem{Vogelstein2009-ax}
-J. T. Vogelstein, B. O. Watson, A. M. Packer, R. Yuste, B. Jedynak, and L. Paninski.
-\newblock Spike inference from calcium imaging using sequential monte carlo methods.
-\newblock Biophys. J. vol. 97, pp. 636--655, 22 July 2009.
-
-\bibitem{Park2014-el}
-I. M. Park, M. L. R. Meister, A. C. Huk, and J. W. Pillow.
-\newblock Encoding and decoding in parietal cortex during sensorimotor decision-making.
-\newblock Nat. Neurosci. vol. 17, pp. 1395--1403, Oct. 2014.
-
-\bibitem{Buesing2014-ta}
-L. Buesing, T. A. Machado, J. P. Cunningham, and L. Paninski.
-\newblock Clustered factor analysis of multineuronal spike data.
-\newblock Advances in Neural Information Processing Systems 27 (Z. Ghahramani, M. Welling, C. Cortes, N. D. Lawrence, and K. Q. Weinberger, eds.), pp. 3500--3508, Curran Associates, Inc., 2014.
-
-\bibitem{Ulrich2014-zc}
-K. R. Ulrich, D. E. Carlson, W. Lian, J. S. Borg, K. Dzirasa, and L. Carin.
-\newblock Analysis of brain states from {Multi-Region} {LFP} {Time-Series}.
-\newblock Advances in Neural Information Processing Systems 27 (Z. Ghahramani, M. Welling, C. Cortes, N. D. Lawrence, and K. Q. Weinberger, eds.), pp. 2483--2491, Curran Associates, Inc., 2014.
-
-\bibitem{Putzky2014-up}
-P. Putzky, F. Franzen, G. Bassetto, and J. H. Macke.
-\newblock A bayesian model for identifying hierarchically organised states in neural population activity.
-\newblock Advances in Neural Information Processing Systems 27 (Z. Ghahramani, M. Welling, C. Cortes, N. D. Lawrence, and K. Q. Weinberger, eds.), pp. 3095--3103, Curran Associates, Inc., 2014.
-
-\bibitem{Wainwright2008-ii}
-M. J. Wainwright and M. I. Jordan.
-\newblock Graphical models, exponential families, and variational inference.
-\newblock Found. Trends Mach. Learn. vol. 1, pp. 1--305, Jan. 2008.
-
-\bibitem{ghahramani1997factorial}
-Z. Ghahramani and M. I. Jordan.
-\newblock Factorial hidden markov models.
-\newblock Machine learning. vol. 29, no. 2-3, pp. 245--273, 1997.
-
-\bibitem{beal2003variational}
-M. J. Beal.
-\newblock Variational algorithms for approximate Bayesian inference.
-\newblock PhD thesis, University of London, 2003.
-
-\bibitem{Yu2006-bb}
-S.-Z. Yu and H. Kobayashi.
-\newblock Practical implementation of an efficient forward-backward algorithm for an explicit-duration hidden markov model.
-\newblock Signal Processing, IEEE Transactions on. vol. 54, pp. 1947--1951, May 2006.
-
-\bibitem{roitman2002response}
-J. D. Roitman and M. N. Shadlen.
-\newblock Response of neurons in the lateral intraparietal area during a combined visual discrimination reaction time
-  task.
-\newblock The Journal of neuroscience. vol. 22, no. 21, pp. 9475--9489,
-  2002.
-
-\bibitem{watson2012social}
-K. K. Watson and M. L. Platt.
-\newblock Social signals in primate orbitofrontal cortex.
-\newblock Current Biology. vol. 22, no. 23, pp. 2268--2273, 2012.
-
-\end{thebibliography}
-
-
+\bibliography{chen_beck_pearson}{}
 
 \end{document}
-
