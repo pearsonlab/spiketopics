@@ -275,7 +275,7 @@ with $\psi(x)$ the digamma function. Likewise, the expectation $\overline{\theta
 \begin{equation}
     \label{eff_rate}
     \mathbb{E}_q\left[
-        \lambda_{0u} \prod_k \lambda_{zuk}^{z_{tk}} \prod_r \lambda_{xur}^{x_{tr}}
+        \lambda_{0u} \prod_k (\lambda_{zuk})^{z_{tk}} \prod_r (\lambda_{xur})^{x_{tr}}
     \right] = \frac{\alpha_{0u}}{\beta_{0u}}
     \prod_k \left(1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{zuk}}{\beta_{zuk}} \right)
     \prod_r \frac{1}{\beta_{xur}^{x_{tr}}} \frac{\Gamma(\alpha_{xur} + x_{tr})}{\Gamma(\alpha_{xur})}
@@ -369,12 +369,16 @@ and assume
 \begin{equation}
     \theta_{\tau u} = \phi_{\tau u} \theta_{\tau - 1, u}
 \end{equation}
-If $\phi_{0u} = \theta_{0, u}$, we then have $\theta_{\tau u} = \prod_{\tau' \le \tau} \phi_{\tau' u}$. In essence, this is a log-autoregressive process in which the innovations are not necessarily normally distributed. In fact, if we further assume that $p(\phi_{\tau u}) = \mathrm{Ga}(s_u, r_u)$ and $q(\phi_{\tau u}) = \mathrm{Ga}(\omega_{\tau u}, \zeta_{\tau u})$, we can once again make use of conjugate updates.
+If $\phi_{0u} = \theta_{0, u}$, we then have $\theta_{\tau u} = \prod_{\tau' \le \tau} \phi_{\tau' u}$. In essence, this is a log-autoregressive process in which the innovations are not necessarily normally distributed. In fact, if we further assume that $p(\phi_{\tau u}) = \mathrm{Ga}(s_u, r_u)$ and $q(\phi_{\tau u}) = \mathrm{Ga}(\omega_{\tau u}, \zeta_{\tau u})$, we can once again make use of conjugate updates:
+\begin{equation}
+    \mathbb{E}_{q(\phi)} = \left[ \log \frac{p(\phi)}{q(\phi)} \right] = \sum_{\tau u} [(s_u - 1) \overline{\log \phi_{\tau u}} - r_u \overline{\phi_{\tau u}} + H_g(\omega_{\tau u}, \zeta_{\tau u})]
+\end{equation}
 
 Given these assumptions, we need to make the following modifications for terms in the evidence lower bound:
-
-{\bf Xin, add ELBO equations from section 9.2 in notes here}
-
+\begin{align}
+    \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} + \sum_{\tau u} \overline{\log\phi_{\tau u}} \sum_{\tau' \ge \tau} N_{\tau' u} \\
+    - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow - \sum_{\tau u} \prod_{\tau' \le \tau} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)
+\end{align}
 
 \section{Inference}
 \subsection{Conjugate updates}
@@ -398,14 +402,12 @@ $c_{xr}$         &$U/2$  &$\sum_u\mathbb{E}_q \left[d_{xr} \lambda_{xur} - \log 
 $d_{0}$         &$U\mathbb{E}_q[c_{0}]$  &$\sum_u\mathbb{E}_q \left[c_{0}\lambda_{0u}\right]$ \\
 $d_{zk}$         &$U\mathbb{E}_q[c_{zk}]$  &$\sum_u\mathbb{E}_q \left[c_{zk}\lambda_{zuk}\right]$ \\
 $d_{xr}$         &$U\mathbb{E}_q[c_{xr}]$  &$\sum_u\mathbb{E}_q \left[c_{xr}\lambda_{xur}\right]$ \\
+$\phi_{\tau u}$  &$\sum_{\tau' \ge j} N_{\tau' u}$  &$\sum_{u, \tau \ge j} F_{t(\tau)} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}}$ \\
 \end{tabular}
 \end{center}
 \end{table}
 
-Here, we overload notation to write $N_{tu} = \sum_m \delta_{u(m), u} \delta_{t(m), t}\, N_m$, $\overline{\theta}_u = \sum_m \delta_{u(m), u}\overline{\theta}_m$, and make use of $H$, $G$, and $F$ as defined in \ref{HFG} - \ref{G}. Indeed, our implementation caches $F$ and $G$ for a substantial speedup (at the cost of additional memory requirements).
-
-\subsubsection{Autocorrelated noise}
-{\bf Xin, add update rules for noise here}
+Here, we overload notation to write $N_{tu} = \sum_m \delta_{u(m), u} \delta_{t(m), t}\, N_m$, $\overline{\theta}_u = \sum_m \delta_{u(m), u}\overline{\theta}_m$, and make use of $H$, $G$, and $F$ as defined in \ref{HFG} - \ref{G}. Indeed, our implementation caches $F$ and $G$ for a substantial speedup (at the cost of additional memory requirements). For autocorrelated noise, the update rules are for the $j$-th item in the series of autocorrelation. 
 
 \subsection{Non-conjugate updates}
 \label{non-conj}
@@ -423,7 +425,7 @@ We also supply the optimizer with the gradient:
     \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_{m; u(m) = u} x_{t(m)ur} \overline{\theta}_m H_{0u} F_{t(m)u}
     e^{-\sum_r \epsilon_{ur} x_{t(m)ur}}
 \end{equation}
-where we sum only over observations with $u(m) = u$. On each iterate, we then optimze $\mathcal{L}_\epsilon$, initialzing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
+where we sum only over observations with $u(m) = u$. On each iterate, we then optimize $\mathcal{L}_\epsilon$, initialzing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
 
 \subsubsection{Semi-Markov duration distribution}
 If the dwell time distributions of states in the semi-Markov model were truly continuous, the parameters $(m, s^2)$ of a lognormal distribution $p(d|j)$ would have a Normal-Gamma conjugate prior, and updates would be closed-form. However, the requirement that the durations be integers and that there exist a maximal duration, $D$, over which these probability mass functions must normalize results in an extra term in $\mathbb{E}_q[\log p]$ arising from the normalization constant. In this case, we must explicitly optimize for the parameters of the Normal-Gamma prior on $(m, s^2)$. However, unlike the case of \ref{beta_x}, these parameters are only updated for one latent feature at a time. Since the Normal-Gamma distribution has only 4 parameters and the number of states of the latent variable is $S = 2$, this requires updating $4SK$ parameters, but only taken $4S = 8$ at a time, a much more manageable task.
@@ -508,7 +510,7 @@ Code for all algorithms and analyses is available at https://github.com/pearsonl
 % style file and paste the contents of your .bbl file
 % here.
 %
-\bibliography{chen_beck_pearson}{}
+
 % \begin{thebibliography}{10}
 %
 % \bibitem{watson2012social}
@@ -518,5 +520,6 @@ Code for all algorithms and analyses is available at https://github.com/pearsonl
 %
 % \end{thebibliography}
 
+\bibliography{chen_beck_pearson}{}
 
 \end{document}

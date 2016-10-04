@@ -325,7 +325,7 @@ Then in the formula of ELBO, the piece that contributes to $\lambda$ now becomes
 
 Assume that the correlation over all natural time is always present. Therefore, we have
 \begin{equation}
-    \mathbb{E}_{q(\phi)} = \left[ \log \frac{p(\phi)}{q(\phi)} \right] &= \sum_{\tau u} [(s_u - 1) \overline{\log \phi_{\tau u}} - r_u \overline{\phi_{\tau u}} + H_g(\omega_{\tau u}, \zeta_{\tau u})]
+    \mathbb{E}_{q(\phi)} = \left[ \log \frac{p(\phi)}{q(\phi)} \right] = \sum_{\tau u} [(s_u - 1) \overline{\log \phi_{\tau u}} - r_u \overline{\phi_{\tau u}} + H_g(\omega_{\tau u}, \zeta_{\tau u})]
 \end{equation}
 
 By comparing the terms that involves $\log \phi_{\tau u}$ and $\phi_{\tau u}$ in the ELBO, we can write down the updates for $\omega_{j u}$ and $\zeta_{j u}$ in gradient ascent as
@@ -876,7 +876,7 @@ where
 \end{align}
 
 \subsubsection{Log-Normal updates}
-For the case above (lognormal durations, Normal-Gamma priors on the lognormal parameters), a convenient simplification occurs. We can see this by noting that the terms involving $C$ above include the posterior variational parameters only through linear combinations of $\mathbb{E}_q[\eta]$ and $\mathbb{E}_q[A(\eta)]$. But because the normal-gamma is conjugate to the lognormal, these quantites are themselves the expected natural parameters of the normal-gamma distribution: $(\log \tau, \tau, m\tau, m^2\tau)$. As a result, we can do Bayesian inference for the natural parameters of the normal-gamma in closed form:
+For the case above (lognormal durations, Normal-Gamma priors on the lognormal parameters), a convenient simplification occurs. We can see this by noting that the terms involving $C$ above include the posterior variational parameters only through linear combinations of $\mathbb{E}_q[\eta]$ and $\mathbb{E}_q[A(\eta)]$. But because the normal-gamma is conjugate to the lognormal, these quantities are themselves the expected natural parameters of the normal-gamma distribution: $(\log \tau, \tau, m\tau, m^2\tau)$. As a result, we can do Bayesian inference for the natural parameters of the normal-gamma in closed form:
 \begin{equation}
     \begin{bmatrix}
     \alpha - \frac{1}{2} \\
