@@ -244,7 +244,8 @@ Consider a population of $U$ spiking neurons or units exposed to a series of sti
 
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{figures/stim_movie}
-	\caption{\bf Illustration of repeated presentations of stimulus.} A: Original series of stimuli indexed by $t$. B: Example stimulus sequences for experiments, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus might be different.
+	\caption{\bf Illustration of repeated presentations of stimulus.}
+    A: Original series of stimuli indexed by $t$. B: Example stimulus sequences for experiments, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus might be different.
 	\label{fig:movie}
 \end{figure}
 
@@ -284,14 +285,13 @@ Putting all this together, we then arrive at the full generative model:
     \text{where} ~~ p(\lambda|\gamma) &= \prod_u p(\lambda_{0u}|c_0, d_0)\prod_{kr} p(\lambda_{zuk}|c_{zk}, d_{zk}) p(\lambda_{xur}) \\
     \text{~~ and} ~~ p(\gamma) &= p(c_0)p(d_0)\prod_k p(c_{zk}) p(d_{zk})
 \end{align}
-in conjunction with the definitions of $p(N|\Lambda, \theta)$ and $\Lambda(\lambda, z, x)$ in Eq. (\ref{obs_model}) and (\ref{fr_model}). The generative model for spike counts is illustrated in Figure \ref{fig1}.
+in conjunction with the definitions of $p(N|\Lambda, \theta)$ and $\Lambda(\lambda, z, x)$ in Eq (\ref{obs_model}) and (\ref{fr_model}). The generative model for spike counts is illustrated in Figure \ref{fig1}.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
-    \center
     \includegraphics[width=\linewidth]{figures/model}
-	\caption{{\bf Generative model for spike counts.}
-	Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M$. Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed covariates $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$.}
+	\caption{\bf Generative model for spike counts.}
+	A: Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed covariates $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$. B: Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M$.
 \label{fig1}
 \end{figure}
 
@@ -403,8 +403,6 @@ The inferred categories based on binned population responses are shown in Figure
 
 Again, as noted above, our results in Figure \ref{fig:imgclust}.A and B indicate predicted population responses, derived from the hierarchical prior. As evidenced in Figure \ref{fig:imgclust}.C and D, individual neuron effects could be much larger. These panels show data for two example units, along with the model's prediction. Clearly, the model recapitulates the largest distinctions between images in the data, though the assumption that firing rates should be the same for all images with similar features fails to capture some variability in the results. Even so, uncertainties in the predicted firing rates are also in line with uncertainties from those of observed rates, indicating that our model is correctly accounting for trial-to-trial noise.
 
-Note that the multiplicative effect in each feature is constant across all stimuli and neurons. This is because we assume that each feature in the model should represent and only represent a single effect on the whole set of neurons over all stimuli. Thus the total effect of a single stimulus is the sum of all features presented in that stimulus, e.g. the effect of Stimulus 1 in the monkey face category is the summation of effects presented by Feature 2, 4 and 5. In Figure \ref{fig:imgclust}.C and D we show the recovered firing rate of two neurons over all stimuli comparing to their original firing rate derived from data. The bars represent the 2.5 and 97.5 percentiles of firing rates from the data and simulated results, and the dots are the means of those firing rates regarding each stimulus. These two neurons are randomly picked up from the 56 and it is obvious that 1) the model successfully recovered the firing rates regarding each neuron to the same scale, and 2) the simulated results show smaller fluctuations in comparison to the actual data.
-
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{figures/imgclust}
@@ -413,8 +411,17 @@ Note that the multiplicative effect in each feature is constant across all stimu
 	\label{fig:imgclust}
 \end{figure}
 
-{\bf moved here: we need another figure showing this}
-Most intriguingly, even the features rarely inferred by our model captured intriguing information. As shown in Figure {\bf XX}, Feature {\bf XX}, also inferred in some single units, appears to capture the distinction between direct and indirect gaze in monkey faces. Likewise, with one false positive, Feature {\bf XX} appears to distinguish between leftward and rightward gaze. Clearly, these results are not dispositive in the dataset we analyzed, but viewed as a source of new hypotheses, they are highly suggestive of future experiments, even if we did not already have evidence for them \cite{Perrett23}.
+Note that the multiplicative effect in each feature is constant across all stimuli and neurons. This is because we assume that each feature in the model should represent and only represent a single effect on the whole set of neurons over all stimuli. Thus the total effect of a single stimulus is the sum of all features presented in that stimulus, e.g. the effect of Stimulus 1 in the monkey face category is the summation of effects presented by Feature 2, 4 and 5. In Figure \ref{fig:imgclust}.C and \ref{fig:imgclust}.D we show the recovered firing rate of two neurons over all stimuli comparing to their original firing rate derived from data. The bars represent the 95\% credible intervals of firing rates from the data and simulated results, and the dots are the means of those firing rates regarding each stimulus. These two neurons are randomly picked up from the 56 and it is obvious that 1) the model successfully recovered the firing rates regarding each neuron to the same scale, and 2) the simulated results show smaller fluctuations in comparison to the actual data.
+
+Most intriguingly, even the features rarely inferred by our model captured intriguing information. As shown in Figure \ref{fig:imgclust_sub}, Feature 6 along with Feature 2, 4, 5 appear to capture the distinction between direct and indirect gaze in monkey faces. Likewise, with one false positive, the ``baseline'' features of 2, 4, 5 in combination of the weak Feature 9 appear to distinguish between leftward and rightward gaze. Clearly, these results are not dispositive in the dataset we analyzed, but viewed as a source of new hypotheses, they are highly suggestive of future experiments, even if we did not already have evidence for them \cite{Perrett23}.
+
+% Place figure captions after the first paragraph in which they are cited.
+\begin{figure}[!h]
+    \includegraphics[width=\linewidth]{figures/imgclust_subgroups}
+	\caption{\bf Small features in identifying minor differences within category.}
+	A: A more detailed plot for the inferred features in the first two categories that correspond to monkey faces and whole monkeys. B: Two subgroups that were identified by the same combination of features. Group 1 picked out all the images that have direct gaze in monkey faces, while Group 2 picked out four leftward gazes out of five (with one false negative).
+	\label{fig:imgclust_sub}
+\end{figure}
 
 
 \section*{Discussion}
@@ -422,7 +429,6 @@ Most intriguingly, even the features rarely inferred by our model captured intri
 Here, we have proposed and implemented a method for learning features in stimuli via the responses of populations of spiking neurons. This work addresses a growing trend in systems neuroscience --- the increasing use of rich and unstructured stimulus sets --- without requiring either expert labeling or a metric on the stimulus space. As such, we expect it to be of particular use in disciplines like social neuroscience, olfaction, and other areas in which the real world is complex and strong hypotheses about the forms of the neural code are lacking. By learning features of interest to neural populations directly from neural data, we stand to generate unexpected, more accurate (less biased) hypotheses regarding the neural representation of the external world.
 
 We have shown that our model is capable of parsimoniously and correctly inferring features in the low signal-to-noise regime of cortical activity, even in the case of independently recorded neurons. Furthermore, by employing a fully variational, Bayesian approach to inference, we gain three key advantages: First, we gain the advantages of Bayesianism in general: estimates of confidence in inferences, parsimony and regularization via priors, and the ability to do principled model comparison. Second, variational methods scale well to large datasets. Finally, variational methods are fast, in that they typically converge within only a few tens of iterations and in many case (such as ours) require mostly simple coordinate updates.
-
 
 Without experimental knowledge in advance, our model can correctly recover important features in the noisy regime of cortical activity or independently recorded neurons, and is also capable of discovering smaller but suggestive features. Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
 
@@ -433,29 +439,13 @@ Without experimental knowledge in advance, our model can correctly recover impor
 \section*{Supporting Information}
 
 % Include only the SI item label in the paragraph heading. Use the \nameref{label} command to cite SI items in the text.
-\paragraph*{S1 Fig.}
-\label{S1_Fig}
-{\bf Bold the title sentence.} Add descriptive text after the title of the item (optional).
+\paragraph*{S1 Text.}
+\label{S1_Text}
+{\bf Mathematical derivation for ELBO and Inference.}
 
 \paragraph*{S2 Fig.}
 \label{S2_Fig}
-{\bf Lorem Ipsum.} Maecenas convallis mauris sit amet sem ultrices gravida. Etiam eget sapien nibh. Sed ac ipsum eget enim egestas ullamcorper nec euismod ligula. Curabitur fringilla pulvinar lectus consectetur pellentesque.
-
-\paragraph*{S1 File.}
-\label{S1_File}
-{\bf Lorem Ipsum.}  Maecenas convallis mauris sit amet sem ultrices gravida. Etiam eget sapien nibh. Sed ac ipsum eget enim egestas ullamcorper nec euismod ligula. Curabitur fringilla pulvinar lectus consectetur pellentesque.
-
-\paragraph*{S1 Video.}
-\label{S1_Video}
-{\bf Lorem Ipsum.}  Maecenas convallis mauris sit amet sem ultrices gravida. Etiam eget sapien nibh. Sed ac ipsum eget enim egestas ullamcorper nec euismod ligula. Curabitur fringilla pulvinar lectus consectetur pellentesque.
-
-\paragraph*{S1 Appendix.}
-\label{S1_Appendix}
-{\bf Lorem Ipsum.} Maecenas convallis mauris sit amet sem ultrices gravida. Etiam eget sapien nibh. Sed ac ipsum eget enim egestas ullamcorper nec euismod ligula. Curabitur fringilla pulvinar lectus consectetur pellentesque.
-
-\paragraph*{S1 Table.}
-\label{S1_Table}
-{\bf Lorem Ipsum.} Maecenas convallis mauris sit amet sem ultrices gravida. Etiam eget sapien nibh. Sed ac ipsum eget enim egestas ullamcorper nec euismod ligula. Curabitur fringilla pulvinar lectus consectetur pellentesque.
+{\bf Actual and recovered firing rates for visual category data.}
 
 \section*{Acknowledgments}
 Cras egestas velit mauris, eu mollis turpis pellentesque sit amet. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam id pretium nisi. Sed ac quam id nisi malesuada congue. Sed interdum aliquet augue, at pellentesque quam rhoncus vitae.
