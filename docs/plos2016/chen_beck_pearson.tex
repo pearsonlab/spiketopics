@@ -244,8 +244,8 @@ Consider a population of $U$ spiking neurons or units exposed to a series of sti
 
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{figures/stim_movie}
-	\caption{\bf Illustration of repeated presentations of stimulus.}
-    A: Original series of stimuli indexed by $t$. B: Example stimulus sequences for experiments, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus might be different.
+	\caption{\bf Observational model.}
+    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(time, unit)$ presentations. Example stimulus sequences for two experiments are shown, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus and unit can be different.
 	\label{fig:movie}
 \end{figure}
 
@@ -291,7 +291,7 @@ in conjunction with the definitions of $p(N|\Lambda, \theta)$ and $\Lambda(\lamb
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{figures/model}
 	\caption{\bf Generative model for spike counts.}
-	A: Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed covariates $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$. B: Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M$.
+	A: Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed covariates $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$. B: Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M_{tu}$.
 \label{fig1}
 \end{figure}
 
@@ -397,9 +397,10 @@ But the model also reproduces less obvious features: it correctly discriminates 
 \end{figure}
 
 \subsection*{Visual category data}
+\label{it_neuron_expt}
 As a second test of our model, we applied our algorithm to a dataset comprising $U = 56$ neurons from macaque inferotemporal cortex \cite{McMahon2014-qq}. These neurons were repeatedly presented with 96 stimuli comprising 8 categories ($M$ = 1483 total trials, roughly 12 to 20 times per unit) comprising monkey faces, monkey bodies, whole monkeys, natural scenes, food, manmade objects, and patterns (Figure \ref{fig:imgclust}.A). Data consisted of spike time series, which we binned into a 300ms pre-stimulus baseline, a 300ms stimulus presentation period, and a 300ms post-stimulus period. Three trials were excluded because of the abnormal stimulus presentation period ($>900$ms). To maximize interpretability of the results, we placed strong priors on the $\pi_k$ to formalize the assumption that all features were off during the baseline period. We also modeled overdispersion with extremely weak priors to encourage the model to attribute fluctuations in firing to noise in preference to feature detection. We again fit $K = 10$ features with sparse hierarchical priors on population responses.
 
-The inferred categories based on binned population responses are shown in Figure \ref{fig:imgclust}.B. Here we only show population mean effects with a $>5\%$ gain modulation. Out of the original categories, our model successfully recovers three features clearly corresponding to categories involving monkeys (Features 2, 4, and 5). These can be viewed additively, with Feature 2 specific to any image containing a monkey face, Feature 4 any photo containing a monkey, and Feature 5 exclusive to monkey face close-ups; but as we will argue, given the nature of the model, it may be better to view these as multiplicative ``bit-encoded" features, with monkey close-ups encoded as $2\& 4\& 5$ $\sim 60\%$ increase in firing), whole monkeys as $2\& 4$ ($\sim 30\%$ increase), and monkey body parts as $4$ ($\sim 8\%$ increase). Of course, this is consistent with what was found in \cite{McMahon2014-qq}, though our model used no labels on the images.
+The inferred categories based on binned population responses are shown in Figure \ref{fig:imgclust}.B. Here we only show population mean effects with a $>5\%$ gain modulation. Out of the original categories, our model successfully recovers three features clearly corresponding to categories involving monkeys (Features 2, 4, and 5). These can be viewed additively, with Feature 2 specific to any image containing a monkey face, Feature 4 any photo containing a monkey, and Feature 5 exclusive to monkey face close-ups; but as we will argue, given the nature of the model, it may be better to view these as a ``combinatorial" code, with monkey close-ups encoded as $2\& 4\& 5$ $\sim 60\%$ increase in firing), whole monkeys as $2\& 4$ ($\sim 30\%$ increase), and monkey body parts as $4$ ($\sim 8\%$ increase). Of course, this is consistent with what was found in \cite{McMahon2014-qq}, though our model used no labels on the images.
 
 Again, as noted above, our results in Figure \ref{fig:imgclust}.A and B indicate predicted population responses, derived from the hierarchical prior. As evidenced in Figure \ref{fig:imgclust}.C and D, individual neuron effects could be much larger. These panels show data for two example units, along with the model's prediction. Clearly, the model recapitulates the largest distinctions between images in the data, though the assumption that firing rates should be the same for all images with similar features fails to capture some variability in the results. Even so, uncertainties in the predicted firing rates are also in line with uncertainties from those of observed rates, indicating that our model is correctly accounting for trial-to-trial noise.
 
@@ -411,15 +412,13 @@ Again, as noted above, our results in Figure \ref{fig:imgclust}.A and B indicate
 	\label{fig:imgclust}
 \end{figure}
 
-Note that the multiplicative effect in each feature is constant across all stimuli and neurons. This is because we assume that each feature in the model should represent and only represent a single effect on the whole set of neurons over all stimuli. Thus the total effect of a single stimulus is the sum of all features presented in that stimulus, e.g. the effect of Stimulus 1 in the monkey face category is the summation of effects presented by Feature 2, 4 and 5. In Figure \ref{fig:imgclust}.C and \ref{fig:imgclust}.D we show the recovered firing rate of two neurons over all stimuli comparing to their original firing rate derived from data. The bars represent the 95\% credible intervals of firing rates from the data and simulated results, and the dots are the means of those firing rates regarding each stimulus. These two neurons are randomly picked up from the 56 and it is obvious that 1) the model successfully recovered the firing rates regarding each neuron to the same scale, and 2) the simulated results show smaller fluctuations in comparison to the actual data.
-
-Most intriguingly, even the features rarely inferred by our model captured intriguing information. As shown in Figure \ref{fig:imgclust_sub}, Feature 6 along with Feature 2, 4, 5 appear to capture the distinction between direct and indirect gaze in monkey faces. Likewise, with one false positive, the ``baseline'' features of 2, 4, 5 in combination of the weak Feature 9 appear to distinguish between leftward and rightward gaze. Clearly, these results are not dispositive in the dataset we analyzed, but viewed as a source of new hypotheses, they are highly suggestive of future experiments, even if we did not already have evidence for them \cite{Perrett23}.
+Finally, even the weaker, sparser features inferred by our model captured intriguing additional information. As shown in Figure \ref{fig:imgclust_sub}, Feature 6, a feature only weakly present in the population as a whole (and thus ignored in \ref{fig:imgclust_sub}.A), when combined with the stronger Features 2, 4, and 5, successfully distinguishes between the monkey close-ups with direct and averted gaze. (Stimulus 5, with averted gaze, is additionally tagged with Feature 9, which we view as an imperfect match.) Thus, despite the fact that this effect is barely a 4\% gain change over the population, it suggests a link between neural firing and gaze direction, one for which there happens to be ample evidence \cite{Perrett23}. Similarly, Feature 9, barely a 1\% effect, correctly tags three of the four close-ups with rightward gaze (with one false positive). Clearly, neither of these results is dispositive in this particular dataset, but in the absence of hypotheses about the effect of head orientation and gaze on neuronal firing, these minor features might suggest hypotheses for future experiments.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{figures/imgclust_subgroups}
-	\caption{\bf Small features in identifying minor differences within category.}
-	A: A more detailed plot for the inferred features in the first two categories that correspond to monkey faces and whole monkeys. B: Two subgroups that were identified by the same combination of features. Group 1 picked out all the images that have direct gaze in monkey faces, while Group 2 picked out four leftward gazes out of five (with one false negative).
+	\caption{\bf Small features suggest additional neural hypotheses.}
+	A: Zoomed-in view of Figure \ref{fig:imgclust}.A, focusing on the first 24 images. B: The feature combinations 2\&4\&5 (Group 1) and 2\&4\&5\&6 (Group 2) are distinguished by direct vs. indirect gaze. Stimulus 5, which is coded 2\&4\&5\&9, may be considered a false negative.
 	\label{fig:imgclust_sub}
 \end{figure}
 
@@ -443,12 +442,12 @@ Without experimental knowledge in advance, our model can correctly recover impor
 \label{S1_Text}
 {\bf Mathematical derivation for ELBO and Inference.}
 
-\paragraph*{S2 Fig.}
-\label{S2_Fig}
-{\bf Actual and recovered firing rates for visual category data.}
+% \paragraph*{S2 Fig.}
+% \label{S2_Fig}
+% {\bf Actual and recovered firing rates for visual category data.}
 
 \section*{Acknowledgments}
-Cras egestas velit mauris, eu mollis turpis pellentesque sit amet. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam id pretium nisi. Sed ac quam id nisi malesuada congue. Sed interdum aliquet augue, at pellentesque quam rhoncus vitae.
+We would like to thank David McMahon and David Leopold for generously sharing the visual cateogry stimuli and neural data from \cite{McMahon2014-qq}.
 
 \nolinenumbers
 

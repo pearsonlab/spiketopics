@@ -311,7 +311,7 @@ with $(\eta, \tilde{A}, \tilde{\pi})$ the parameters of the variational posterio
     \tilde{A}_k &\leftarrow \overline{\log A_k} &
     \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
 \end{align}
-while the effective emission probabilities in State 1 are
+while the effective emission probabilities in the ``on" ($z = 1$) state of the HMM are
 \begin{align}
     \eta_{tk} &\leftarrow \delta_{z_{tk}, 1} \sum_{m; t(m) = t} N_m \overline{\log \lambda_{zu(m)k}}
     - \sum_{m; t(m) = t} \overline{\theta_m} H_{0u(m)} F_{tku(m)} G_{tu(m)}
@@ -417,7 +417,7 @@ $c_{xr}$         &$U/2$  &$\sum_u\mathbb{E}_q \left[d_{xr} \lambda_{xur} - \log 
 $d_{0}$         &$U\mathbb{E}_q[c_{0}]$  &$\sum_u\mathbb{E}_q \left[c_{0}\lambda_{0u}\right]$ \\
 $d_{zk}$         &$U\mathbb{E}_q[c_{zk}]$  &$\sum_u\mathbb{E}_q \left[c_{zk}\lambda_{zuk}\right]$ \\
 $d_{xr}$         &$U\mathbb{E}_q[c_{xr}]$  &$\sum_u\mathbb{E}_q \left[c_{xr}\lambda_{xur}\right]$ \\
-$\phi_{j u}$ as $j \in \{1, \ldots, \tau\}$  &$\sum_{\tau' \ge j} N_{\tau' u}$  &$\sum_{u, \tau \ge j} F_{t(\tau)} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}}$ \\
+$\phi_{j u}$ for $j \in \{1, \ldots, \tau\}$  &$\sum_{\tau' \ge j} N_{\tau' u}$  &$\sum_{u, \tau \ge j} F_{t(\tau)} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}}$ \\
 \end{tabular}
 \end{center}
 \end{table}
