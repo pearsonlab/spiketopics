@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# mysql -u root surfer < echo "SELECT * FROM EthoFull" > etho.tsv
-echo "SELECT * FROM EthoFull" | mysql -u root surfer > etho.tsv
-tr "\t" "," < etho.tsv > etho.csv
-rm etho.tsv

@@ -42,6 +42,7 @@ snames = ['sig057a','sig065a','sig065b','sig066a','sig068a','sig068b','sig069a',
 pp = PdfPages('rasterplot_unit.pdf')
 
 for unit in range(Nu):
+    print "Printing raster plot for Unit {}/{} ...".format(unit+1, Nu)
     # plot figures with proper names
     plt.figure(figsize = (32,20))
     plt.suptitle(snames[unit], fontsize = 48)
@@ -57,7 +58,7 @@ for unit in range(Nu):
     for ith, trial in enumerate(tuplistunit):
         # 12x8 subplots
         plt.subplot(8, 12, evt.STIM[ith+1])
-        plotidx = evt.STIM[ith+1] - 1
+        plotidx = int(evt.STIM[ith+1] - 1)
         plotcnt[plotidx] += 1 
         # landmarks of stimulus
         landmarks = [evt.T_PRE[ith+1], evt.T_STIMON[ith+1], evt.T_STIMOFF[ith+1], evt.T_POST[ith+1]]

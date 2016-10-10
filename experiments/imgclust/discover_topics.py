@@ -27,25 +27,8 @@ if __name__ == '__main__':
     print "Reading data..."
     df = pd.read_csv(datfile)
 
-    ###########################################
-    # For testing only
-    # No Need to input datafile in the argument
-    # np.random.seed(101)
-    # print "Reading data..."
-    # df = pd.read_csv("data/prepped_data.csv")
-
-    ####### for testing only ################
-    # print "Subsetting for testing..."
-    # df = df.query('utime <= 1e5')
-    ####### for testing only ################
-
     # set up params
     print "Calculating parameters..."
-
-    # Modified by Xin: since we also need the trial info 
-    # to compute natural time correlations
-    # juggle columns
-    # df = df[['time', 'unit', 'count']]
 
     # and renumber units consecutively (starting at 0)
     df['unit'] = np.unique(df['unit'], return_inverse=True)[1]
@@ -59,9 +42,8 @@ if __name__ == '__main__':
     Mz = 2  # number of levels of each latent state
     time_natural = int(T / (12 * 8))  # the number of natural time bins within each trial
     print "There are {} time bins per trial".format(time_natural)
-    # dt = df.loc[1, 'time'] - df.loc[0, 'time']  # duration of bin
     dt = 900 / time_natural  # 300 or 150 ms bins
-    od_natural = True  # flag for overdispersion_natural
+    od_natural = False  # indicator for autocorrelated noise
 
     #################### priors and initial values
 
@@ -90,12 +72,8 @@ if __name__ == '__main__':
     ############ firing rate latents ####################
     fr_shape_shape = 2. * np.ones((K,))
     fr_shape_rate = 1e-4 * np.ones((K,))
-    # fr_shape_shape = 1. * np.ones((K,))
-    # fr_shape_rate = 1 * np.ones((K,))
     fr_mean_shape = 1 * U * np.ones((K,))
     fr_mean_rate = 1 * U * np.ones((K,))
-    # fr_mean_shape = 1 * np.ones((K,))
-    # fr_mean_rate = 1 * np.ones((K,))
 
     sp_prior = np.array([1, 1])
     sp_init = np.array([10, 1])
@@ -110,18 +88,9 @@ if __name__ == '__main__':
                 'post_mean_rate': fr_mean_rate,
                 'post_child_shape': np.ones((U, K)),
                 'post_child_rate': np.ones((U, K))})
-                # 'prior_sparsity': np.tile(sp_prior.reshape(2, 1), (1, K)),
-                # 'post_sparsity': np.tile(sp_init.reshape(2, 1), (1, K)),
-                # 'post_features': 0.8 * np.random.rand(U, K),
-                # 'spike_severity': 1e8
-                # })
 
     ############ latent states ####################
     ###### A ###############
-    # A_off = 10.
-    # A_on = 1.
-    # Avec = np.r_[A_off, A_on].reshape(2, 1, 1)
-    # A_prior = np.tile(Avec, (1, 2, K))
     A_cat = (10 * np.eye(2) + 1).reshape(2, 2, 1)
     A_prior = np.tile(A_cat, (1, 1, K))
 
@@ -172,50 +141,18 @@ if __name__ == '__main__':
                     'logZ_init': np.zeros((K,)),
                     'chunklist': chunklist
                     })
-    # latent_dict.update(d_pars)
-    # latent_dict.update(d_post_pars)
-    ############ regression coefficients ####################
-    # ups_shape = 11.
-    # ups_rate = 10.
-    # reg_shape = ups_shape * np.ones((U, R))  # shape
-    # reg_rate = ups_rate * np.ones((U, R))  # rate
-
-    # # since we know exact update for a_mat, use that
-    # nn = df['count']
-    # uu = df['unit']
-    # NX = nn[:, np.newaxis] * df.iloc[:, -R:]
-    # NX *= 0.5  # don't start off too big
-    # a_mat = NX.groupby(uu).sum().values + reg_rate
-    # b_mat = a_mat.copy()
-
-    # reg_dict = ({'prior_shape': reg_shape, 'prior_rate': reg_rate,
-    #             'post_shape': a_mat, 'post_rate': b_mat
-    #              })
 
     ############ overdispersion ####################
-    od_shape = 6.
-    od_rate = 6.
+    od_shape = 1.01
+    od_rate = .01
+
+    init_array = np.ones(time_natural)
+
     od_dict = ({'prior_shape': od_shape * np.ones((M,)),
                 'prior_rate': od_rate * np.ones((M,)),
                 'post_shape': np.ones((M,)),
                 'post_rate': np.ones((M,))
                 })
-
-
-    ############ overdispersion natural time: Xin ####################
-    od_natural_shape = 6.
-    od_natural_rate = 6.
-    init_array = np.array(xrange(1, time_natural+1))
-    # init_array = np.ones(time_natural)
-    od_natural_dict = ({
-                'prior_shape': od_natural_shape * (np.ones(
-                    (M,)).reshape(-1, time_natural) * init_array).ravel(),
-                'prior_rate': od_natural_rate * (np.ones(
-                    (M,)).reshape(-1, time_natural) * init_array).ravel(),
-                'post_shape': np.ones((M,)),
-                'post_rate': np.ones((M,))
-                })
-
 
     ############ initialize model ####################
     numstarts = 10
@@ -229,17 +166,17 @@ if __name__ == '__main__':
         gpm.initialize_latents(**jitter_inits(latent_dict, 0.25))
         # gpm.initialize_fr_regressors(**jitter_inits(reg_dict, 0.25))
 
-        # Modified by Xin
+        # Choose from independent or autocorrelated data
         if not od_natural:
             gpm.initialize_overdispersion(**jitter_inits(od_dict, 0.25))
         else:
-            gpm.initialize_overdispersion_natural(**jitter_inits(od_natural_dict, 0.25))
+            gpm.initialize_overdispersion_natural(**jitter_inits(od_dict, 0.25))
             gpm.time_natural = time_natural
 
         gpm.finalize()
 
         print "Start {} ------------------------------------------------------".format(idx)
-        gpm.do_inference(tol=1e-4, verbosity=1)
+        gpm.do_inference(tol=1e-4, verbosity=2)
         print "Final L = {}".format(gpm.L())
         Lvals.append(gpm.L())
         fitobjs.append(gpm)
@@ -270,7 +207,7 @@ if __name__ == '__main__':
         pass
 
     print "Writing to disk..."
-    # fstub = '_{}K_{}S'.format(K, numstarts)
+    # fstub = '{}_{}K_{}S'.format(time_natural, K, numstarts)
     fstub = str(time_natural)
-    outfile = 'data/fitted_model_object{}.pkl'.format(fstub)
+    outfile = 'output/pickles/fitted_model_object{}.pkl'.format(fstub)
     pickle.dump(gpm, open(outfile, 'wb'))
