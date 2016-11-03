@@ -1,0 +1,945 @@
+
+@INCOLLECTION{Ulrich2014-zc,
+  title     = "Analysis of Brain States from {Multi-Region} {LFP} {Time-Series}",
+  booktitle = "Advances in Neural Information Processing Systems 27",
+  author    = "Ulrich, Kyle R and Carlson, David E and Lian, Wenzhao and Borg,
+               Jana S and Dzirasa, Kafui and Carin, Lawrence",
+  editor    = "Ghahramani, Z and Welling, M and Cortes, C and Lawrence, N D and
+               Weinberger, K Q",
+  publisher = "Curran Associates, Inc.",
+  pages     = "2483--2491",
+  year      =  2014
+}
+
+
+@INCOLLECTION{Buesing2014-ta,
+  title     = "Clustered factor analysis of multineuronal spike data",
+  booktitle = "Advances in Neural Information Processing Systems 27",
+  author    = "Buesing, Lars and Machado, Timothy A and Cunningham, John P and
+               Paninski, Liam",
+  editor    = "Ghahramani, Z and Welling, M and Cortes, C and Lawrence, N D and
+               Weinberger, K Q",
+  publisher = "Curran Associates, Inc.",
+  pages     = "3500--3508",
+  year      =  2014
+}
+
+@ARTICLE{Ramirez2014-vy,
+  title       = "Fast inference in generalized linear models via expected
+                 log-likelihoods",
+  author      = "Ramirez, Alexandro D and Paninski, Liam",
+  affiliation = "Weill Cornell Medical College, New York, NY, USA,
+                 adr2110@gmail.com.",
+  abstract    = "Generalized linear models play an essential role in a wide
+                 variety of statistical applications. This paper discusses an
+                 approximation of the likelihood in these models that can
+                 greatly facilitate computation. The basic idea is to replace a
+                 sum that appears in the exact log-likelihood by an expectation
+                 over the model covariates; the resulting ``expected
+                 log-likelihood'' can in many cases be computed significantly
+                 faster than the exact log-likelihood. In many neuroscience
+                 experiments the distribution over model covariates is
+                 controlled by the experimenter and the expected log-likelihood
+                 approximation becomes particularly useful; for example,
+                 estimators based on maximizing this expected log-likelihood
+                 (or a penalized version thereof) can often be obtained with
+                 orders of magnitude computational savings compared to the
+                 exact maximum likelihood estimators. A risk analysis
+                 establishes that these maximum EL estimators often come with
+                 little cost in accuracy (and in some cases even improved
+                 accuracy) compared to standard maximum likelihood estimates.
+                 Finally, we find that these methods can significantly decrease
+                 the computation time of marginal likelihood calculations for
+                 model selection and of Markov chain Monte Carlo methods for
+                 sampling from the posterior parameter distribution. We
+                 illustrate our results by applying these methods to a
+                 computationally-challenging dataset of neural spike trains
+                 obtained via large-scale multi-electrode recordings in the
+                 primate retina.",
+  journal     = "J. Comput. Neurosci.",
+  volume      =  36,
+  number      =  2,
+  pages       = "215--234",
+  month       =  apr,
+  year        =  2014
+}
+
+@ARTICLE{Vogelstein2009-ax,
+  title       = "Spike inference from calcium imaging using sequential Monte
+                 Carlo methods",
+  author      = "Vogelstein, Joshua T and Watson, Brendon O and Packer, Adam M
+                 and Yuste, Rafael and Jedynak, Bruno and Paninski, Liam",
+  affiliation = "Department of Neuroscience, The Johns Hopkins School of
+                 Medicine, Baltimore, Maryland, USA. joshuav@jhu.edu",
+  abstract    = "As recent advances in calcium sensing technologies facilitate
+                 simultaneously imaging action potentials in neuronal
+                 populations, complementary analytical tools must also be
+                 developed to maximize the utility of this experimental
+                 paradigm. Although the observations here are fluorescence
+                 movies, the signals of interest--spike trains and/or time
+                 varying intracellular calcium concentrations--are hidden.
+                 Inferring these hidden signals is often problematic due to
+                 noise, nonlinearities, slow imaging rate, and unknown
+                 biophysical parameters. We overcome these difficulties by
+                 developing sequential Monte Carlo methods (particle filters)
+                 based on biophysical models of spiking, calcium dynamics, and
+                 fluorescence. We show that even in simple cases, the particle
+                 filters outperform the optimal linear (i.e., Wiener) filter,
+                 both by obtaining better estimates and by providing error
+                 bars. We then relax a number of our model assumptions to
+                 incorporate nonlinear saturation of the fluorescence signal,
+                 as well external stimulus and spike history dependence (e.g.,
+                 refractoriness) of the spike trains. Using both simulations
+                 and in vitro fluorescence observations, we demonstrate
+                 temporal superresolution by inferring when within a frame each
+                 spike occurs. Furthermore, the model parameters may be
+                 estimated using expectation maximization with only a very
+                 limited amount of data (e.g., approximately 5-10 s or 5-40
+                 spikes), without the requirement of any simultaneous
+                 electrophysiology or imaging experiments.",
+  journal     = "Biophys. J.",
+  volume      =  97,
+  number      =  2,
+  pages       = "636--655",
+  month       =  "22~" # jul,
+  year        =  2009
+}
+
+@ARTICLE{Pillow2008-em,
+  title       = "Spatio-temporal correlations and visual signalling in a
+                 complete neuronal population",
+  author      = "Pillow, Jonathan W and Shlens, Jonathon and Paninski, Liam and
+                 Sher, Alexander and Litke, Alan M and Chichilnisky, E J and
+                 Simoncelli, Eero P",
+  affiliation = "Gatsby Computational Neuroscience Unit, UCL, 17 Queen Square,
+                 London WC1N 3AR, UK. pillow@gatsby.ucl.ac.uk",
+  abstract    = "Statistical dependencies in the responses of sensory neurons
+                 govern both the amount of stimulus information conveyed and
+                 the means by which downstream neurons can extract it. Although
+                 a variety of measurements indicate the existence of such
+                 dependencies, their origin and importance for neural coding
+                 are poorly understood. Here we analyse the functional
+                 significance of correlated firing in a complete population of
+                 macaque parasol retinal ganglion cells using a model of
+                 multi-neuron spike responses. The model, with parameters fit
+                 directly to physiological data, simultaneously captures both
+                 the stimulus dependence and detailed spatio-temporal
+                 correlations in population responses, and provides two
+                 insights into the structure of the neural code. First, neural
+                 encoding at the population level is less noisy than one would
+                 expect from the variability of individual neurons: spike times
+                 are more precise, and can be predicted more accurately when
+                 the spiking of neighbouring neurons is taken into account.
+                 Second, correlations provide additional sensory information:
+                 optimal, model-based decoding that exploits the response
+                 correlation structure extracts 20\% more information about the
+                 visual scene than decoding under the assumption of
+                 independence, and preserves 40\% more visual information than
+                 optimal linear decoding. This model-based approach reveals the
+                 role of correlated activity in the retinal coding of visual
+                 stimuli, and provides a general framework for understanding
+                 the importance of correlated activity in populations of
+                 neurons.",
+  journal     = "Nature",
+  volume      =  454,
+  number      =  7207,
+  pages       = "995--999",
+  month       =  "23~" # jul,
+  year        =  2008
+}
+
+@ARTICLE{Mishchenko2011-wb,
+  title     = "A Bayesian approach for inferring neuronal connectivity from
+               calcium fluorescent imaging data",
+  author    = "Mishchenko, Yuriy and Vogelstein, Joshua T. and Paninski, Liam",
+  abstract  = "Project Euclid - mathematics and statistics online",
+  journal   = "Ann. Appl. Stat.",
+  publisher = "Institute of Mathematical Statistics",
+  volume    =  5,
+  number    = "2B",
+  pages     = "1229--1261",
+  month     =  jun,
+  year      =  2011,
+  keywords  = "Sequential Monte Carlo; Metropolis--Hastings; spike train data;
+               point process; generalized linear model"
+}
+
+
+@ARTICLE{Huth2012-cj,
+  title       = "A continuous semantic space describes the representation of
+                 thousands of object and action categories across the human
+                 brain",
+  author      = "Huth, Alexander G and Nishimoto, Shinji and Vu, An T and
+                 Gallant, Jack L",
+  affiliation = "Helen Wills Neuroscience Institute, University of California,
+                 Berkeley, Berkeley, CA 94720, USA.",
+  abstract    = "Humans can see and name thousands of distinct object and
+                 action categories, so it is unlikely that each category is
+                 represented in a distinct brain area. A more efficient scheme
+                 would be to represent categories as locations in a continuous
+                 semantic space mapped smoothly across the cortical surface. To
+                 search for such a space, we used fMRI to measure human brain
+                 activity evoked by natural movies. We then used voxelwise
+                 models to examine the cortical representation of 1,705 object
+                 and action categories. The first few dimensions of the
+                 underlying semantic space were recovered from the fit models
+                 by principal components analysis. Projection of the recovered
+                 semantic space onto cortical flat maps shows that semantic
+                 selectivity is organized into smooth gradients that cover much
+                 of visual and nonvisual cortex. Furthermore, both the
+                 recovered semantic space and the cortical organization of the
+                 space are shared across different individuals.",
+  journal     = "Neuron",
+  volume      =  76,
+  number      =  6,
+  pages       = "1210--1224",
+  month       =  "20~" # dec,
+  year        =  2012
+}
+
+@ARTICLE{Stansbury2013-nm,
+  title       = "Natural scene statistics account for the representation of
+                 scene categories in human visual cortex",
+  author      = "Stansbury, Dustin E and Naselaris, Thomas and Gallant, Jack L",
+  affiliation = "Vision Science Group, University of California, Berkeley, CA
+                 94720, USA.",
+  abstract    = "During natural vision, humans categorize the scenes they
+                 encounter: an office, the beach, and so on. These categories
+                 are informed by knowledge of the way that objects co-occur in
+                 natural scenes. How does the human brain aggregate information
+                 about objects to represent scene categories? To explore this
+                 issue, we used statistical learning methods to learn
+                 categories that objectively capture the co-occurrence
+                 statistics of objects in a large collection of natural scenes.
+                 Using the learned categories, we modeled fMRI brain signals
+                 evoked in human subjects when viewing images of scenes. We
+                 find that evoked activity across much of anterior visual
+                 cortex is explained by the learned categories. Furthermore, a
+                 decoder based on these scene categories accurately predicts
+                 the categories and objects comprising novel scenes from brain
+                 activity evoked by those scenes. These results suggest that
+                 the human brain represents scene categories that capture the
+                 co-occurrence statistics of objects in the world.",
+  journal     = "Neuron",
+  volume      =  79,
+  number      =  5,
+  pages       = "1025--1034",
+  month       =  "8~" # aug,
+  year        =  2013
+}
+
+@ARTICLE{Vu2011-da,
+  title       = "Encoding and Decoding V1 fMRI Responses to
+                 Natural Images with Sparse Nonparametric Models",
+  author      = "Vu, Vincent Q and Ravikumar, Pradeep and Naselaris, Thomas and
+                 Kay, Kendrick N and Gallant, Jack L and Yu, Bin",
+  affiliation = "Department of Statistics, Carnegie Mellon University,
+                 Pittsburgh, Pennsylvania 15213, USA.",
+  abstract    = "Functional MRI (fMRI) has become the most common method for
+                 investigating the human brain. However, fMRI data present some
+                 complications for statistical analysis and modeling. One
+                 recently developed approach to these data focuses on
+                 estimation of computational encoding models that describe how
+                 stimuli are transformed into brain activity measured in
+                 individual voxels. Here we aim at building encoding models for
+                 fMRI signals recorded in the primary visual cortex of the
+                 human brain. We use residual analyses to reveal systematic
+                 nonlinearity across voxels not taken into account by previous
+                 models. We then show how a sparse nonparametric method [bJ.
+                 Roy. Statist. Soc. Ser. B71 (2009b) 1009-1030] can be used
+                 together with correlation screening to estimate nonlinear
+                 encoding models effectively. Our approach produces encoding
+                 models that predict about 25\% more accurately than models
+                 estimated using other methods [Nature452 (2008a) 352-355]. The
+                 estimated nonlinearity impacts the inferred properties of
+                 individual voxels, and it has a plausible biological
+                 interpretation. One benefit of quantitative encoding models is
+                 that estimated models can be used to decode brain activity, in
+                 order to identify which specific image was seen by an
+                 observer. Encoding models estimated by our approach also
+                 improve such image identification by about 12\% when the
+                 correct image is one of 11,500 possible images.",
+  journal     = "Ann. Appl. Stat.",
+  publisher   = "ncbi.nlm.nih.gov",
+  volume      =  5,
+  number      = "2B",
+  pages       = "1159--1182",
+  month       =  jun,
+  year        =  2011
+}
+
+@ARTICLE{Nishimoto2011-br,
+  title     = "Reconstructing Visual Experiences from Brain Activity Evoked by
+               Natural Movies",
+  author    = "Nishimoto, Shinji and Vu, An T. and Naselaris, Thomas and
+               Benjamini, Yuval and Yu, Bin and Gallant, Jack L.",
+  abstract  = "... 2; T. Naselaris, KN Kay, S. Nishimoto, JL Gallant ; Encoding
+               and decoding in fMRI . Neuroimage, 56 (2011), pp. 400--410. ...",
+  journal   = "Curr. Biol.",
+  publisher = "Elsevier",
+  volume    =  21,
+  number    =  19,
+  pages     = "1641--1646",
+  month     =  oct,
+  year      =  2011
+}
+
+@ARTICLE{Kay2008-gd,
+  title       = "Identifying natural images from human brain activity",
+  author      = "Kay, Kendrick N and Naselaris, Thomas and Prenger, Ryan J and
+                 Gallant, Jack L",
+  affiliation = "Department of Psychology, University of California, Berkeley,
+                 California 94720, USA.",
+  abstract    = "A challenging goal in neuroscience is to be able to read out,
+                 or decode, mental content from brain activity. Recent
+                 functional magnetic resonance imaging (fMRI) studies have
+                 decoded orientation, position and object category from
+                 activity in visual cortex. However, these studies typically
+                 used relatively simple stimuli (for example, gratings) or
+                 images drawn from fixed categories (for example, faces,
+                 houses), and decoding was based on previous measurements of
+                 brain activity evoked by those same stimuli or categories. To
+                 overcome these limitations, here we develop a decoding method
+                 based on quantitative receptive-field models that characterize
+                 the relationship between visual stimuli and fMRI activity in
+                 early visual areas. These models describe the tuning of
+                 individual voxels for space, orientation and spatial
+                 frequency, and are estimated directly from responses evoked by
+                 natural images. We show that these receptive-field models make
+                 it possible to identify, from a large set of completely novel
+                 natural images, which specific image was seen by an observer.
+                 Identification is not a mere consequence of the retinotopic
+                 organization of visual areas; simpler receptive-field models
+                 that describe only spatial tuning yield much poorer
+                 identification performance. Our results suggest that it may
+                 soon be possible to reconstruct a picture of a person's visual
+                 experience from measurements of brain activity alone.",
+  journal     = "Nature",
+  publisher   = "nature.com",
+  volume      =  452,
+  number      =  7185,
+  pages       = "352--355",
+  month       =  "5~" # mar,
+  year        =  2008
+}
+
+@ARTICLE{Vinje2000-dx,
+  title       = "Sparse coding and decorrelation in primary visual cortex
+                 during natural vision",
+  author      = "Vinje, W E and Gallant, J L",
+  affiliation = "Program in Neuroscience, Department of Molecular and Cellular
+                 Biology, and Department of Psychology, University of
+                 California at Berkeley, Berkeley, CA 94720-1650, USA.",
+  abstract    = "Theoretical studies suggest that primary visual cortex (area
+                 V1) uses a sparse code to efficiently represent natural
+                 scenes. This issue was investigated by recording from V1
+                 neurons in awake behaving macaques during both free viewing of
+                 natural scenes and conditions simulating natural vision.
+                 Stimulation of the nonclassical receptive field increases the
+                 selectivity and sparseness of individual V1 neurons, increases
+                 the sparseness of the population response distribution, and
+                 strongly decorrelates the responses of neuron pairs. These
+                 effects are due to both excitatory and suppressive modulation
+                 of the classical receptive field by the nonclassical receptive
+                 field and do not depend critically on the spatiotemporal
+                 structure of the stimuli. During natural vision, the classical
+                 and nonclassical receptive fields function together to form a
+                 sparse representation of the visual world. This sparse code
+                 may be computationally efficient for both early vision and
+                 higher visual processing.",
+  journal     = "Science",
+  publisher   = "sciencemag.org",
+  volume      =  287,
+  number      =  5456,
+  pages       = "1273--1276",
+  month       =  "18~" # feb,
+  year        =  2000
+}
+
+
+@ARTICLE{Agrawal2014-ti,
+  title         = "Pixels to Voxels: Modeling Visual Representation in the
+                   Human Brain",
+  author        = "Agrawal, Pulkit and Stansbury, Dustin and Malik, Jitendra
+                   and Gallant, Jack L",
+  abstract      = "The human brain is adept at solving difficult high-level
+                   visual processing problems such as image interpretation and
+                   object recognition in natural scenes. Over the past few
+                   years neuroscientists have made remarkable progress in
+                   understanding how the human brain represents categories of
+                   objects and actions in natural scenes. However, all current
+                   models of high-level human vision operate on hand annotated
+                   images in which the objects and actions have been assigned
+                   semantic tags by a human operator. No current models can
+                   account for high-level visual function directly in terms of
+                   low-level visual input (i.e., pixels). To overcome this
+                   fundamental limitation we sought to develop a new class of
+                   models that can predict human brain activity directly from
+                   low-level visual input (i.e., pixels). We explored two
+                   classes of models drawn from computer vision and machine
+                   learning. The first class of models was based on Fisher
+                   Vectors (FV) and the second was based on Convolutional
+                   Neural Networks (ConvNets). We find that both classes of
+                   models accurately predict brain activity in high-level
+                   visual areas, directly from pixels and without the need for
+                   any semantic tags or hand annotation of images. This is the
+                   first time that such a mapping has been obtained. The fit
+                   models provide a new platform for exploring the functional
+                   principles of human vision, and they show that modern
+                   methods of computer vision and machine learning provide
+                   important tools for characterizing brain function.",
+  month         =  "18~" # jul,
+  year          =  2014,
+  archivePrefix = "arXiv",
+  primaryClass  = "q-bio.NC",
+  eprint        = "1407.5104"
+}
+
+@article{ringach2004reverse,
+  title={Reverse correlation in neurophysiology},
+  author={Ringach, Dario and Shapley, Robert},
+  journal={Cognitive Science},
+  volume={28},
+  number={2},
+  pages={147--166},
+  year={2004},
+  publisher={Elsevier}
+}
+
+@article{sharpee2004analyzing,
+  title={Analyzing neural responses to natural signals: maximally informative dimensions},
+  author={Sharpee, Tatyana and Rust, Nicole C and Bialek, William},
+  journal={Neural computation},
+  volume={16},
+  number={2},
+  pages={223--250},
+  year={2004},
+  publisher={MIT Press}
+}
+
+@article{ringach2002receptive,
+  title={Receptive field structure of neurons in monkey primary visual cortex revealed by stimulation with natural image sequences},
+  author={Ringach, Dario L and Hawken, Michael J and Shapley, Robert},
+  journal={Journal of vision},
+  volume={2},
+  number={1},
+  pages={2},
+  year={2002},
+  publisher={Association for Research in Vision and Ophthalmology}
+}
+
+@article {steveninck1988realtime,
+  author = {Steveninck, R. De Ruyter Van and Bialek, W.},
+  title = {Real-Time Performance of a Movement-Sensitive Neuron in the Blowfly Visual System: Coding and Information Transfer in Short Spike Sequences},
+  volume = {234},
+  number = {1277},
+  pages = {379--414},
+  year = {1988},
+  doi = {10.1098/rspb.1988.0055},
+  publisher = {The Royal Society},
+  abstract = {We develop model-independent methods for characterizing the information carried by particular features of a neural spike train as it encodes continuously varying stimuli. These methods consist, in essence, of an inverse statistical approach; instead of asking for the statistics of neural responses to a given stimulus we describe the probability distribution of stimuli that give rise to a certain short pattern of spikes. These {\textquoteleft}response-conditional ensembles{\textquoteright} contain all the information about the stimulus that a hypothetical observer of the spike train may obtain. The structure of these distributions thus provides a quantitative picture of the neural code, and certain integrals of these distributions determine the absolute information in bits carried by a given spike sequence. These methods are applied to a movement-sensitive neuron (H1) in the visual system of the blowfly Calliphora erythrocephala. The stimulus is chosen as the time-varying angular velocity of a (spatially) random pattern, and we consider segments of the spike train of up to three spikes with specified spike-intervals. We demonstrate that, with extensive analysis, a single experiment of roughly one hour{\textquoteright}s duration is sufficient to provide reliable estimates of the relevant probability distributions. From the experimentally determined probability distributions we are able to draw several conclusions. (1) Under the conditions of our experiment, observation of a single spike carries roughly 0.36 bits of information, but spike pairs carry an interval-dependent signal that can be much larger than 0.72 bits; estimates of the total information capacity are in rough agreement with the maximum possible capacity given the signal-to-noise characteristics of the photoreceptors. (2) On average a single spike signals the occurrence of a velocity waveform that is positive (movement in the excitatory direction) at all times before the spike, whereas spike pairs can signal both positive and negative velocities, depending on the inter-spike interval. (3) Although inter-spike intervals are crucial in extracting all the coded information, the code is robust to several millisecond errors in the estimate of spike arrival times. (4) Short spike sequences give reliable information about specific features of the stimulus waveform, and this specificity can be quantified. (5) Our results suggest approximate strategies for reading the neural code -- reconstructing the stimulus from observations of the spike train -- and some preliminary reconstructions are presented. Some tentative attempts are made to relate our results to the more general questions of coding and computation in the nervous system.},
+  issn = {0080-4649},
+  journal = {Proceedings of the Royal Society of London B: Biological Sciences}
+}
+
+@ARTICLE{Williamson2013-rg,
+  title         = "The equivalence of information-theoretic and
+                   likelihood-based methods for neural dimensionality reduction",
+  author        = "Williamson, Ross S and Sahani, Maneesh and Pillow, Jonathan
+                   W",
+  abstract      = "Stimulus dimensionality-reduction methods in neuroscience
+                   seek to identify a low-dimensional space of stimulus
+                   features that affect a neuron's probability of spiking. One
+                   popular method, known as maximally informative dimensions
+                   (MID), uses an information-theoretic quantity known as
+                   ``single-spike information'' to identify this space. Here we
+                   examine MID from a model-based perspective. We show that MID
+                   is a maximum-likelihood estimator for the parameters of a
+                   linear-nonlinear-Poisson (LNP) model, and that the empirical
+                   single-spike information corresponds to the normalized
+                   log-likelihood under a Poisson model. This equivalence
+                   implies that MID does not necessarily find maximally
+                   informative stimulus dimensions when spiking is not well
+                   described as Poisson. We provide several examples to
+                   illustrate this shortcoming, and derive a lower bound on the
+                   information lost when spiking is Bernoulli in discrete time
+                   bins. To overcome this limitation, we introduce model-based
+                   dimensionality reduction methods for neurons with
+                   non-Poisson firing statistics, and show that they can be
+                   framed equivalently in likelihood-based or
+                   information-theoretic terms. Finally, we show how to
+                   overcome practical limitations on the number of stimulus
+                   dimensions that MID can estimate by constraining the form of
+                   the non-parametric nonlinearity in an LNP model. We
+                   illustrate these methods with simulations and data from
+                   primate visual cortex.",
+  month         =  "16~" # aug,
+  year          =  2013,
+  archivePrefix = "arXiv",
+  primaryClass  = "q-bio.NC",
+  eprint        = "1308.3542"
+}
+
+@ARTICLE{Park2014-el,
+  title       = "Encoding and decoding in parietal cortex during sensorimotor
+                 decision-making",
+  author      = "Park, Il Memming and Meister, Miriam L R and Huk, Alexander C
+                 and Pillow, Jonathan W",
+  affiliation = "1] Center for Perceptual Systems, The University of Texas at
+                 Austin, Austin, Texas, USA. [2] Department of Psychology, The
+                 University of Texas at Austin, Austin, Texas, USA. [3]
+                 Institute for Neuroscience, The University of Texas at Austin,
+                 Austin, Texas, USA. 1] Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, Texas, USA. [2]
+                 Department of Physiology and Biophysics, University of
+                 Washington, Seattle, Washington, USA. 1] Center for Perceptual
+                 Systems, The University of Texas at Austin, Austin, Texas,
+                 USA. [2] Department of Psychology, The University of Texas at
+                 Austin, Austin, Texas, USA. [3] Institute for Neuroscience,
+                 The University of Texas at Austin, Austin, Texas, USA. [4]
+                 Department of Neuroscience, The University of Texas at Austin,
+                 Austin, Texas, USA. 1] Center for Perceptual Systems, The
+                 University of Texas at Austin, Austin, Texas, USA. [2]
+                 Department of Psychology, The University of Texas at Austin,
+                 Austin, Texas, USA. [3] Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, Texas, USA. [4]
+                 Department of Statistics and Data Science, The University of
+                 Texas at Austin, Austin, Texas, USA.",
+  abstract    = "It has been suggested that the lateral intraparietal area
+                 (LIP) of macaques plays a fundamental role in sensorimotor
+                 decision-making. We examined the neural code in LIP at the
+                 level of individual spike trains using a statistical approach
+                 based on generalized linear models. We found that LIP
+                 responses reflected a combination of temporally overlapping
+                 task- and decision-related signals. Our model accounts for the
+                 detailed statistics of LIP spike trains and accurately
+                 predicts spike trains from task events on single trials.
+                 Moreover, we derived an optimal decoder for heterogeneous,
+                 multiplexed LIP responses that could be implemented in
+                 biologically plausible circuits. In contrast with
+                 interpretations of LIP as providing an instantaneous code for
+                 decision variables, we found that optimal decoding requires
+                 integrating LIP spikes over two distinct timescales. These
+                 analyses provide a detailed understanding of neural
+                 representations in LIP and a framework for studying the coding
+                 of multiplexed signals in higher brain areas.",
+  journal     = "Nat. Neurosci.",
+  volume      =  17,
+  number      =  10,
+  pages       = "1395--1403",
+  month       =  oct,
+  year        =  2014
+}
+
+@phdthesis{beal2003variational,
+  title={Variational algorithms for approximate Bayesian inference},
+  author={Beal, Matthew James},
+  year={2003},
+  school={University of London}
+}
+
+@ARTICLE{Blei2006-oh,
+  title     = "Variational inference for Dirichlet process mixtures",
+  author    = "Blei, David M. and Jordan, Michael I.",
+  abstract  = "Project Euclid - mathematics and statistics online",
+  journal   = "Bayesian Anal.",
+  publisher = "International Society for Bayesian Analysis",
+  volume    =  1,
+  number    =  1,
+  pages     = "121--143",
+  month     =  mar,
+  year      =  2006,
+  keywords  = "Dirichlet processes; hierarchical models; variational inference;
+               image processing; Bayesian computation"
+}
+
+@article{ghahramani1997factorial,
+  title={Factorial hidden Markov models},
+  author={Ghahramani, Zoubin and Jordan, Michael I},
+  journal={Machine learning},
+  volume={29},
+  number={2-3},
+  pages={245--273},
+  year={1997},
+  publisher={Springer}
+}
+
+@book{abramowitz1964handbook,
+  title={Handbook of mathematical functions: with formulas, graphs, and mathematical tables},
+  author={Abramowitz, Milton and Stegun, Irene A},
+  number={55},
+  year={1964},
+  publisher={Courier Corporation}
+}
+
+@ARTICLE{Wainwright2008-ii,
+  title     = "Graphical Models, Exponential Families, and Variational
+               Inference",
+  author    = "Wainwright, Martin J. and Jordan, Michael I.",
+  abstract  = "Abstract The formalism of probabilistic graphical models
+               provides a unifying framework for capturing complex dependencies
+               among random variables, and building large-scale multivariate
+               statistical models. Graphical models have become a focus of
+               research in ...",
+  journal   = "Found. Trends Mach. Learn.",
+  publisher = "Now Publishers Inc.",
+  volume    =  1,
+  number    = "1-2",
+  pages     = "1--305",
+  month     =  jan,
+  year      =  2008
+}
+
+@article{roitman2002response,
+  title={Response of neurons in the lateral intraparietal area during a combined visual discrimination reaction time task},
+  author={Roitman, Jamie D and Shadlen, Michael N},
+  journal={The Journal of neuroscience},
+  volume={22},
+  number={21},
+  pages={9475--9489},
+  year={2002},
+  publisher={Soc Neuroscience}
+}
+
+@article{adams_inprep,
+  journal={in prep.},
+  author={Adams, Geoffrey K, and Pearson, John M and Platt, Michael L}
+}
+
+@article{watson2012social,
+  title={Social signals in primate orbitofrontal cortex},
+  author={Watson, Karli K and Platt, Michael L},
+  journal={Current Biology},
+  volume={22},
+  number={23},
+  pages={2268--2273},
+  year={2012},
+  publisher={Elsevier}
+}
+
+@INCOLLECTION{Scott2012-de,
+  title     = "Fully Bayesian inference for neural models with
+               negative-binomial spiking",
+  booktitle = "Advances in Neural Information Processing Systems 25",
+  author    = "Scott, James and Pillow, Jonathan W",
+  editor    = "Pereira, F and Burges, C J C and Bottou, L and Weinberger, K Q",
+  publisher = "Curran Associates, Inc.",
+  pages     = "1898--1906",
+  year      =  2012
+}
+
+@INCOLLECTION{Putzky2014-up,
+  title     = "A Bayesian model for identifying hierarchically organised states
+               in neural population activity",
+  booktitle = "Advances in Neural Information Processing Systems 27",
+  author    = "Putzky, Patrick and Franzen, Florian and Bassetto, Giacomo and
+               Macke, Jakob H",
+  editor    = "Ghahramani, Z and Welling, M and Cortes, C and Lawrence, N D and
+               Weinberger, K Q",
+  publisher = "Curran Associates, Inc.",
+  pages     = "3095--3103",
+  year      =  2014
+}
+
+@ARTICLE{Mitchell1995-go,
+  title   = "On the complexity of explicit duration {HMM's}",
+  author  = "Mitchell, C and Harper, M and Jamieson, L",
+  journal = "IEEE Trans. Audio Speech Lang. Processing",
+  volume  =  3,
+  number  =  3,
+  pages   = "213--217",
+  month   =  may,
+  year    =  1995
+}
+
+@INPROCEEDINGS{Mitchell1993-sl,
+  title     = "Modeling Duration in a Hidden Markov Model with the Exponential
+               Family",
+  booktitle = "Acoustics, Speech, and Signal Processing",
+  author    = "Mitchell, C D and Jamieson, L H",
+  abstract  = "Abstract Explicit duration modeling has been shown to increase
+               the effectiveness of hidden Markov models in automatic speech
+               recognition. Ferguson found the optimum parameters of the
+               duration model for the case where duration is assumed to be
+               distributed according to a ...",
+  year      =  1993
+}
+
+@ARTICLE{Yu2006-bb,
+  title    = "Practical implementation of an efficient forward-backward
+              algorithm for an explicit-duration hidden Markov model",
+  author   = "Yu, Shun-Zheng and Kobayashi, Hisashi",
+  abstract = "This correspondence addresses several practical problems in
+              implementing a forward-backward (FB) algorithm for an
+              explicit-duration hidden Markov model. First, the FB variables
+              are redefined in terms of posterior probabilities to avoid
+              possible underflows that may occur in practice. Then, a forward
+              recursion is used that is symmetric to the backward one and can
+              reduce the number of logic gates required to implement on a
+              field-programmable gate-array (FPGA) chip.",
+  journal  = "Signal Processing, IEEE Transactions on",
+  volume   =  54,
+  number   =  5,
+  pages    = "1947--1951",
+  month    =  may,
+  year     =  2006,
+  keywords = "field programmable gate arrays;hidden Markov models;logic
+              gates;FPGA;explicit-duration hidden Markov
+              model;field-programmable gate-array chip;forward-backward
+              algorithm;logic gates;posterior probabilities;Field programmable
+              gate arrays;Handwriting recognition;Hidden Markov models;Land
+              mobile radio cellular systems;Logic gates;Magnetic resonance
+              imaging;Signal processing algorithms;Speech analysis;Speech
+              recognition;Videos;Explicit-duration hidden Markov model
+              (HMM);forward--backward (FB) algorithm;hidden Markov model
+              (HMM);hidden semi-Markov model (HSMM);variable duration HMM"
+}
+
+
+@ARTICLE{McMahon2014-qq,
+  title       = "Face-selective neurons maintain consistent visual responses
+                 across months",
+  author      = "McMahon, David B T and Jones, Adam P and Bondar, Igor V and
+                 Leopold, David A",
+  affiliation = "Section on Cognitive Neurophysiology and Imaging, Laboratory
+                 of Neuropsychology, National Institute of Mental Health,
+                 National Institutes of Health, Bethesda, MD 20892;
+                 mcmahond@mail.nih.gov. Section on Cognitive Neurophysiology
+                 and Imaging, Laboratory of Neuropsychology, National Institute
+                 of Mental Health, National Institutes of Health, Bethesda, MD
+                 20892;Department of Biology, University of Maryland, College
+                 Park, MD 20742; Institute of Higher Nervous Activity and
+                 Neurophysiology, Moscow 117485, Russia; and. Section on
+                 Cognitive Neurophysiology and Imaging, Laboratory of
+                 Neuropsychology, National Institute of Mental Health, National
+                 Institutes of Health, Bethesda, MD 20892;Neurophysiology
+                 Imaging Facility, National Institute of Mental Health,
+                 National Eye Institute, and National Institute of Neurological
+                 Disorders and Stroke, National Institutes of Health, Bethesda,
+                 MD 20892.",
+  abstract    = "Face perception in both humans and monkeys is thought to
+                 depend on neurons clustered in discrete, specialized brain
+                 regions. Because primates are frequently called upon to
+                 recognize and remember new individuals, the neuronal
+                 representation of faces in the brain might be expected to
+                 change over time. The functional properties of neurons in
+                 behaving animals are typically assessed over time periods
+                 ranging from minutes to hours, which amounts to a snapshot
+                 compared to a lifespan of a neuron. It therefore remains
+                 unclear how neuronal properties observed on a given day
+                 predict that same neuron's activity months or years later.
+                 Here we show that the macaque inferotemporal cortex contains
+                 face-selective cells that show virtually no change in their
+                 patterns of visual responses over time periods as long as one
+                 year. Using chronically implanted microwire electrodes guided
+                 by functional MRI targeting, we obtained distinct profiles of
+                 selectivity for face and nonface stimuli that served as
+                 fingerprints for individual neurons in the anterior fundus
+                 (AF) face patch within the superior temporal sulcus.
+                 Longitudinal tracking over a series of daily recording
+                 sessions revealed that face-selective neurons maintain
+                 consistent visual response profiles across months-long time
+                 spans despite the influence of ongoing daily experience. We
+                 propose that neurons in the AF face patch are specialized for
+                 aspects of face perception that demand stability as opposed to
+                 plasticity.",
+  journal     = "Proc. Natl. Acad. Sci. U. S. A.",
+  volume      =  111,
+  number      =  22,
+  pages       = "8251--8256",
+  month       =  "3~" # jun,
+  year        =  2014,
+  keywords    = "fMRI; physiology; vision"
+}
+
+
+
+@ARTICLE{Zhao2016-bw,
+  title         = "Variational Latent Gaussian Process for Recovering
+                   {Single-Trial} Dynamics from Population Spike Trains",
+  author        = "Zhao, Yuan and Park, Il Memming",
+  abstract      = "A small number of common factors often explain most of the
+                   interdependence among simultaneously recorded neurons, a
+                   signature of underlying low-dimensional dynamics. We posit
+                   that simple neural coding and computation manifest as
+                   low-dimensional nonlinear dynamics implemented redundantly
+                   within a large population of neurons. Recovering the latent
+                   dynamics from observations can offer a deeper understanding
+                   of neural computation. We improve upon previously-proposed
+                   methods for recovering latent dynamics, which assume either
+                   an inappropriate observation model or linear dynamics. We
+                   propose a practical and efficient inference method for a
+                   generative model with explicit point process observations
+                   and an assumption of smooth nonlinear dynamics. We validate
+                   our method on both simulated data and population recording
+                   from primary visual cortex.",
+  month         =  "11~" # apr,
+  year          =  2016,
+  archivePrefix = "arXiv",
+  primaryClass  = "stat.ML",
+  eprint        = "1604.03053"
+}
+
+
+@ARTICLE{Gao2016-ck,
+  title         = "Linear dynamical neural population models through nonlinear
+                   embeddings",
+  author        = "Gao, Yuanjun and Archer, Evan and Paninski, Liam and
+                   Cunningham, John P",
+  abstract      = "A body of recent work in modeling neural activity focuses on
+                   recovering low-dimensional latent features that capture the
+                   statistical structure of large-scale neural populations.
+                   Most such approaches have focused on linear generative
+                   models, where inference is computationally tractable. Here,
+                   we propose fLDS, a general class of nonlinear generative
+                   models that permits the firing rate of each neuron to vary
+                   as an arbitrary smooth function of a latent, linear
+                   dynamical state. This extra flexibility allows the model to
+                   capture a richer set of neural variability than a purely
+                   linear model, but retains an easily visualizable
+                   low-dimensional latent space. To fit this class of
+                   non-conjugate models we propose a variational inference
+                   scheme, along with a novel approximate posterior capable of
+                   capturing rich temporal correlations across time. We show
+                   that our techniques permit inference in a wide class of
+                   generative models.We also show in application to two neural
+                   datasets that, compared to state-of-the-art neural
+                   population models, fLDS captures a much larger proportion of
+                   neural variability with a small number of latent dimensions,
+                   providing superior predictive performance and
+                   interpretability.",
+  month         =  "26~" # may,
+  year          =  2016,
+  archivePrefix = "arXiv",
+  primaryClass  = "q-bio.NC",
+  eprint        = "1605.08454"
+}
+
+@ARTICLE{Archer2015-ec,
+  title         = "Black box variational inference for state space models",
+  author        = "Archer, Evan and Park, Il Memming and Buesing, Lars and
+                   Cunningham, John and Paninski, Liam",
+  abstract      = "Latent variable time-series models are among the most
+                   heavily used tools from machine learning and applied
+                   statistics. These models have the advantage of learning
+                   latent structure both from noisy observations and from the
+                   temporal ordering in the data, where it is assumed that
+                   meaningful correlation structure exists across time. A few
+                   highly-structured models, such as the linear dynamical
+                   system with linear-Gaussian observations, have closed-form
+                   inference procedures (e.g. the Kalman Filter), but this case
+                   is an exception to the general rule that exact posterior
+                   inference in more complex generative models is intractable.
+                   Consequently, much work in time-series modeling focuses on
+                   approximate inference procedures for one particular class of
+                   models. Here, we extend recent developments in stochastic
+                   variational inference to develop a `black-box' approximate
+                   inference technique for latent variable models with latent
+                   dynamical structure. We propose a structured Gaussian
+                   variational approximate posterior that carries the same
+                   intuition as the standard Kalman filter-smoother but,
+                   importantly, permits us to use the same inference approach
+                   to approximate the posterior of much more general, nonlinear
+                   latent variable generative models. We show that our approach
+                   recovers accurate estimates in the case of basic models with
+                   closed-form posteriors, and more interestingly performs well
+                   in comparison to variational approaches that were designed
+                   in a bespoke fashion for specific non-conjugate models.",
+  month         =  "23~" # nov,
+  year          =  2015,
+  archivePrefix = "arXiv",
+  primaryClass  = "stat.ML",
+  eprint        = "1511.07367"
+}
+
+@article {Perrett23,
+	author = {Perrett, D. I. and Hietanen, J. K. and Oram, M. W. and Benson, P. J. and Rolls, E. T.},
+	title = {Organization and Functions of Cells Responsive to Faces in the Temporal Cortex [and Discussion]},
+	volume = {335},
+	number = {1273},
+	pages = {23--30},
+	year = {1992},
+	doi = {10.1098/rstb.1992.0003},
+	publisher = {The Royal Society},
+	abstract = {Cells selectively responsive to the face have been found in several visual sub-areas of temporal cortex in the macaque brain. These include the lateral and ventral surfaces of inferior temporal cortex and the upper bank, lower bank and fundus of the superior temporal sulcus (STS). Cells in the different regions may contribute in different ways to the processing of the facial image. Within the upper bank of the STS different populations of cells are selective for different views of the face and head. These cells occur in functionally discrete patches (3-5 mm across) within the STS cortex. Studies of output connections from the STS also reveal a modular anatomical organization of repeating 3-5 mm patches connected to the parietal cortex, an area thought to be involved in spatial awareness and in the control of attention. The properties of some cells suggest a role in the discrimination of heads from other objects, and in the recognition of familiar individuals. The selectivity for view suggests that the neural operations underlying face or head recognition rely on parallel analyses of different characteristic views of the head, the outputs of these view-specific analyses being subsequently combined to support view-independent (object-centred) recognition. An alternative functional interpretation of the sensitivity to head view is that the cells enable an analysis of {\textquoteleft}social attention{\textquoteright}, i.e. they signal where other individuals are directing their attention. A cell maximally responsive to the left profile thus provides a signal that the attention (of another individual) is directed to the observer{\textquoteright}s left. Such information is useful for analysing social interactions between other individuals. This interpretation accounts not only for the extensive tuning to head view in the horizontal plane, but also explains the additional tuning of many STS cells to gaze direction and vertical elevation of the head and body posture. Deficits in perception of gaze direction after lesions to the macaque STS cortex, and in certain cases of prosopagnosia, are also predicted by this interpretation.},
+	issn = {0962-8436},
+	journal = {Philosophical Transactions of the Royal Society of London B: Biological Sciences}
+}
+
+@article {McMahon5537,
+	author = {McMahon, David B.T. and Russ, Brian E. and Elnaiem, Heba D. and Kurnikova, Anastasia I. and Leopold, David A.},
+	title = {Single-Unit Activity during Natural Vision: Diversity, Consistency, and Spatial Sensitivity among AF Face Patch Neurons},
+	volume = {35},
+	number = {14},
+	pages = {5537--5548},
+	year = {2015},
+	doi = {10.1523/JNEUROSCI.3825-14.2015},
+	publisher = {Society for Neuroscience},
+	abstract = {Several visual areas within the STS of the macaque brain respond strongly to faces and other biological stimuli. Determining the principles that govern neural responses in this region has proven challenging, due in part to the inherently complex stimulus domain of dynamic biological stimuli that are not captured by an easily parameterized stimulus set. Here we investigated neural responses in one fMRI-defined face patch in the anterior fundus (AF) of the STS while macaques freely view complex videos rich with natural social content. Longitudinal single-unit recordings allowed for the accumulation of each neuron{\textquoteright}s responses to repeated video presentations across sessions. We found that individual neurons, while diverse in their response patterns, were consistently and deterministically driven by the video content. We used principal component analysis to compute a family of eigenneurons, which summarized 24\% of the shared population activity in the first two components. We found that the most prominent component of AF activity reflected an interaction between visible body region and scene layout. Close-up shots of faces elicited the strongest neural responses, whereas far away shots of faces or close-up shots of hindquarters elicited weak or inhibitory responses. Sensitivity to the apparent proximity of faces was also observed in gamma band local field potential. This category-selective sensitivity to spatial scale, together with the known exchange of anatomical projections of this area with regions involved in visuospatial analysis, suggests that the AF face patch may be specialized in aspects of face perception that pertain to the layout of a social scene.},
+	issn = {0270-6474},
+	journal = {Journal of Neuroscience}
+}
+
+@article {Freiwald845,
+	author = {Freiwald, Winrich A. and Tsao, Doris Y.},
+	title = {Functional Compartmentalization and Viewpoint Generalization Within the Macaque Face-Processing System},
+	volume = {330},
+	number = {6005},
+	pages = {845--851},
+	year = {2010},
+	doi = {10.1126/science.1194908},
+	publisher = {American Association for the Advancement of Science},
+	abstract = {The temporal lobe of macaques{\textquoteright} brains contains six patches of face-selective cortex. This observation has prompted systems neuroscientists to ask, why so many and what do they do? Freiwald and Tsao (p. 845; see the Perspective by Connor) targeted four of these regions for single-unit recordings and found that the different face-selective patches in macaques have independent functions. The areas where earliest processing occurred were most sharply tuned for individual views and least sharply tuned for identity. The mid-level area was more sharply tuned for identity, and the highest processing stage was strongly tuned for identity in a strikingly view-invariant way. These results yield fundamental insights into the computational process of object recognition, the functional organization of the brain, and how representations are transformed through processing hierarchies.Primates can recognize faces across a range of viewing conditions. Representations of individual identity should thus exist that are invariant to accidental image transformations like view direction. We targeted the recently discovered face-processing network of the macaque monkey that consists of six interconnected face-selective regions and recorded from the two middle patches (ML, middle lateral, and MF, middle fundus) and two anterior patches (AL, anterior lateral, and AM, anterior medial). We found that the anatomical position of a face patch was associated with a unique functional identity: Face patches differed qualitatively in how they represented identity across head orientations. Neurons in ML and MF were view-specific; neurons in AL were tuned to identity mirror-symetrically across views, thus achieving partial view invariance; and neurons in AM, the most anterior face patch, achieved almost full view invariance.},
+	issn = {0036-8075},
+	journal = {Science}
+}
+
+@ARTICLE{Latimer2015-pb,
+  title       = "Single-trial spike trains in parietal cortex reveal discrete
+                 steps during decision-making",
+  author      = "Latimer, Kenneth W and Yates, Jacob L and Meister, Miriam L R
+                 and Huk, Alexander C and Pillow, Jonathan W",
+  affiliation = "Center for Perceptual Systems, The University of Texas at
+                 Austin, Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA. Center
+                 for Perceptual Systems, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA.
+                 Institute for Neuroscience, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Department of Physiology and
+                 Biophysics, University of Washington, Seattle, WA 98195, USA.
+                 Center for Perceptual Systems, The University of Texas at
+                 Austin, Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA.
+                 Department of Neuroscience, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Department of Psychology, The
+                 University of Texas at Austin, Austin, TX 78712, USA. Center
+                 for Perceptual Systems, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA.
+                 Department of Psychology, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Princeton Neuroscience Institute and
+                 Department of Psychology, Princeton University, Princeton, NJ
+                 08544, USA. pillow@princeton.edu.",
+  abstract    = "Neurons in the macaque lateral intraparietal (LIP) area
+                 exhibit firing rates that appear to ramp upward or downward
+                 during decision-making. These ramps are commonly assumed to
+                 reflect the gradual accumulation of evidence toward a decision
+                 threshold. However, the ramping in trial-averaged responses
+                 could instead arise from instantaneous jumps at different
+                 times on different trials. We examined single-trial responses
+                 in LIP using statistical methods for fitting and comparing
+                 latent dynamical spike-train models. We compared models with
+                 latent spike rates governed by either continuous
+                 diffusion-to-bound dynamics or discrete ``stepping'' dynamics.
+                 Roughly three-quarters of the choice-selective neurons we
+                 recorded were better described by the stepping model.
+                 Moreover, the inferred steps carried more information about
+                 the animal's choice than spike counts.",
+  journal     = "Science",
+  volume      =  349,
+  number      =  6244,
+  pages       = "184--187",
+  month       =  "10~" # jul,
+  year        =  2015
+}
