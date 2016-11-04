@@ -9,6 +9,7 @@
 \usepackage{hyperref}
 \usepackage{cite}
 \usepackage{graphicx}
+\usepackage[right]{lineno}
 %\graphicspath{ {figures/} }
 \newcommand*{\bigcdot}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
 
@@ -55,6 +56,8 @@ Experiments that study the neural encoding of stimuli typically require advance 
 %automatically moved to the end of the document (they are printed
 %out with the \verb|\end{document}| command. However, tables must
 %be manually moved to the end of the document, after the addendum.
+
+\linenumbers
 
 \section*{Introduction}
 The question of how the brain encodes information from the natural world forms one of the primary areas of study within neuroscience. For many sensory systems, particularly vision and audition, the discovery that single neurons modulate their firing of action potentials in response to particular stimulus features has proven foundational for theories of sensory function. Indeed, neuronal responses to contrast, edges, and motion direction appear to form fundamental primitives on which higher-level visual abstractions are built. Yet many higher-level abstractions like social interaction do not exist in a stimulus space with obvious axes. As a result, experimenters must choose \emph{a priori} features of interest in constructing their stimulus sets, with the result that cells may appear weakly tuned due to misalignment of stimulus and neural axes.
@@ -135,7 +138,7 @@ In general, calculating the normalization constant for this posterior is computa
     \label{elbo}
     \mathcal{L} \equiv \mathbb{E}_q \left[\log \frac{p(\Theta,Z|N)}{q(\Theta, Z)} \right] = \mathbb{E}_q \left[\log p(\Theta,Z|N) \right] + \mathcal{H}[q_\Theta(\Theta)] + \mathcal{H}[q_Z(Z)]
 \end{equation}
-with $\mathcal{H}$ the entropy. We adopt the factorial HMM trick \cite{ghahramani1997factorial}, making the reasonable assumption that the posterior factorizes over each latent time series $z_{\bigcdot k}$ and the overdispersion factor $\theta_m$, as well as the rate parameters $\lambda_{\bigcdot u \bigcdot}$ associated with each Markov process. Thus the variational objective decomposes in a natural way, and choices are available for nearly all of the $q$s that lead to closed-form updates.
+with $\mathcal{H}$ the entropy. We adopt the factorial HMM trick \cite{ghahramani1997factorial}, making the reasonable assumption that the posterior factorizes over each latent time series $z_{\bigcdot k}$ and the overdispersion factor $\theta_m$, as well as the rate parameters $\lambda_{\bigcdot u \bigcdot}$ associated with each Markov process. Thus the variational objective decomposes in a natural way, and choices are available for nearly all of the $q$'s that lead to closed-form updates.
 %This factorization results in a variational posterior of the form:
 %\begin{multline}
 %    q(\Theta,Z) = q(c_0)q(d_0)\prod_m q(\theta_m) \prod_u q(s_u) q(\lambda_{0u}) \prod_r q(\lambda_{xur}) \times \\
@@ -238,7 +241,7 @@ Our model is unique among similar efforts in assuming that neurons' reponses are
 
 Here, we have validated this method using structured, labeled stimuli more typical of systems neuroscience experiments, showing that our model is capable of parsimoniously and correctly inferring features in the low signal-to-noise regime of cortical activity, even in the case of independently recorded neurons. Moreover, even small features in our model recapitulated known physiological results regarding gaze and viewpoint encoding in single neurons. And while these features alone might not provide proof positive of, for instance, viewpoint tuning, similar findings would be valuable in generating hypotheses in cases where the stimulus space and its neural correlates remain poorly understood. Thus our model facilitates an iterative experimental process: subjects are first be exposed to large, heterogeneous data; stimuli are then tagged based on neural responses; and finally, features with the largest effects are used to refine the set until it most accurately represents those stimuli with the largest neural correlates. Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
 
-
+\nolinenumbers
 %
 %\section*{Another Section}
 %

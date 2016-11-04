@@ -10,6 +10,7 @@
 \usepackage{cite}
 \usepackage{graphicx}
 \usepackage{algorithm, algpseudocode}
+\usepackage[right]{lineno}
 \usepackage{xr}
 \externaldocument{nature-methods}
 %\graphicspath{ {figures/} }
@@ -38,6 +39,7 @@
  \item Center for Cognitive Neuroscience, Duke University, Durham, North Carolina, USA
 \end{affiliations}
 
+\linenumbers
 
 \section*{Derivation of Evidence Lower Bound (ELBO)}
 Here we derive the evidence lower bound (ELBO) used as a variational objective by our inference algorithm. That is, we want to calculate
@@ -296,7 +298,7 @@ Thus the objective to be optimized is
     \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
 \end{equation}
 
-For the case of $p(d|m, s^2)$ Log-Normal and $(m, \tau = s^{-2})$ Normal-Gamma, the terms $\mathbb{E}_q[\log p(d)]$ involve only routine expectations of natural parameters of the Normal-Gamma, and similarly for the expected log prior and entropy in the last term. Only slightly more complicated is the term arising from the normalization constant, which in the standard $(\mu, \lambda, \alpha, \beta)$ parameterization of the Normal-Gamma takes the form
+For the case of $p(d|m, s^2)$ Log-Normal and $(m, \tau = s^{-2})$ Normal-Gamma, the terms which $\mathbb{E}_q[\log p(d)]$ involve only routine expectations of natural parameters of the Normal-Gamma, and similarly for the expected log prior and entropy in the last term. Only slightly more complicated is the term arising from the normalization constant, which in the standard $(\mu, \lambda, \alpha, \beta)$ parameterization of the Normal-Gamma takes the form
 \begin{equation}
     \mathbb{E}_q[p(d|m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau)
     = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}}
@@ -350,6 +352,7 @@ Here we performed a sparse logistic regression on two-bit combinations of our fe
 \section*{Experiments}
 Code for all algorithms and analyses is available at \url{https://github.com/pearsonlab/spiketopics}.
 
+\nolinenumbers
 
 %
 %\section*{Another Section}
