@@ -9,8 +9,9 @@
 \usepackage{hyperref}
 \usepackage{cite}
 \usepackage{graphicx}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
+\usepackage{algorithm, algpseudocode}
+\usepackage{xr}
+\externaldocument{nature-methods}
 %\graphicspath{ {figures/} }
 \newcommand*{\bigcdot}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
 
@@ -115,7 +116,7 @@ with $(\eta, \tilde{A}, \tilde{\pi})$ the parameters of the variational posterio
     \tilde{A}_k &\leftarrow \overline{\log A_k} &
     \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
 \end{align}
-while the effective emission probabilities in the ``on" ($z = 1$) state of the HMM are
+while the effective emission probabilities in the ``on'' ($z = 1$) state of the HMM are
 \begin{align}
     \eta_{tk} &\leftarrow \delta_{z_{tk}, 1} \sum_{m; t(m) = t} N_m \overline{\log \lambda_{zu(m)k}}
     - \sum_{m; t(m) = t} \overline{\theta_m} H_{0u(m)} F_{tku(m)} G_{tu(m)}
@@ -201,7 +202,7 @@ This correction for truncation must then be added to $\mathbb{E}_q[p(z|\Theta)]$
 
 \section*{Inference}
 \subsection{hierarchical priors.}
-As stated in the Methods section, for the latent states and baselines, we assume hierarchical priors. This allows us to model each neuron's firing rate response to a particular stimulus as being drawn from a population response to that same stimulus. We also assume that the moment-to-moment noise in firing rates, $\theta_m$, follows a neuron-specific distribution. As a result of the form of this hierarchy given in Eq (\ref{hierarchy}), the first piece in Eq (\ref{elbo}) contains multiple terms of the form
+As stated in the Methods section, for the latent states and baselines, we assume hierarchical priors. This allows us to model each neuron's firing rate response to a particular stimulus as being drawn from a population response to that same stimulus. We also assume that the moment-to-moment noise in firing rates, $\theta_m$, follows a neuron-specific distribution. As a result of the form of this hierarchy given in main article Eq (\ref{hierarchy}), the first piece in main article Eq (\ref{elbo}) contains multiple terms of the form
 \begin{equation}
     \mathbb{E}_q \left[\sum_u \log p(\lambda_u|c, d)\right] = \sum_u \mathbb{E}_q \left[
     (c - 1) \log \lambda_u - cd\lambda_u + c \log cd - \log \Gamma(c)
@@ -261,7 +262,7 @@ We employ explicit optimization steps for two updates in our iterative Algorithm
 
 \subsubsection{Covariate firing rate effects.}
 \label{beta_x}
-Because we do not restrict the covariates $x(t)$ to be binary, Equation \ref{eff_rate} no longer yields a conditional log probability for $\lambda_x$ in the exponential family. This leaves us with a transcendental equation to solve for $\beta_{xr}$. However, from Table \ref{conj_updates}, we see that $\alpha_{xr} \gg \sum_t x_{tr}$, allowing us to approximate $G_t \approx \prod_r (\alpha_{xr}/\beta_{xr})^{x_{tr}}$ as we have done above. Moreover, since the sum $\sum_t G_t \sim T\overline{G}$, we expect $\alpha_x / \beta_x \approx 1$ at the optimum for most reasonable datasets. We thus reparameterize $\beta_{xur} = \alpha_{xur}e^{-\epsilon_{ur}}$ and write the relevant $\epsilon$-dependent piece of the objective function $\mathcal{L}$ as
+Because we do not restrict the covariates $x(t)$ to be binary, Equation \ref{eff_rate} no longer yields a conditional log probability for $\lambda_x$ in the exponential family. This leaves us with a transcendental equation to solve for $\beta_{xr}$. However, from Table \ref{conj_updates}, we see that $\alpha_{xr} \gg \sum_t x_{tr}$, allowing us to approximate $G_t \approx \prod_r (\alpha_{xr}/\beta_{xr})^{x_{tr}}$ as we have done above. Moreover, since the sum $\sum_t G_t \sim T \overline{G}$, we expect $\alpha_x / \beta_x \approx 1$ at the optimum for most reasonable datasets. We thus reparameterize $\beta_{xur} = \alpha_{xur}e^{-\epsilon_{ur}}$ and write the relevant $\epsilon$-dependent piece of the objective function $\mathcal{L}$ as
 \begin{equation}
     \mathcal{L}_\epsilon = \sum_{ur} \left[a_{xur}\epsilon_{ur} - b_{xur}e^{-\epsilon_{ur}} \right] - \sum_m \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)}
     e^{-\sum_r \epsilon_{u(m)r} x_{t(m)u(m)r}}
@@ -333,6 +334,19 @@ This can be derived either by performing the integral directly or by noting that
 \end{algorithmic}
 \end{algorithm}
 
+\section*{Categorization using raw data and model inferred features}
+As a byproduct to the inferred features of our model, the generated labels provide a concise and fairly complete summary of the stimulus-related activity of all neural recordings. Here we want to emphasize that although our model is not a data compression method, it nonetheless preserves most of the information from raw data.
+
+Here we performed a sparse logistic regression on two-bit combinations of our features to predict stimulus category ties and outperforms, respectively a multinomial logistic regression on the raw spike counts with L1 and L2 regularization, as shown in Figure \ref{fig:softmax}.
+
+\begin{figure}
+    \includegraphics[width=.8\linewidth]{figures/l1_hit_rate_2way}
+    \includegraphics[width=.8\linewidth]{figures/l2_hit_rate_2way}
+	\caption{\bf Comparison of actual and inferred states of the macaque dataset.}
+	 %using raw data and inferred features for visual category dataset.
+	\label{fig:softmax}
+\end{figure}
+
 \section*{Experiments}
 Code for all algorithms and analyses is available at \url{https://github.com/pearsonlab/spiketopics}.
 
@@ -402,16 +416,6 @@ Code for all algorithms and analyses is available at \url{https://github.com/pea
 \bibliography{chen_beck_pearson}{}
 
 
-%% Here is the endmatter stuff: Supplementary Info, etc.
-%% Use \item's to separate, default label is "Acknowledgements"
-
-\begin{addendum}
- \item We would like to thank David McMahon and David Leopold for generously sharing the visual cateogry stimuli and neural data from \cite{McMahon2014-qq} and for comments on the manuscript.
- \item[Competing Interests] The authors declare that they have no
-competing financial interests.
- \item[Correspondence] Correspondence and requests for materials
-should be addressed to John M. Pearson.~(email: john.pearson@duke.edu).
-\end{addendum}
 
 
 %\begin{figure}
