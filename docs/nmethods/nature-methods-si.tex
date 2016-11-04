@@ -39,7 +39,7 @@
 \end{affiliations}
 
 
-\section*{Evidence Lower Bound (ELBO)}
+\section*{Derivation of Evidence Lower Bound (ELBO)}
 Here we derive the evidence lower bound (ELBO) used as a variational objective by our inference algorithm. That is, we want to calculate
 \begin{equation}
     \mathcal{L} \equiv \mathbb{E}_q \left[\log \frac{p(\Theta|N)}{q(\Theta)} \right] = \mathbb{E}_q \left[\log p(\Theta|N) \right] + \mathcal{H}[q(\Theta)]
@@ -202,7 +202,7 @@ This correction for truncation must then be added to $\mathbb{E}_q[p(z|\Theta)]$
 
 \section*{Inference}
 \subsection{hierarchical priors.}
-As stated in the Methods section, for the latent states and baselines, we assume hierarchical priors. This allows us to model each neuron's firing rate response to a particular stimulus as being drawn from a population response to that same stimulus. We also assume that the moment-to-moment noise in firing rates, $\theta_m$, follows a neuron-specific distribution. As a result of the form of this hierarchy given in main article Eq (\ref{hierarchy}), the first piece in main article Eq (\ref{elbo}) contains multiple terms of the form
+As stated in the Methods section, for the latent states and baselines, we assume hierarchical priors. This allows us to model each neuron's firing rate response to a particular stimulus as being drawn from a population response to that same stimulus. We also assume that the moment-to-moment noise in firing rates, $\theta_m$, follows a neuron-specific distribution. As a result of the form of this hierarchy given in Eq (\ref{hierarchy}) of main article, the first piece in Eq (\ref{elbo}) of main article contains multiple terms of the form
 \begin{equation}
     \mathbb{E}_q \left[\sum_u \log p(\lambda_u|c, d)\right] = \sum_u \mathbb{E}_q \left[
     (c - 1) \log \lambda_u - cd\lambda_u + c \log cd - \log \Gamma(c)
@@ -260,7 +260,7 @@ Here, we overload notation to write $N_{tu} = \sum_m \delta_{u(m), u} \delta_{t(
 \label{non-conj}
 We employ explicit optimization steps for two updates in our iterative Algorithm \ref{algo}. In each case, we employ an off-the-shelf optimization routine, though more efficient alternatives are likely possible.
 
-\subsubsection{Covariate firing rate effects.}
+\subsection{Covariate firing rate effects.}
 \label{beta_x}
 Because we do not restrict the covariates $x(t)$ to be binary, Equation \ref{eff_rate} no longer yields a conditional log probability for $\lambda_x$ in the exponential family. This leaves us with a transcendental equation to solve for $\beta_{xr}$. However, from Table \ref{conj_updates}, we see that $\alpha_{xr} \gg \sum_t x_{tr}$, allowing us to approximate $G_t \approx \prod_r (\alpha_{xr}/\beta_{xr})^{x_{tr}}$ as we have done above. Moreover, since the sum $\sum_t G_t \sim T \overline{G}$, we expect $\alpha_x / \beta_x \approx 1$ at the optimum for most reasonable datasets. We thus reparameterize $\beta_{xur} = \alpha_{xur}e^{-\epsilon_{ur}}$ and write the relevant $\epsilon$-dependent piece of the objective function $\mathcal{L}$ as
 \begin{equation}
@@ -274,7 +274,7 @@ We also supply the optimizer with the gradient:
 \end{equation}
 where we sum only over observations with $u(m) = u$. On each iterate, we then optimize $\mathcal{L}_\epsilon$, initializing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
 
-\subsubsection{Semi-Markov duration distribution.}
+\subsection{Semi-Markov duration distribution.}
 \label{semimarkovdd}
 If the dwell time distributions of states in the semi-Markov model were truly continuous, the parameters $(m, s^2)$ of a lognormal distribution $p(d|j)$ would have a Normal-Gamma conjugate prior, and updates would be closed-form. However, the requirement that the durations be integers and that there exist a maximal duration, $D$, over which these probability mass functions must normalize results in an extra term in $\mathbb{E}_q[\log p]$ arising from the normalization constant. In this case, we must explicitly optimize for the parameters of the Normal-Gamma prior on $(m, s^2)$. However, unlike the case of \ref{beta_x}, these parameters are only updated for one latent feature at a time. Since the Normal-Gamma distribution has only 4 parameters and the number of states of the latent variable is $S = 2$, this requires updating $4SK$ parameters, but only taken $4S = 8$ at a time, a much more manageable task.
 
