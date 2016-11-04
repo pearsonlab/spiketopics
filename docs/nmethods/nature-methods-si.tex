@@ -200,6 +200,33 @@ This correction for truncation must then be added to $\mathbb{E}_q[p(z|\Theta)]$
 
 
 \section*{Inference}
+\subsection{hierarchical priors.}
+As stated in the Methods section, for the latent states and baselines, we assume hierarchical priors. This allows us to model each neuron's firing rate response to a particular stimulus as being drawn from a population response to that same stimulus. We also assume that the moment-to-moment noise in firing rates, $\theta_m$, follows a neuron-specific distribution. As a result of the form of this hierarchy given in Eq (\ref{hierarchy}), the first piece in Eq (\ref{elbo}) contains multiple terms of the form
+\begin{equation}
+    \mathbb{E}_q \left[\sum_u \log p(\lambda_u|c, d)\right] = \sum_u \mathbb{E}_q \left[
+    (c - 1) \log \lambda_u - cd\lambda_u + c \log cd - \log \Gamma(c)
+    \right]
+\end{equation}
+In order to calculate the expectation, we make use of the following inequality \cite{abramowitz1964handbook}
+\begin{equation}
+    \sqrt{2\pi} \le \frac{z!}{z^{z+\frac{1}{2}} e^{-z}} \le e
+\end{equation}
+to lower bound the negative gamma function and approximate the above as
+\begin{equation}
+    \log p(\lambda) \ge \sum_u \left[
+    (c - 1) (\log \lambda_u + 1) - cd\lambda_u + c \log d + \frac{1}{2}\log c\right]
+\end{equation}
+Clearly, the conditional probabilities for $c$ and $d$ are gamma in form, so that if we use priors $c \sim \text{Gamma}(a_c, b_c)$ and $d\sim \text{Gamma}(a_d, b_d)$ the posteriors have the form
+\begin{align}
+    c &\sim \text{Gamma}\left(a_c + \frac{U}{2},
+    b_c + \sum_u\mathbb{E}_q
+        \left[d \lambda_u - \log \lambda_u - \log d - 1\right]\right) \\
+    d &\sim \text{Gamma}\left(
+        a_d + U\mathbb{E}_q[c], b_d + \sum_u \mathbb{E}_q [c \lambda_u]
+    \right)
+\end{align}
+This basic form, with appropriate indices added, gives the update rules for the hyperparameter posteriors for $\lambda_0$ and $\lambda_z$. For $\theta$, we simply set $c = s_u$ and $d = 1$.
+
 \subsection{Conjugate updates.}
 For updates on the overdispersion, firing rate, and hyperparameter variables, we have the simple conjugate update rules depicted in Table \ref{conj_updates}. These can be derived either from free-form variational arguments, or exponential family rules, but are in any case straightforward\cite{Blei2006-oh}. If we assume a $\text{Ga}(a, b)$ prior and $\text{Ga}(\alpha, \beta)$ variational posterior, all of these have a simple algebraic update in terms of sufficient statistics.
 
