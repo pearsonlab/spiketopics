@@ -42,7 +42,7 @@ if __name__ == '__main__':
     Mz = 2  # number of levels of each latent state
     time_natural = int(T / (12 * 8))  # the number of natural time bins within each trial
     print "There are {} time bins per trial".format(time_natural)
-    dt = 900 / time_natural  # 300 or 150 ms bins
+    dt = .900 / time_natural  # 300 or 150 ms bins
     od_natural = False  # indicator for autocorrelated noise
 
     #################### priors and initial values
