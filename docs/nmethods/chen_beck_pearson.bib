@@ -695,3 +695,251 @@
               (HMM);hidden semi-Markov model (HSMM);variable duration HMM"
 }
 
+
+@ARTICLE{McMahon2014-qq,
+  title       = "Face-selective neurons maintain consistent visual responses
+                 across months",
+  author      = "McMahon, David B T and Jones, Adam P and Bondar, Igor V and
+                 Leopold, David A",
+  affiliation = "Section on Cognitive Neurophysiology and Imaging, Laboratory
+                 of Neuropsychology, National Institute of Mental Health,
+                 National Institutes of Health, Bethesda, MD 20892;
+                 mcmahond@mail.nih.gov. Section on Cognitive Neurophysiology
+                 and Imaging, Laboratory of Neuropsychology, National Institute
+                 of Mental Health, National Institutes of Health, Bethesda, MD
+                 20892;Department of Biology, University of Maryland, College
+                 Park, MD 20742; Institute of Higher Nervous Activity and
+                 Neurophysiology, Moscow 117485, Russia; and. Section on
+                 Cognitive Neurophysiology and Imaging, Laboratory of
+                 Neuropsychology, National Institute of Mental Health, National
+                 Institutes of Health, Bethesda, MD 20892;Neurophysiology
+                 Imaging Facility, National Institute of Mental Health,
+                 National Eye Institute, and National Institute of Neurological
+                 Disorders and Stroke, National Institutes of Health, Bethesda,
+                 MD 20892.",
+  abstract    = "Face perception in both humans and monkeys is thought to
+                 depend on neurons clustered in discrete, specialized brain
+                 regions. Because primates are frequently called upon to
+                 recognize and remember new individuals, the neuronal
+                 representation of faces in the brain might be expected to
+                 change over time. The functional properties of neurons in
+                 behaving animals are typically assessed over time periods
+                 ranging from minutes to hours, which amounts to a snapshot
+                 compared to a lifespan of a neuron. It therefore remains
+                 unclear how neuronal properties observed on a given day
+                 predict that same neuron's activity months or years later.
+                 Here we show that the macaque inferotemporal cortex contains
+                 face-selective cells that show virtually no change in their
+                 patterns of visual responses over time periods as long as one
+                 year. Using chronically implanted microwire electrodes guided
+                 by functional MRI targeting, we obtained distinct profiles of
+                 selectivity for face and nonface stimuli that served as
+                 fingerprints for individual neurons in the anterior fundus
+                 (AF) face patch within the superior temporal sulcus.
+                 Longitudinal tracking over a series of daily recording
+                 sessions revealed that face-selective neurons maintain
+                 consistent visual response profiles across months-long time
+                 spans despite the influence of ongoing daily experience. We
+                 propose that neurons in the AF face patch are specialized for
+                 aspects of face perception that demand stability as opposed to
+                 plasticity.",
+  journal     = "Proc. Natl. Acad. Sci. U. S. A.",
+  volume      =  111,
+  number      =  22,
+  pages       = "8251--8256",
+  month       =  "3~" # jun,
+  year        =  2014,
+  keywords    = "fMRI; physiology; vision"
+}
+
+
+
+@ARTICLE{Zhao2016-bw,
+  title         = "Variational Latent Gaussian Process for Recovering
+                   {Single-Trial} Dynamics from Population Spike Trains",
+  author        = "Zhao, Yuan and Park, Il Memming",
+  abstract      = "A small number of common factors often explain most of the
+                   interdependence among simultaneously recorded neurons, a
+                   signature of underlying low-dimensional dynamics. We posit
+                   that simple neural coding and computation manifest as
+                   low-dimensional nonlinear dynamics implemented redundantly
+                   within a large population of neurons. Recovering the latent
+                   dynamics from observations can offer a deeper understanding
+                   of neural computation. We improve upon previously-proposed
+                   methods for recovering latent dynamics, which assume either
+                   an inappropriate observation model or linear dynamics. We
+                   propose a practical and efficient inference method for a
+                   generative model with explicit point process observations
+                   and an assumption of smooth nonlinear dynamics. We validate
+                   our method on both simulated data and population recording
+                   from primary visual cortex.",
+  month         =  "11~" # apr,
+  year          =  2016,
+  archivePrefix = "arXiv",
+  primaryClass  = "stat.ML",
+  eprint        = "1604.03053"
+}
+
+
+@ARTICLE{Gao2016-ck,
+  title         = "Linear dynamical neural population models through nonlinear
+                   embeddings",
+  author        = "Gao, Yuanjun and Archer, Evan and Paninski, Liam and
+                   Cunningham, John P",
+  abstract      = "A body of recent work in modeling neural activity focuses on
+                   recovering low-dimensional latent features that capture the
+                   statistical structure of large-scale neural populations.
+                   Most such approaches have focused on linear generative
+                   models, where inference is computationally tractable. Here,
+                   we propose fLDS, a general class of nonlinear generative
+                   models that permits the firing rate of each neuron to vary
+                   as an arbitrary smooth function of a latent, linear
+                   dynamical state. This extra flexibility allows the model to
+                   capture a richer set of neural variability than a purely
+                   linear model, but retains an easily visualizable
+                   low-dimensional latent space. To fit this class of
+                   non-conjugate models we propose a variational inference
+                   scheme, along with a novel approximate posterior capable of
+                   capturing rich temporal correlations across time. We show
+                   that our techniques permit inference in a wide class of
+                   generative models.We also show in application to two neural
+                   datasets that, compared to state-of-the-art neural
+                   population models, fLDS captures a much larger proportion of
+                   neural variability with a small number of latent dimensions,
+                   providing superior predictive performance and
+                   interpretability.",
+  month         =  "26~" # may,
+  year          =  2016,
+  archivePrefix = "arXiv",
+  primaryClass  = "q-bio.NC",
+  eprint        = "1605.08454"
+}
+
+@ARTICLE{Archer2015-ec,
+  title         = "Black box variational inference for state space models",
+  author        = "Archer, Evan and Park, Il Memming and Buesing, Lars and
+                   Cunningham, John and Paninski, Liam",
+  abstract      = "Latent variable time-series models are among the most
+                   heavily used tools from machine learning and applied
+                   statistics. These models have the advantage of learning
+                   latent structure both from noisy observations and from the
+                   temporal ordering in the data, where it is assumed that
+                   meaningful correlation structure exists across time. A few
+                   highly-structured models, such as the linear dynamical
+                   system with linear-Gaussian observations, have closed-form
+                   inference procedures (e.g. the Kalman Filter), but this case
+                   is an exception to the general rule that exact posterior
+                   inference in more complex generative models is intractable.
+                   Consequently, much work in time-series modeling focuses on
+                   approximate inference procedures for one particular class of
+                   models. Here, we extend recent developments in stochastic
+                   variational inference to develop a `black-box' approximate
+                   inference technique for latent variable models with latent
+                   dynamical structure. We propose a structured Gaussian
+                   variational approximate posterior that carries the same
+                   intuition as the standard Kalman filter-smoother but,
+                   importantly, permits us to use the same inference approach
+                   to approximate the posterior of much more general, nonlinear
+                   latent variable generative models. We show that our approach
+                   recovers accurate estimates in the case of basic models with
+                   closed-form posteriors, and more interestingly performs well
+                   in comparison to variational approaches that were designed
+                   in a bespoke fashion for specific non-conjugate models.",
+  month         =  "23~" # nov,
+  year          =  2015,
+  archivePrefix = "arXiv",
+  primaryClass  = "stat.ML",
+  eprint        = "1511.07367"
+}
+
+@article {Perrett23,
+	author = {Perrett, D. I. and Hietanen, J. K. and Oram, M. W. and Benson, P. J. and Rolls, E. T.},
+	title = {Organization and Functions of Cells Responsive to Faces in the Temporal Cortex [and Discussion]},
+	volume = {335},
+	number = {1273},
+	pages = {23--30},
+	year = {1992},
+	doi = {10.1098/rstb.1992.0003},
+	publisher = {The Royal Society},
+	abstract = {Cells selectively responsive to the face have been found in several visual sub-areas of temporal cortex in the macaque brain. These include the lateral and ventral surfaces of inferior temporal cortex and the upper bank, lower bank and fundus of the superior temporal sulcus (STS). Cells in the different regions may contribute in different ways to the processing of the facial image. Within the upper bank of the STS different populations of cells are selective for different views of the face and head. These cells occur in functionally discrete patches (3-5 mm across) within the STS cortex. Studies of output connections from the STS also reveal a modular anatomical organization of repeating 3-5 mm patches connected to the parietal cortex, an area thought to be involved in spatial awareness and in the control of attention. The properties of some cells suggest a role in the discrimination of heads from other objects, and in the recognition of familiar individuals. The selectivity for view suggests that the neural operations underlying face or head recognition rely on parallel analyses of different characteristic views of the head, the outputs of these view-specific analyses being subsequently combined to support view-independent (object-centred) recognition. An alternative functional interpretation of the sensitivity to head view is that the cells enable an analysis of {\textquoteleft}social attention{\textquoteright}, i.e. they signal where other individuals are directing their attention. A cell maximally responsive to the left profile thus provides a signal that the attention (of another individual) is directed to the observer{\textquoteright}s left. Such information is useful for analysing social interactions between other individuals. This interpretation accounts not only for the extensive tuning to head view in the horizontal plane, but also explains the additional tuning of many STS cells to gaze direction and vertical elevation of the head and body posture. Deficits in perception of gaze direction after lesions to the macaque STS cortex, and in certain cases of prosopagnosia, are also predicted by this interpretation.},
+	issn = {0962-8436},
+	journal = {Philosophical Transactions of the Royal Society of London B: Biological Sciences}
+}
+
+@article {McMahon5537,
+	author = {McMahon, David B.T. and Russ, Brian E. and Elnaiem, Heba D. and Kurnikova, Anastasia I. and Leopold, David A.},
+	title = {Single-Unit Activity during Natural Vision: Diversity, Consistency, and Spatial Sensitivity among AF Face Patch Neurons},
+	volume = {35},
+	number = {14},
+	pages = {5537--5548},
+	year = {2015},
+	doi = {10.1523/JNEUROSCI.3825-14.2015},
+	publisher = {Society for Neuroscience},
+	abstract = {Several visual areas within the STS of the macaque brain respond strongly to faces and other biological stimuli. Determining the principles that govern neural responses in this region has proven challenging, due in part to the inherently complex stimulus domain of dynamic biological stimuli that are not captured by an easily parameterized stimulus set. Here we investigated neural responses in one fMRI-defined face patch in the anterior fundus (AF) of the STS while macaques freely view complex videos rich with natural social content. Longitudinal single-unit recordings allowed for the accumulation of each neuron{\textquoteright}s responses to repeated video presentations across sessions. We found that individual neurons, while diverse in their response patterns, were consistently and deterministically driven by the video content. We used principal component analysis to compute a family of eigenneurons, which summarized 24\% of the shared population activity in the first two components. We found that the most prominent component of AF activity reflected an interaction between visible body region and scene layout. Close-up shots of faces elicited the strongest neural responses, whereas far away shots of faces or close-up shots of hindquarters elicited weak or inhibitory responses. Sensitivity to the apparent proximity of faces was also observed in gamma band local field potential. This category-selective sensitivity to spatial scale, together with the known exchange of anatomical projections of this area with regions involved in visuospatial analysis, suggests that the AF face patch may be specialized in aspects of face perception that pertain to the layout of a social scene.},
+	issn = {0270-6474},
+	journal = {Journal of Neuroscience}
+}
+
+@article {Freiwald845,
+	author = {Freiwald, Winrich A. and Tsao, Doris Y.},
+	title = {Functional Compartmentalization and Viewpoint Generalization Within the Macaque Face-Processing System},
+	volume = {330},
+	number = {6005},
+	pages = {845--851},
+	year = {2010},
+	doi = {10.1126/science.1194908},
+	publisher = {American Association for the Advancement of Science},
+	abstract = {The temporal lobe of macaques{\textquoteright} brains contains six patches of face-selective cortex. This observation has prompted systems neuroscientists to ask, why so many and what do they do? Freiwald and Tsao (p. 845; see the Perspective by Connor) targeted four of these regions for single-unit recordings and found that the different face-selective patches in macaques have independent functions. The areas where earliest processing occurred were most sharply tuned for individual views and least sharply tuned for identity. The mid-level area was more sharply tuned for identity, and the highest processing stage was strongly tuned for identity in a strikingly view-invariant way. These results yield fundamental insights into the computational process of object recognition, the functional organization of the brain, and how representations are transformed through processing hierarchies.Primates can recognize faces across a range of viewing conditions. Representations of individual identity should thus exist that are invariant to accidental image transformations like view direction. We targeted the recently discovered face-processing network of the macaque monkey that consists of six interconnected face-selective regions and recorded from the two middle patches (ML, middle lateral, and MF, middle fundus) and two anterior patches (AL, anterior lateral, and AM, anterior medial). We found that the anatomical position of a face patch was associated with a unique functional identity: Face patches differed qualitatively in how they represented identity across head orientations. Neurons in ML and MF were view-specific; neurons in AL were tuned to identity mirror-symetrically across views, thus achieving partial view invariance; and neurons in AM, the most anterior face patch, achieved almost full view invariance.},
+	issn = {0036-8075},
+	journal = {Science}
+}
+
+@ARTICLE{Latimer2015-pb,
+  title       = "Single-trial spike trains in parietal cortex reveal discrete
+                 steps during decision-making",
+  author      = "Latimer, Kenneth W and Yates, Jacob L and Meister, Miriam L R
+                 and Huk, Alexander C and Pillow, Jonathan W",
+  affiliation = "Center for Perceptual Systems, The University of Texas at
+                 Austin, Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA. Center
+                 for Perceptual Systems, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA.
+                 Institute for Neuroscience, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Department of Physiology and
+                 Biophysics, University of Washington, Seattle, WA 98195, USA.
+                 Center for Perceptual Systems, The University of Texas at
+                 Austin, Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA.
+                 Department of Neuroscience, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Department of Psychology, The
+                 University of Texas at Austin, Austin, TX 78712, USA. Center
+                 for Perceptual Systems, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Institute for Neuroscience, The
+                 University of Texas at Austin, Austin, TX 78712, USA.
+                 Department of Psychology, The University of Texas at Austin,
+                 Austin, TX 78712, USA. Princeton Neuroscience Institute and
+                 Department of Psychology, Princeton University, Princeton, NJ
+                 08544, USA. pillow@princeton.edu.",
+  abstract    = "Neurons in the macaque lateral intraparietal (LIP) area
+                 exhibit firing rates that appear to ramp upward or downward
+                 during decision-making. These ramps are commonly assumed to
+                 reflect the gradual accumulation of evidence toward a decision
+                 threshold. However, the ramping in trial-averaged responses
+                 could instead arise from instantaneous jumps at different
+                 times on different trials. We examined single-trial responses
+                 in LIP using statistical methods for fitting and comparing
+                 latent dynamical spike-train models. We compared models with
+                 latent spike rates governed by either continuous
+                 diffusion-to-bound dynamics or discrete ``stepping'' dynamics.
+                 Roughly three-quarters of the choice-selective neurons we
+                 recorded were better described by the stepping model.
+                 Moreover, the inferred steps carried more information about
+                 the animal's choice than spike counts.",
+  journal     = "Science",
+  volume      =  349,
+  number      =  6244,
+  pages       = "184--187",
+  month       =  "10~" # jul,
+  year        =  2015
+}

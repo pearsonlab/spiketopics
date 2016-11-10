@@ -7,7 +7,6 @@ try:
     from ..forward_backward import fb_infer
 except ImportError:
     from ..fbi import fb_infer
-from ..hsmm_forward_backward import fb_infer as hsmm_fb_infer
 import multiprocessing as mp
 
 def do_fb(args):

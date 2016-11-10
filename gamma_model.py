@@ -4,11 +4,10 @@ import pandas as pd
 from scipy.optimize import minimize
 import numexpr as ne
 import spiketopics.nodes as nd
-from numba import autojit, jit
+from numba import jit
 
 
-class GammaModel:
-
+class GammaModel(object):
     """
     This class fits a Poisson observation model using a product of Gamma-
     distributed variables to model the rates.
@@ -66,10 +65,12 @@ class GammaModel:
         of spike counts at each time, one of number of observations of each
         time.
         """
-
-        cols = ['unit', 'time', 'count']
+        # Modified by Xin
+        cols = ['unit', 'time', 'trial', 'count']
+        # cols = ['unit', 'time', 'count']
         self.Nframe = data[cols].copy()
 
+        # empty data frame for simple model
         self.Xframe = data.drop(cols, axis=1).copy()
         if self.Xframe.values.size > 0 and np.min(self.Xframe.values) < 0.0:
             raise ValueError('User-specified regressors must be non-negative')
@@ -141,12 +142,41 @@ class GammaModel:
 
         return self
 
+    def initialize_overdispersion_natural(self, **kwargs):
+        """
+        Set up trial-to-trial overdispersion natural time on firing rates.
+        """
+        self._initialize_gamma_nodes('overdispersion_natural', (self.M,),
+                                     (self.U,), **kwargs)
+
+        return self
+
     def initialize_latents(self, **kwargs):
         nodes = nd.initialize_HMM(self.K, 2, self.T, self.D, **kwargs)
 
         self.nodes.update({n.name: n for n in nodes})
 
         return self
+
+    def _sort_values(self, indmat, values):
+        """
+        :param indmat: an n*2 matrix with Column 1: original index, Column 2: sorted index
+        :param values: an n vector to be sorted according to column 2
+        :return: sorted values
+        """
+        sorted_values = np.c_[indmat[indmat[:, 0].argsort()], values]
+        sorted_values = sorted_values[sorted_values[:, 1].argsort()][:, 2]
+        return sorted_values
+
+    def _unsort_values(self, indmat, values):
+        """
+        :param indmat: an n*2 matrix with Column 1: original index, Column 2: sorted index
+        :param values: an n vector to be unsorted according to column 1
+        :return: unsorted values
+        """
+        unsort_values = np.c_[indmat[indmat[:, 1].argsort()], values]
+        unsort_values = unsort_values[unsort_values[:, 0].argsort()][:, 2]
+        return unsort_values
 
     def update_baseline(self):
         node = self.nodes['baseline']
@@ -156,8 +186,25 @@ class GammaModel:
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
+        elif self.overdispersion_natural:
+            # get the dataframe for count values
+            cnt_index = self.Nframe.sort_values(['unit', 'trial', 'time']).index
+            # index matrix of 2 columns: Column 1 original, Column 2 sorted
+            ind_mat = np.c_[np.array(cnt_index),
+                            np.array(xrange(cnt_index.shape[0]))]
+
+            # expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+
+            # sort expected_phi and compute cumulative product
+            exphi_sorted = self._sort_values(ind_mat, expected_phi)
+            # cumulative product
+            exphi_sorted = np.cumprod(exphi_sorted.reshape(-1, self.time_natural), axis=1).ravel()
+            # unsort expected_phi
+            od = self._unsort_values(ind_mat, exphi_sorted)
         else:
             od = 1
+
         F = self.F_prod()
         G = self.G_prod()
         allprod = od * F * G
@@ -178,6 +225,22 @@ class GammaModel:
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
+        elif self.overdispersion_natural:
+            # get the dataframe for count values
+            cnt_index = self.Nframe.sort_values(['unit', 'trial', 'time']).index
+            # index matrix of 2 columns: Column 1 original, Column 2 sorted
+            ind_mat = np.c_[np.array(cnt_index),
+                            np.array(xrange(cnt_index.shape[0]))]
+
+            # expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+
+            # sort expected_phi and compute cumulative product
+            exphi_sorted = self._sort_values(ind_mat, expected_phi)
+            # cumulative product
+            exphi_sorted = np.cumprod(exphi_sorted.reshape(-1, self.time_natural), axis=1).ravel()
+            # unsort expected_phi
+            od = self._unsort_values(ind_mat, exphi_sorted)
         else:
             od = 1
 
@@ -212,18 +275,34 @@ class GammaModel:
         correct up to an overall constant.
         """
         logpsi = np.empty((self.T, 2))
-
         N = self.Nframe
         nn = N['count']
         uu = N['unit']
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
+        elif self.overdispersion_natural:
+            # get the dataframe for count values
+            cnt_index = self.Nframe.sort_values(['unit', 'trial', 'time']).index
+            # index matrix of 2 columns: Column 1 original, Column 2 sorted
+            ind_mat = np.c_[np.array(cnt_index),
+                            np.array(xrange(cnt_index.shape[0]))]
+
+            # expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+
+            # sort expected_phi and compute cumulative product
+            exphi_sorted = self._sort_values(ind_mat, expected_phi)
+            # cumulative product
+            exphi_sorted = np.cumprod(exphi_sorted.reshape(-1, self.time_natural), axis=1).ravel()
+            # unsort expected_phi
+            od = self._unsort_values(ind_mat, exphi_sorted)
         else:
             od = 1
         bl = self.nodes['baseline'].expected_x()[uu]
         Fk = self.F_prod(idx)
         G = self.G_prod()
+
         allprod = bl * od * Fk * G
 
         lam = self.nodes['fr_latents']
@@ -237,7 +316,7 @@ class GammaModel:
 
         return logpsi
 
-    @autojit
+    @jit
     def expected_log_evidence(self):
         """
         Calculate E[log p(N, z|rest).
@@ -283,6 +362,40 @@ class GammaModel:
 
             Elogp += np.sum(nn * bar_log_lam)
             eff_rate *= bar_lam
+            # print "Min, Mean, Max of effective rate: {}\t{}\t{} ~~~~~~".format(
+            #     np.min(eff_rate), np.mean(eff_rate), np.max(eff_rate))
+
+        if self.overdispersion_natural:
+            #print "compute overdispersion natural!"
+            node = self.nodes['overdispersion_natural']
+            bar_log_phi = node.expected_log_x()
+            bar_phi = node.expected_x()
+            time_nat = self.time_natural
+
+            # get the dataframe for count values
+            cnt_dframe = self.Nframe.sort_values(['unit', 'trial', 'time'])['count']
+            cnt_cumsum = np.cumsum(np.array(cnt_dframe).reshape(-1, time_nat)[:, ::-1], axis=1)[:, ::-1].ravel()
+
+            # index matrix of 2 columns: Column 1 original, Column 2 sorted
+            ind_mat = np.c_[np.array(cnt_dframe.index), np.array(xrange(cnt_dframe.index.shape[0]))]
+            # unsort cnt_cumsum to be in the original order
+            cumsum_unsort = self._unsort_values(ind_mat, cnt_cumsum)
+
+            Elogp += np.sum(cumsum_unsort * bar_log_phi)
+
+            # sort bar_phi to compute cumulative product
+            exphi_sorted =self._sort_values(ind_mat, bar_phi)
+            # compute the cumultive product
+            prod_array = np.cumprod(exphi_sorted.reshape(-1, time_nat), axis=1).ravel()
+            # print "Min, Mean, Max of product array:  {}\t{}\t{}".format(
+            #     np.min(prod_array), np.mean(prod_array), np.max(prod_array))
+
+            # sort prod_array to be in the original order
+            prod_unsort = self._unsort_values(ind_mat, prod_array)
+
+            eff_rate *= prod_unsort
+            # print "Min, Mean, Max of effective rate: {}\t{}\t{} ~~~~~~".format(
+            #     np.min(eff_rate), np.mean(eff_rate), np.max(eff_rate))
 
         Elogp += -np.sum(eff_rate)
 
@@ -316,8 +429,25 @@ class GammaModel:
 
         if self.overdispersion:
             od = self.nodes['overdispersion'].expected_x()
+        elif self.overdispersion_natural:
+            # get the dataframe for count values
+            cnt_index = self.Nframe.sort_values(['unit', 'trial', 'time']).index
+            # index matrix of 2 columns: Column 1 original, Column 2 sorted
+            ind_mat = np.c_[np.array(cnt_index),
+                            np.array(xrange(cnt_index.shape[0]))]
+
+            # expectation of phi
+            expected_phi = self.nodes['overdispersion_natural'].expected_x()
+
+            # sort expected_phi and compute cumulative product
+            exphi_sorted = self._sort_values(ind_mat, expected_phi)
+            # cumulative product
+            exphi_sorted = np.cumprod(exphi_sorted.reshape(-1, self.time_natural), axis=1).ravel()
+            # unsort expected_phi
+            od = self._unsort_values(ind_mat, exphi_sorted)
         else:
             od = 1
+
         F = self.F_prod()
         bl = self.nodes['baseline'].expected_x()[uu]
         Fblod = np.array(F * bl * od)
@@ -345,13 +475,142 @@ class GammaModel:
         F = self.F_prod()
         G = self.G_prod()
 
+        # print "Old zeta: {}, {}, {}".format(node.post_rate.min(),
+        #                                     node.post_rate.mean(),
+        #                                     node.post_rate.max())
+        # print "Old omega: {}, {}, {}".format(node.post_shape.min(),
+        #                                      node.post_shape.mean(),
+        #                                      node.post_shape.max())
+
         if node.has_parents:
             node.post_shape = node.prior_shape.expected_x()[uu] + np.array(nn)
-            node.post_rate = node.prior_rate.expected_x(
-            )[uu] + np.array(bl * F * G)
+            node.post_rate = node.prior_rate.expected_x()[uu] + np.array(bl * F * G)
         else:
             node.post_shape = node.prior_shape + np.array(nn)
             node.post_rate = node.prior_rate + np.array(bl * F * G)
+            # print "Min, Mean, Max of post shape: {}\t{}\t{}******".format(np.min(node.post_shape),
+            #                                                               np.mean(node.post_shape),
+            #                                                               np.max(node.post_shape))
+            # print "Min, Mean, Max of post rate:  {}\t{}\t{}******".format(np.min(node.post_rate),
+            #                                                               np.mean(node.post_rate),
+            #                                                               np.max(node.post_rate))
+
+    def update_overdispersion_natural(self):
+        node = self.nodes['overdispersion_natural']
+        uu = self.Nframe['unit']
+        bl = self.nodes['baseline'].expected_x()[uu]
+        F = self.F_prod()
+        G = self.G_prod()
+        time_nat = self.time_natural
+
+        # update of post_shape
+        cnt_dframe = self.Nframe.sort_values(['unit', 'trial', 'time'])['count']
+        # index matrix of 2 columns: Column 1 original, Column 2 sorted
+        ind_mat = np.c_[np.array(cnt_dframe.index), np.array(xrange(cnt_dframe.index.shape[0]))]
+
+        # cumulative sum from data
+        cnt_cumsum = np.cumsum(np.array(cnt_dframe).reshape(-1, time_nat)[:, ::-1], axis=1)[:, ::-1]
+        expected_phi = node.expected_x()
+        # sort expected values of phi
+        exphi_sorted = self._sort_values(ind_mat, expected_phi)
+        # sort baseline
+        bl_sorted = self._sort_values(ind_mat, bl)
+
+        # sort F values
+        if not hasattr(F, '__iter__'):
+            F_sorted = F * np.ones(self.M)
+        else:
+            F_sorted = self._sort_values(ind_mat, F)
+
+        # sort G values
+        if not hasattr(G, '__iter__'):
+            G_sorted = G * np.ones(self.M)
+        else:
+            G_sorted = self._sort_values(ind_mat, G)
+
+        cumprod_phi = np.cumprod(exphi_sorted.reshape(-1, time_nat), axis=1) 
+        prod_phi_F = cumprod_phi * bl_sorted.reshape(-1, time_nat) * F_sorted.reshape(-1, time_nat) * \
+                     G_sorted.reshape(-1, time_nat)
+        cumsum_phi_F = np.cumsum(prod_phi_F[:, ::-1], axis=1)[:, ::-1] / exphi_sorted.reshape(-1, time_nat)
+
+        # create an array for update rule
+        reg_prod = np.ones(node.prior_rate.reshape(-1, time_nat).shape[0])
+
+        # create sorted copies of post_rate and post_shape
+        postrate_sorted = self._sort_values(ind_mat, node.post_rate).reshape(-1, time_nat)
+        postshape_sorted = self._sort_values(ind_mat, node.post_shape).reshape(-1, time_nat)
+
+        # print "zeta priors: {}, {}, {}".format(node.prior_rate.min(),
+        #                                        node.prior_rate.mean(),
+        #                                        node.prior_rate.max())
+        # print "omega priors: {}, {}, {}".format(node.prior_shape.min(),
+        #                                         node.prior_shape.mean(),
+        #                                         node.prior_shape.max())
+
+        # print "Old zeta: {}, {}, {}".format(postrate_sorted.min(),
+        #                                     postrate_sorted.mean(),
+        #                                     postrate_sorted.max())
+        # print "Old omega: {}, {}, {}".format(postshape_sorted.min(),
+        #                                      postshape_sorted.mean(),
+        #                                      postshape_sorted.max())
+
+        # print "Min, Mean, Max of cumsum_phi_F:  {}\t{}\t{} @@@@@@".format(np.min(cumsum_phi_F),
+        #                                                                   np.mean(cumsum_phi_F),
+        #                                                                   np.max(cumsum_phi_F))
+
+        if node.has_parents:
+            print "Overdispersion_natural has parents!"
+            # prior_rate = node.prior_rate.expected_x()[uu]
+            priorate_sorted = self._sort_values(ind_mat, node.prior_rate.expected_x()[uu]).reshape(-1, time_nat)
+
+            # prior_shape = node.prior_shape.expected_x()[uu]
+            priorshape_sorted = self._sort_values(ind_mat, node.prior_shape.expected_x()[uu]).reshape(-1, time_nat)
+
+            # # update post shape and post rate
+            # node.post_shape, node.post_rate = _reg_omega_zeta(time_nat,
+            #     node.post_shape.reshape(-1, time_nat), node.post_rate.reshape(-1, time_nat),
+            #     new_omega, new_zeta, prior_shape, prior_rate, cnt_cumsum, cumsum_phi_F, reg_prod)
+
+            for i in range(time_nat):
+                # create a temp vector to keep last ratio of rate / shape
+                temp_ratio = postrate_sorted[:, i] / postshape_sorted[:, i]
+                # update post rate and post shape
+                postrate_sorted[:, i] = cumsum_phi_F[:, i] * reg_prod + priorate_sorted[:, i]
+                postshape_sorted[:, i] = cnt_cumsum[:, i] + priorshape_sorted[:, i]
+                # update regressive product
+                reg_prod *= temp_ratio * (postshape_sorted[:, i] / postrate_sorted[:, i])
+
+        else:
+            # create sorted copies of prior_rate and prior_shape
+            priorate_sorted = self._sort_values(ind_mat, node.prior_rate).reshape(-1, time_nat)
+            priorshape_sorted = self._sort_values(ind_mat, node.prior_shape).reshape(-1, time_nat)
+
+            for i in range(time_nat):
+                # create a temp vector to keep last ratio of rate / shape
+                temp_ratio = postrate_sorted[:, i] / postshape_sorted[:, i]
+                # update post rate and post shape
+                postrate_sorted[:, i] = cumsum_phi_F[:, i] * reg_prod + priorate_sorted[:, i]
+                postshape_sorted[:, i] = cnt_cumsum[:, i] + priorshape_sorted[:, i]
+                # update regressive product
+                reg_prod *= temp_ratio * (postshape_sorted[:, i] / postrate_sorted[:, i])
+
+        node.post_shape = self._unsort_values(ind_mat, postshape_sorted.ravel())
+        node.post_rate = self._unsort_values(ind_mat, postrate_sorted.ravel())
+
+            # # update post shape and post rate
+            # node.post_shape, node.post_rate = _reg_omega_zeta(time_nat,
+            #     node.post_shape.reshape(-1, time_nat), node.post_rate.reshape(-1, time_nat),
+            #     new_omega, new_zeta,
+            #     node.prior_shape.reshape(-1, time_nat), node.prior_rate.reshape(-1, time_nat),
+            #     reg_prod, cnt_cumsum, cumsum_phi_F)
+
+        # print "Min, Mean, Max of post shape: {}\t{}\t{}******".format(np.min(node.post_shape),
+        #                                                               np.mean(node.post_shape),
+        #                                                               np.max(node.post_shape))
+        # print "Min, Mean, Max of post rate:  {}\t{}\t{}******".format(np.min(node.post_rate),
+        #                                                               np.mean(node.post_rate),
+        #                                                               np.max(node.post_rate))
+
 
     def finalize(self):
         """
@@ -384,9 +643,16 @@ class GammaModel:
         else:
             self.overdispersion = False
 
+        if 'overdispersion_natural' in self.nodes:
+            self.overdispersion_natural = True
+            self.nodes['overdispersion_natural'].update = self.update_overdispersion_natural
+        else:
+            self.overdispersion_natural = False
+
         return self
 
-    @autojit
+
+    @jit
     def F_prod(self, k=None, update=False):
         """
         Accessor method to return the value of the F product.
@@ -429,7 +695,7 @@ class GammaModel:
         else:
             return self._F
 
-    @autojit
+    @jit
     def G_prod(self, k=None, update=False):
         """
         Return the value of the G product.
@@ -493,13 +759,14 @@ class GammaModel:
         if print_pieces:
             print
             print "xxxxxxxxxxxxxxxxxxxxxxxxxx"
-            print "Elogp = {}".format(Elogp)
+            print "Elogp = {}\tH = {}".format(Elogp, H)
 
         for _, node in self.nodes.iteritems():
             logp = node.expected_log_prior()
             logq = node.entropy()
             if print_pieces:
-                print "{}: Elogp = {}, H = {}".format(node.name, logp, logq)
+                print "{}: \n \tElogp = {}\tH = {}\tsum = {}".format(
+                    node.name, logp, logq, logp + logq)
 
             Elogp += logp
             H += logq
@@ -549,7 +816,7 @@ class GammaModel:
         if self.latents:
             # for k in np.random.permutation(self.K):
             for k in xrange(self.K):
-
+            # for k in range(1):
                 # M step
                 self.nodes['fr_latents'].update(k)
                 if self.nodes['fr_latents'].has_parents:
@@ -595,6 +862,19 @@ class GammaModel:
                 print("         updated overdispersion effects: L = {}"
                       ).format(Lval)
 
+        if self.overdispersion_natural:
+            self.nodes['overdispersion_natural'].update()
+            if self.nodes['overdispersion_natural'].has_parents:
+                self.nodes['overdispersion_natural'].update_parents()
+            if calc_L:
+                Lval = self.L(keeplog=keeplog, print_pieces=print_pieces)
+                assert((Lval >= lastL) | np.isclose(Lval, lastL))
+                lastL = Lval
+            if doprint:
+                print("         updated overdispersion_natural effects: L = {}"
+                      ).format(Lval)
+
+
     def do_inference(self, verbosity=0, tol=1e-3, keeplog=False,
                      maxiter=np.inf, delayed_iters=[]):
         """
@@ -617,6 +897,12 @@ class GammaModel:
 
             delta = ((self.Lvalues[-1] - self.Lvalues[-2]) /
                      np.abs(self.Lvalues[-1]))
+            # if not (delta > 0) | np.isclose(delta, 0):
+            #     print "!!!!!!ERROR ERROR ERROR ERROR ERROR!!!!!!"
+            #     print "Lval previous, Lval current: {}, {}".format(
+            #         self.Lvalues[-2], self.Lvalues[-1])
+            #     print "delta value: {}".format(delta)
+            #     return
             assert((delta > 0) | np.isclose(delta, 0))
             idx += 1
 
@@ -629,7 +915,7 @@ class GammaModel:
                               maxiter=maxiter, delayed_iters=[])
 
 
-@autojit
+@jit
 def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
@@ -639,12 +925,12 @@ def exact_minfun(epsilon, aa, ww, uu, Fblod, X):
     G = np.zeros(M)
 
     elbo = _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X)
-    assert(np.isfinite(np.log(-elbo)))
+    assert (np.isfinite(np.log(-elbo)))
 
     return np.log(-elbo), grad.ravel() / elbo
 
 
-@autojit(nopython=True, nogil=True)
+@jit(nopython=True, nogil=True)
 def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
     U, R = aa.shape
     M = X.shape[0]
@@ -678,3 +964,16 @@ def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
             grad[uu[m], r] -= FblodG * X[m, r]
 
     return elbo
+
+
+@jit(nopython=True, nogil=True)
+def _reg_omega_zeta(time_nat, omega, zeta, new_omega, new_zeta, prior_shape, prior_rate, 
+    reg_prod, cnt_cumsum, cumsum_phi_F):
+    
+    for i in xrange(time_nat):
+        new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + prior_rate[:, i]
+        new_omega[:, i] = cnt_cumsum[:, i] + prior_shape[:, i]
+
+        for j in xrange(reg_prod.shape[0]):
+            reg_prod[j] *= (zeta[j, i] / omega[j, i]) * (new_omega[j, i] / new_zeta[j, i])
+    return new_omega.ravel(), new_zeta.ravel()

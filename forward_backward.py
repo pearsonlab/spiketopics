@@ -1,10 +1,10 @@
 """
-Contains code to run the forward-backward algorithm for inference in 
+Contains code to run the forward-backward algorithm for inference in
 Hidden Markov Models.
 """
 from __future__ import division
 import numpy as np
-from numba import jit, autojit
+from numba import jit
 
 def fb_infer(A, pi, psi):
     """
@@ -37,14 +37,14 @@ def fb_infer(A, pi, psi):
     logZ[0] = np.log(np.sum(a))
     beta[-1, :] = 1
     beta[-1, :] = beta[-1, :] / np.sum(beta[-1, :])
-    
+
     forward(psi, A, alpha, logZ, a)
-        
+
     backward(psi, A, beta, a)
 
     # posterior
     calc_post(alpha, beta, gamma)
-    
+
     # calculate 2-slice marginal
     two_slice(alpha, beta, psi, A, Xi)
 
@@ -53,7 +53,7 @@ def fb_infer(A, pi, psi):
 
     return gamma, np.sum(logZ), Xi
 
-@autojit(nopython=True)
+@jit(nopython=True)
 def forward(psi, A, alpha, logZ, a):
     T = psi.shape[0]
     M = A.shape[0]
@@ -71,7 +71,7 @@ def forward(psi, A, alpha, logZ, a):
 
         logZ[t] = np.log(asum)
 
-@autojit(nopython=True)
+@jit(nopython=True)
 def backward(psi, A, beta, a):
     T = psi.shape[0]
     M = A.shape[0]
@@ -81,13 +81,13 @@ def backward(psi, A, beta, a):
         for i in xrange(M):
             a[i] = 0.0
             for j in xrange(M):
-                a[i] += beta[t, j] * psi[t, j] * A[j, i]  
+                a[i] += beta[t, j] * psi[t, j] * A[j, i]
             asum += a[i]
 
         for i in xrange(M):
             beta[t - 1, i] = a[i] / asum
 
-@autojit(nopython=True)
+@jit(nopython=True)
 def calc_post(alpha, beta, gamma):
     T, M = alpha.shape
 
@@ -100,7 +100,7 @@ def calc_post(alpha, beta, gamma):
         for m in xrange(M):
             gamma[t, m] /= gamsum
 
-@autojit(nopython=True)
+@jit(nopython=True)
 def two_slice(alpha, beta, psi, A, Xi):
     T, M = alpha.shape
 
@@ -108,17 +108,11 @@ def two_slice(alpha, beta, psi, A, Xi):
         xsum = 0.0
         for i in xrange(M):
             for j in xrange(M):
-                Xi[t, i, j] = beta[t + 1, i] * psi[t + 1, i] 
-                Xi[t, i, j] *= alpha[t, j] * A[i, j] 
+                Xi[t, i, j] = beta[t + 1, i] * psi[t + 1, i]
+                Xi[t, i, j] *= alpha[t, j] * A[i, j]
                 xsum += Xi[t, i, j]
 
         # normalize
         for i in xrange(M):
             for j in xrange(M):
                 Xi[t, i, j] /= xsum
-
-
-
-
-
-

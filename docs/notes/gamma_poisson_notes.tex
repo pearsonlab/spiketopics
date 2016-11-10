@@ -10,13 +10,13 @@
 We assume a Poisson process with $T$ observation times, $N$ observation units, and $K$ latent states. The counts for each unit at each time are then given by
 
 \begin{equation}
-    N_{tu} \sim \mathrm{Poisson}(\mu_{tu})
+    N_{tu} \sim \mathrm{Poisson}(e^{\mu_{tu}})
 \end{equation}
 with
 \begin{equation}
    \mu_{tu} = (ZB)_{tu} = \sum_k z_{tk} b_{ku}
 \end{equation}
-wit $z$ the time series of latent states (assumed binary) and $b$ the regression coefficients. In addition, we assume the $z_t$ have independent Markov transition dynamics within each latent state (see below).
+with $z$ the time series of latent states (assumed binary) and $b$ the regression coefficients. In addition, we assume the $z_t$ have independent Markov transition dynamics within each latent state (see below).
 
 In addition, it will be more convenient for our purposes to rewrite the above expression using $b_{ku} = \log \lambda_{ku}$, so that
 \begin{equation}
@@ -34,7 +34,7 @@ Clearly, if we treat $N$ and $z$ as constants, we have
 \section{Hidden Markov Model}
 Here, we assume a hidden Markov model for each latent state. That is, we take
 \begin{align}
-    A_{ij} &\equiv p(z_{t+1}=i|z_t = j) \\
+    A_{ji} &\equiv p(z_{t+1}=j|z_t = i) \\
     \pi_i &\equiv p(z_0 = i)
 \end{align}
 (Note that this means that the \emph{columns} of $A$ sum to 1, which is the opposite of the usual convention. In other words, in matrix notation, $z_{t+1} = A \cdot z_t$.)
@@ -224,11 +224,12 @@ as the cumulative spike count and effective number of observations at each stimu
         \sum_u M_{tu}\frac{\alpha_{ku}}{\beta_{ku}} F_{tku}
     \end{pmatrix} \\
     \alpha_{ku} &\leftarrow \sum_t \hat{N}_{tu} \xi_{tk} + c_{ku} \\
-    \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku}\xi_{tk} + d_{ku} \\
+    \beta_{ku} &\leftarrow \sum_t M_{tu} F_{tku}\xi_{tk} + d_{ku}
 \end{align}
 In fact, for simplicity in what follows, we will drop the hat notation on $N$, with the understanding that when $N$ appears with a $t$ index, it is the sum over all counts at that time.
 
 \section{Overdispersion}
+\subsection{Fluctuation in multiple observations}
 To model overdispersion in our count data, we can include an additional moment-by-moment fluctuation in the firing rate of each unit:
 \begin{equation}
     (\lambda_{\mathrm{eff}})_{tu} = \prod_k \lambda_{ku}^{z_{tk}}\theta_{tu}
@@ -239,19 +240,19 @@ If, like $\lambda$, $\theta$ is assumed to be gamma-distributed, then this is eq
     q(\theta_{mu}) &= \mathrm{Gamma}(\omega_{mu}, \zeta_{mu})
 \end{align}
 and include additional terms in the pieces of the evidence lower bound above:
-\begin{align}
+\begin{align*}
     \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{kmu} N_{mu} \xi_{t(m)k} \overline{\log \lambda_{ku}} + \sum_{mu} N_{mu} \overline{\log \theta_{mu}} \\
     &= \sum_{ktu} N_{tu} \xi_{tk} \overline{\log \lambda_{ku}} + \sum_{mu} N_{mu} \overline{\log \theta_{mu}} \\
     - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow - \sum_{mu} \frac{\omega_{mu}}{\zeta_{mu}} \prod_k \left( 1 - \xi_{t(m)k} + \xi_{t(m)k} \frac{\alpha_{ku}}{\beta_{ku}}\right)
-\end{align}
+\end{align*}
 Note in particular that the overdispersion term is assumed to always be present, and that it is unique to every stimulus presentation ($m$ index), not merely every moment during the stimulus itself ($t$ index). Nevertheless, the fact that the prior for this term depends only on the unit, $u$, means that we can aggregate sufficient statistics across repetitions, eliminating the $m$ index in favor of $t$.
 
 yielding
-\begin{multline}
-    \mathbb{E}_{q(\theta)} \left[ \log \frac{p(\theta)}{q(\theta)} \right] =
-    \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} - r_u \overline{\theta_{mu}} + H_g(\omega_u, \zeta_u) \right] =\\
-    \sum_{mu} \left[ (s_u - 1) (\psi(\omega_{mu}) - \log \zeta_{mu}) - r_u \frac{\omega_{mu}}{\zeta_{mu}} + H_g(\omega_{mu}, \zeta_{mu}) \right]
-\end{multline}
+\begin{align}
+    \mathbb{E}_{q(\theta)} \left[ \log \frac{p(\theta)}{q(\theta)} \right] &=
+    \sum_{mu} \left[ (s_u - 1) \overline{\log \theta_{mu}} - r_u \overline{\theta_{mu}} + H_g(\omega_u, \zeta_u) \right] \\
+    &= \sum_{mu} \left[ (s_u - 1) (\psi(\omega_{mu}) - \log \zeta_{mu}) - r_u \frac{\omega_{mu}}{\zeta_{mu}} + H_g(\omega_{mu}, \zeta_{mu}) \right]
+\end{align}
 with $H_g$ the differential entropy for the gamma distribution, as above. By analogy with $\lambda$, we can easily write down the updates for $\omega$ and $\zeta$
 \begin{align}
     \omega_{mu} &\leftarrow N_{mu} + s_u \\
@@ -271,6 +272,79 @@ Similarly, the update for the local emission probability, $\eta$ takes the form
     \end{pmatrix}
 \end{equation}
 All other updates should remain unchanged.
+
+\subsection{Fluctuation in natural time}
+Here we consider the correlation of firing rates in consecutive natural time slots. Different from the discussion above, we include the moment-by-moment fluctuation in the firing rate of each unit:
+\begin{equation}
+    (\lambda_{\mathrm{eff}})_{tu} = \prod_k \theta_{\tau u} \lambda_{ku}^{z_{tk}}
+\end{equation}
+where $\tau$ is the natural time when movie clip is played.
+
+Further, we assume the overdispersion parameter $\theta_{\tau u} = \phi_{\tau u} \theta_{\tau - 1, u}$ is modulated by $\phi$ from the last moment. Let $\phi_{0u} = \theta_{0, u}$, then we have $\theta_{\tau u} = \prod_{\tau' \le \tau} \phi_{\tau' u}$.
+
+Therefore, the terms that contains $\lambda$ in ELBO can be modified as follows. One term that corresponds to $N\log(\lambda_{\mathrm{}})$ is:
+\begin{align*}
+    \sum_{tu} N_{tu} \log(\lambda_{\mathrm{eff}})_{tu}
+    % = \sum_{tu} N_{tu} \log \left(\prod_{\tau' \le \tau} \phi_{\tau' u}  \prod_k \lambda_{ku}^{z_{tk}} \right) \\
+    &= \sum_{\tau u} N_{\tau u} \sum_{\tau' \le \tau} \log\phi_{\tau' u} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \\
+    &= \sum_{\tau u} \log\phi_{\tau u} \sum_{j \ge \tau}N_{ju} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \\
+    &= \log\phi_{ju} \sum_{j' \ge \tau}N_{j'u} + \sum_{u, \tau \ne j} \log\phi_{\tau u} \sum_{j' \ge \tau}N_{j'u} + \sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku}
+\end{align*}
+
+The other term corresponds to $\lambda_{\mathrm{eff}}$ is:
+\begin{align}
+    \sum_{tu}(\lambda_{\mathrm{eff}})_{tu} &= \sum_{\tau u} \prod_{\tau' \le \tau} \phi_{\tau' u} \prod_k \lambda_{ku}^{z_{t(\tau)k}} \\
+    &= \phi_{ju} \sum_{u, \tau \ge j} \prod_{\substack{\tau' \ge \tau \\ \tau' \ne j}} \phi_{\tau'u} \prod_k \lambda_{ku}^{z_{t(\tau)k}}
+\end{align}
+
+Assume the error correlation $\phi$ follows a gamma distribution for every natural time $\tau$, and all $\phi$'s are independent of each other. Then we have:
+\begin{align}
+    p(\phi_{\tau u}) &= \mathrm{Gamma}(s_u, r_u) \\
+    q(\phi_{\tau u}) &= \mathrm{Gamma}(\omega_{\tau u}, \zeta_{\tau u})
+\end{align}
+
+Take expectation with respect to $q(\phi)$, we have:
+\begin{align}
+    \mathbb{E}_{q}[\cdot] &= \mathbb{E}_{q} \left[\sum_{\tau u} \log\phi_{\tau u} (\sum_{\tau' \ge \tau}N_{\tau' u}) \right]
+    + \mathbb{E}_{q}\left[\sum_{tu} N_{tu} \sum_k z_{tk} \log\lambda_{ku} \right] \\
+    &= \sum_{\tau u}\overline{\log\phi_{\tau u}} \sum_{\tau' \ge \tau}N_{\tau' u} + \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}}
+\end{align}
+
+For the second term, assume that $\phi_{\tau u}$ is independent of $\lambda_{ku}$, and follows a Gamma distribution as stated above:
+\begin{align}
+    \mathbb{E}_{q}[\cdot] &= \sum_{\tau u} \mathbb{E}_{q} \left( \prod_{\substack{\tau' \le \tau}} \phi_{\tau' u} \right) \mathbb{E}_{q} \left(\prod_k \lambda_{ku}^{z_{t(\tau)k}} \right) \\
+    &= \sum_{\tau u} \prod_{\substack{\tau' \le \tau}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)
+    %&= \sum_{u, \tau \ge j} \prod_{\tau' \le \tau} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)
+\end{align}
+
+Then in the formula of ELBO, the piece that contributes to $\lambda$ now becomes:
+\begin{align*}
+    \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} &\rightarrow \sum_{ktu} N_{tu}\xi_{tk} \overline{\log \lambda_{ku}} + \sum_{\tau u} \overline{\log\phi_{\tau u}} \sum_{\tau' \ge \tau} N_{\tau' u} \\
+    - \sum_{tu} \prod_k \left( 1 - \xi_{tk} + \xi_{tk} \frac{\alpha_{ku}}{\beta_{ku}}\right) &\rightarrow - \sum_{\tau u} \prod_{\tau' \le \tau} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)
+\end{align*}
+
+Assume that the correlation over all natural time is always present. Therefore, we have
+\begin{equation}
+    \mathbb{E}_{q(\phi)} = \left[ \log \frac{p(\phi)}{q(\phi)} \right] = \sum_{\tau u} [(s_u - 1) \overline{\log \phi_{\tau u}} - r_u \overline{\phi_{\tau u}} + H_g(\omega_{\tau u}, \zeta_{\tau u})]
+\end{equation}
+
+By comparing the terms that involves $\log \phi_{\tau u}$ and $\phi_{\tau u}$ in the ELBO, we can write down the updates for $\omega_{j u}$ and $\zeta_{j u}$ in gradient ascent as
+\begin{align*}
+    \omega_{j u} &\leftarrow s_u + \sum_{\tau' \ge j} N_{\tau' u} \\
+    \zeta_{j u} &\leftarrow r_u + \sum_{u, \tau \ge j} F_{t(\tau)} \prod_{\substack{\tau' \le \tau \\ \tau' \ne j}} \frac{\omega_{\tau' u}}{\zeta_{\tau' u}}
+\end{align*}
+
+where $j \in \{1, 2, \ldots, T \}$ and $F_{t(\tau)u} \equiv \prod_k \left( 1 - \xi_{t(\tau)k} + \xi_{t(\tau)k} \frac{\alpha_{ku}}{\beta_{ku}} \right)$.
+
+Similarly, the update for the local emission probability, $\eta$ now becomes:
+
+\begin{align*}
+    \eta_{tk} \leftarrow
+    \begin{pmatrix}
+        -\sum_{u, \tau: \, t(\tau) = t} F_{t(\tau)ku} \prod_{\tau' \le \tau}\frac{\omega_{\tau' u}}{\zeta_{\tau' u}} \\
+        \sum_u N_{tu} \overline{\log \lambda_{ku}} - \sum_{u, \tau: \, t(\tau) = t} F_{t(\tau)ku} \frac{\alpha_{ku}}{\beta_{ku}} \prod_{\tau' \le \tau}\frac{\omega_{\tau' u}}{\zeta_{\tau' u}}
+    \end{pmatrix}
+\end{align*}
 
 \section{External covariates}
 \subsection{Gamma priors}
@@ -802,7 +876,7 @@ where
 \end{align}
 
 \subsubsection{Log-Normal updates}
-For the case above (lognormal durations, Normal-Gamma priors on the lognormal parameters), a convenient simplification occurs. We can see this by noting that the terms involving $C$ above include the posterior variational parameters only through linear combinations of $\mathbb{E}_q[\eta]$ and $\mathbb{E}_q[A(\eta)]$. But because the normal-gamma is conjugate to the lognormal, these quantites are themselves the expected natural parameters of the normal-gamma distribution: $(\log \tau, \tau, m\tau, m^2\tau)$. As a result, we can do Bayesian inference for the natural parameters of the normal-gamma in closed form:
+For the case above (lognormal durations, Normal-Gamma priors on the lognormal parameters), a convenient simplification occurs. We can see this by noting that the terms involving $C$ above include the posterior variational parameters only through linear combinations of $\mathbb{E}_q[\eta]$ and $\mathbb{E}_q[A(\eta)]$. But because the normal-gamma is conjugate to the lognormal, these quantities are themselves the expected natural parameters of the normal-gamma distribution: $(\log \tau, \tau, m\tau, m^2\tau)$. As a result, we can do Bayesian inference for the natural parameters of the normal-gamma in closed form:
 \begin{equation}
     \begin{bmatrix}
     \alpha - \frac{1}{2} \\
