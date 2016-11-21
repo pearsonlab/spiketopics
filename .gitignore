@@ -12,6 +12,7 @@
 **/*.bbl
 **/*.blg
 **/*.svg
+**/*.png
 **/*.docx
 **/*.fls
 !**/figures/*.svg
