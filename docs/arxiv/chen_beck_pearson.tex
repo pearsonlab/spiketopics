@@ -76,7 +76,9 @@
 \usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
 
 \usepackage{lastpage,fancyhdr,graphicx}
-\graphicspath{{../plos2016/}}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+%\graphicspath{{../plos2016/}}
 
 % amsmath and amssymb packages, useful for mathematical formulas and symbols
 \usepackage{amsmath,amssymb}
@@ -411,22 +413,17 @@ Here, we have validated this method using structured, labeled stimuli more typic
 
 Finally, even small features in our model recapitulated known physiological results regarding face encoding in single neurons. And while these features alone might not provide proof positive of, e.g., viewpoint tuning, similar findings would be valuable in generating hypotheses in cases where the stimulus space and its neural correlates remain poorly understood. Thus our model facilitates an iterative experimental process: subjects are first be exposed to large, heterogeneous data; stimuli are then tagged based on neural responses; and finally, features with the largest effects are used to refine the set until it most accurately represents those stimuli with the largest neural correlates. Combined with the modularity of this and similar approaches, such models provide a promising opportunity to ``build out'' additional features that will meet the challenges of the next generation of experimental data.
 
-
-
-
-\section*{Supporting Information}
-
-% Include only the SI item label in the paragraph heading. Use the \nameref{label} command to cite SI items in the text.
-\paragraph*{S1 Text.}
-\label{S1_Text}
-{\bf Mathematical derivation for ELBO and Inference.}
-
- \paragraph*{S2 Fig.}
- \label{S2_Fig}
- {\bf Categorization of multinomial logistic regression using inferred features and raw data for visual category dataset.}
-
 \section*{Acknowledgments}
 We would like to thank David McMahon and David Leopold for generously sharing the visual cateogry stimuli and neural data from \cite{McMahon2014-qq} and for comments on the manuscript.
+
+% \section*{Supporting Information}
+
+% Include only the SI item label in the paragraph heading. Use the \nameref{label} command to cite SI items in the text.
+\include{S1text}
+
+%\newpage
+\include{S2fig}
+
 
 \nolinenumbers
 
