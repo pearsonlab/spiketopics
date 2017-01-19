@@ -76,7 +76,7 @@ def make_count_frame(dat, event_frame, dt, start_evt, stop_evt, start, stop):
             spike_clock_start = dat[2][idx, 1]  
 
             # reconcile to fixation point onset
-            spikes -= spike_clock_start + row[start_evt]
+            spikes -= int(spike_clock_start + row[start_evt])
 
             # taxis start ms before fixation point to stop ms after stim_off
             dur = row[stop_evt] - row[start_evt]
@@ -134,7 +134,7 @@ def normalize_times(df):
     index.
     """
 
-    t_index = df[['stimulus', 'time']].drop_duplicates().sort(['stimulus', 'time'])
+    t_index = df[['stimulus', 'time']].drop_duplicates().sort_values(by=['stimulus', 'time'])
     t_index = t_index.reset_index(drop=True)  # get rid of original index
     t_index.index.name = 'utime'  # name integer index
     t_index = t_index.reset_index()  # make time a column
