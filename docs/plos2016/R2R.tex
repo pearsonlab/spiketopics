@@ -39,11 +39,66 @@
 % \usepackage{array}
 
 \newcommand{\edit}[1]{\textcolor{blue}{#1}}
+\usepackage{parskip}
 \begin{document}
+
+\edit{We are grateful to both reviewers for their thorough reading and constructive comments on our work. While both reviewers showed some enthusiasm for the results of the current model, each raised a constellation of important issues related to its application. Broadly speaking:
+\begin{itemize}
+    \item {\bf Reviewer 1} asks that we clarify the limitations and caveats needed in applying our model. More specifically, because the model only infers stimulus features given a fixed data set (stimuli + neuron responses), it is difficult to see how to generalize results across experiments. Moreover, while our experiments show that the model infers sensible features, it is less clear what to do in situations where stimuli have no such labels available.
+    \item {\bf Reviewer 3} asks that we provide a more extensive discussion placing our model in the context of other latent variable models for neural response data, many of which also rely on Variational Bayes methods. The reviewer also asks that we provide more explicit detail for the algorithm used to perform inference in the model.
+\end{itemize}
+}
+
+\edit{In this substantially revised manuscript, we have expanded both our presentation of the model and our discussion of its relation to both previous work and experimental application. In particular:
+\begin{enumerate}
+    \item We have emphasized assumptions, caveats, and limitations of the present model, including discussion of semi-Markov dynamics, binning, and generalization to new data, as per Reviewer 1.
+    \item We have substantially revised the introduction to place our work in the context of other latent variable models, particularly those using similar Variational Bayes methods.
+    \item We have moved Algorithm 1 from the Supplement to the main text, with equation references for each step.
+    \item \color{red}{goodness of fit for firing rates?}
+    \item \color{red}{binning simulation?}
+\end{enumerate}
+}
+
+\edit{
+Extended responses to these and other points raised by the reviewers appear inline below. We hope the reviewers will agree that these revisions {\color{red}{and new analyses}} materially strengthen the original work while appropriately nuancing its claims.
+}
 
 {\bf Reviewer \#1}: The authors propose a statistical modeling approach for identifying stimulus features within a highly complex stimulus space that are important for a set of neurons under study. Objectively searching for what neurons actually code, without getting stuck in our preconceived notions, is of fundamental importance to performing replicable, generalizable neuroscience. They approach this by modeling the spike rate as a combination of independent, latent features, each modeled as an HMM. Unlike a standard HMM, this model effectively breaks up a single (complex) state controlling firing rates into the product of binary states, resulting in a potentially far more interpretable structure, especially for complex, multi-neuron data. One notable aspect of the model is that it is applicable to independently recorded cells as long as the stimulus set is shared, and the stimuli can have different presentation lengths. Additionally, the authors use a variational algorithm to keeps the method highly tractable while keeping it Bayesian. The method is clearly presented and this particular way of deconstructing spike trains into a simple set of features is potentially widely applicable in systems neuroscience.
 
-My primary critique of this paper is a fundamental issue of framing of the model’s capabilities. Limitations of the model and its features need to be more clearly and accurately addressed. The authors argue that their “work focuses on detecting features in external stimuli.” They state that features they detect in neural data can be used to tag stimuli and refine the stimulus set they use. However, there is a crucial step missing between the states identified by this model in the neural data and stimulus: we are given a set of features corresponding to each stimulus presented in the experiment, not a function mapping stimulus space to features. This problem is highlighted by the IT example with neurons selective for complex visual features. The authors demonstrate that the states in their model correspond to selectivity for complex visual features, such as monkey close-ups or monkey body parts. These are reasonable conclusions (and serve to validate that the model is acting sensibly), but the analysis of the features relied entirely on the hand-labeled stimulus features given by the authors – opening the door to subjective feature selectivity this paper aims to avoid. Unlike a regression model like a GLM, this model does not appear to simply generate predictions of the neural responses to new stimuli. For this model to be more helpful in the way the authors suggest for refining stimulus sets in an objective way without a priori labels, we’d like to have an objective estimate of whether or not a feature is present in a new stimulus. Thus, the strong language of the intro and conclusion ought to be backed up by a more compelling demonstration that it can show something new in the stimulus space, something that is necessary to account for the firing rates, beyond a set of predefined features.
+\edit{We appreciate the reviewer's encouraging assessment of our work. As the reviewer notes (and we elaborate in response to Reviewer 3 below), we believe the particular binary, combinatorial decomposition of firing rates we propose is the key innovation in this work.}
+
+My primary critique of this paper is a fundamental issue of framing of the model’s capabilities. Limitations of the model and its features need to be more clearly and accurately addressed. The authors argue that their “work focuses on detecting features in external stimuli.” They state that features they detect in neural data can be used to tag stimuli and refine the stimulus set they use. However, there is a crucial step missing between the states identified by this model in the neural data and stimulus: we are given a set of features corresponding to each stimulus presented in the experiment, not a function mapping stimulus space to features. This problem is highlighted by the IT example with neurons selective for complex visual features. The authors demonstrate that the states in their model correspond to selectivity for complex visual features, such as monkey close-ups or monkey body parts. These are reasonable conclusions (and serve to validate that the model is acting sensibly), but the analysis of the features relied entirely on the hand-labeled stimulus features given by the authors – opening the door to subjective feature selectivity this paper aims to avoid.
+
+
+{\color{red}{I want to be really careful here. This is just a first stab.}}
+
+\edit{
+The reviewer is correct here in noting that our model does not learn a mapping from stimuli to features. Indeed, because our model uses only an index or code for each stimulus, along with neural responses, it is difficult to imagine how one might infer such a map without either reference to pixel values (in the case of image stimuli) or neural responses to the new stimulus. This is precisely because our model defines features \emph{only with respect to a given set of neural responses}. As the reviewer has discerned, this is a limitation for generalizing to new populations (e.g., in other brain regions), but does have the advantage of not requiring analysis of the content of stimuli.
+}
+
+\edit{
+We would also like to note that this limitation is not specific to our model. In fact, it is shared by a large number of other unsupervised machine learning approaches such as topic modeling or the latent linear dynamical systems model of Park et al. cited by Reviewer 3 below. In these cases, the typical strategy for validating models has been to show that when trained on well-understood benchmark data sets, such methods recover interpretable structure that bears some resemblance to either human intuition or ground truth labels. As the reviewer notes, our model does this. Moreover, as we {\color{red}{have clarified in the text}}, none of our experiments makes use of stimulus labels for model fitting. Labels are only used as a point of comparison with inferred features. In fact, in the case of the data set involving IT neurons, the features we discuss in Figure 6 (direct and indirect gaze) \emph{were not provided} as lables in the original data set.
+}
+
+\edit{
+Finally, in our revised text {\color{red} we have attempted to clarify} the intended use of our model. The reviewer raises the concern that simply fitting our model to a single set of neurons and stimuli would not be sufficient to refine a much larger stimulus set to which the neurons had not been exposed. This is correct, but is somewhat different than the problem our model is designed to solve. We imagine an experiment (similar to many real electrophysiology experiments) in which animals might be exposed to a wide variety of stimuli, to which individual neurons respond diversely. Our model, applied to the resulting data, would then result in a set of binary tags for each stimulus. Similar to our results, it would then fall to the experimenters to determine what commonality existed among stimuli tagged with Feature 1, Feature 2, etc. When these features are interpretable, they suggest new, more focused hypotheses about neural responses that can be tested. The missing link to which the reviewer refers is the generalization from feature tags to interpretable hypotheses.
+}
+
+\edit{
+Thus for example, in the IT data set, it is clear that Feature 0 corresponds to close-ups of monkey faces, and it would have been easy to see this simply by examining the images tagged with this feature, apart from any experimenter-provided labels. In a screening experiment involving a large collection of stimuli, detecting this feature would have suggested a follow-up experiment in which a larger set of monkey faces might be used.
+}
+
+{\color{red} We have added the following text to clarify this process:}
+
+Unlike a regression model like a GLM, this model does not appear to simply generate predictions of the neural responses to new stimuli. For this model to be more helpful in the way the authors suggest for refining stimulus sets in an objective way without a priori labels, we’d like to have an objective estimate of whether or not a feature is present in a new stimulus. Thus, the strong language of the intro and conclusion ought to be backed up by a more compelling demonstration that it can show something new in the stimulus space, something that is necessary to account for the firing rates, beyond a set of predefined features.
+
+\edit{
+These issues are related to those addressed above, but we would like to provide the following more focused responses:
+\begin{itemize}
+    \item The reviewer is correct in that our model is unable to make predictions about neural responses to new stimuli without additional information. In a GLM, this information, the covariates, are provided by the modeler or the experimenter. In our case, if the tags inferred in the original data set are interpretable (as they are in our examples), predictions could be made on the basis of these interpretations. For example, our fitted model is easily able to predict the response of each IT neuron to a new stimulus tagged exclusively with Feature 0. To the degree we are confident that Feature 0 corresponds to close-ups of monkey faces, we can make predictions about the responses of the neurons in our data set to new monkey faces.
+    \item As we have noted above, it is not generally possible to create a map between latent features and unseen stimuli in the absence of neural response data to those stimuli (at least not without making use of the content of the stimuli themselves). However, because our model is both generative and Bayesian, it does facilitate predictions about the distribution of population responses in response to new stimuli conditioned on knowing the feature labels. As noted above, this does rely on the idea that inferred features are often interpretable.
+\end{itemize}
+}
 
 Specific comments.
 \begin{enumerate}
