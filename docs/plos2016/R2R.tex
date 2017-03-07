@@ -34,11 +34,14 @@
 %
 % % color can be used to apply background shading to table cells only
 \usepackage[table]{xcolor}
+\definecolor{edit}{HTML}{107896}
+\definecolor{added}{HTML}{F26D21}
 %
 % % array package and thick rules for tables
 % \usepackage{array}
 
-\newcommand{\edit}[1]{\textcolor{blue}{#1}}
+\newcommand{\edit}[1]{\textcolor{edit}{#1}}
+\newcommand{\added}[1]{\textcolor{added}{#1}}
 \usepackage{parskip}
 \begin{document}
 
@@ -54,6 +57,7 @@
     \item We have emphasized assumptions, caveats, and limitations of the present model, including discussion of semi-Markov dynamics, binning, and generalization to new data, as per Reviewer 1.
     \item We have substantially revised the introduction to place our work in the context of other latent variable models, particularly those using similar Variational Bayes methods.
     \item We have moved Algorithm 1 from the Supplement to the main text, with equation references for each step.
+    \item As suggested by Reviewer 3, we have extensively edited the figure captions for clarity.
     \item \color{red}{goodness of fit for firing rates?}
     \item \color{red}{binning simulation?}
 \end{enumerate}
@@ -73,7 +77,7 @@ My primary critique of this paper is a fundamental issue of framing of the model
 {\color{red}{I want to be really careful here. This is just a first stab.}}
 
 \edit{
-The reviewer is correct here in noting that our model does not learn a mapping from stimuli to features. Indeed, because our model uses only an index or code for each stimulus, along with neural responses, it is difficult to imagine how one might infer such a map without either reference to pixel values (in the case of image stimuli) or neural responses to the new stimulus. This is precisely because our model defines features \emph{only with respect to a given set of neural responses}. As the reviewer has discerned, this is a limitation for generalizing to new populations (e.g., in other brain regions), but does have the advantage of not requiring analysis of the content of stimuli.
+The reviewer is correct here in noting that our model does not learn a mapping from stimuli to features. Indeed, because our model uses only an index for each stimulus, along with neural responses, it is difficult to imagine how one might infer such a map without either reference to pixel values (in the case of image stimuli) or neural responses to the new stimulus. This is precisely because our model defines features \emph{only with respect to a given set of neural responses}. As the reviewer has discerned, this is a limitation for generalizing to new populations (e.g., in other brain regions), but does have the advantage of not requiring analysis of the content of stimuli.
 }
 
 \edit{
@@ -81,7 +85,7 @@ We would also like to note that this limitation is not specific to our model. In
 }
 
 \edit{
-Finally, in our revised text {\color{red} we have attempted to clarify} the intended use of our model. The reviewer raises the concern that simply fitting our model to a single set of neurons and stimuli would not be sufficient to refine a much larger stimulus set to which the neurons had not been exposed. This is correct, but is somewhat different than the problem our model is designed to solve. We imagine an experiment (similar to many real electrophysiology experiments) in which animals might be exposed to a wide variety of stimuli, to which individual neurons respond diversely. Our model, applied to the resulting data, would then result in a set of binary tags for each stimulus. Similar to our results, it would then fall to the experimenters to determine what commonality existed among stimuli tagged with Feature 1, Feature 2, etc. When these features are interpretable, they suggest new, more focused hypotheses about neural responses that can be tested. The missing link to which the reviewer refers is the generalization from feature tags to interpretable hypotheses.
+Finally, in our revised text {\color{red} we have attempted to clarify} the intended use of our model. The reviewer raises the concern that simply fitting our model to a single set of neurons and stimuli would not be sufficient to refine a much larger stimulus set to which the neurons had not been exposed. This is correct, but is somewhat different than the problem our model is designed to solve. We imagine an experiment (similar to many real electrophysiology experiments) in which animals might be exposed to a wide variety of stimuli, to which individual neurons respond diversely. Our model, applied to the resulting data, would then infer a set of binary tags for each stimulus. As in our Experiments section, it would then fall to the experimenters to determine what commonality existed among stimuli tagged with Feature 1, Feature 2, etc. When these features are interpretable, they suggest new, more focused hypotheses about neural responses that can be tested. The missing link to which the reviewer refers is the generalization from feature tags to interpretable hypotheses.
 }
 
 \edit{
@@ -96,7 +100,7 @@ Unlike a regression model like a GLM, this model does not appear to simply gener
 These issues are related to those addressed above, but we would like to provide the following more focused responses:
 \begin{itemize}
     \item The reviewer is correct in that our model is unable to make predictions about neural responses to new stimuli without additional information. In a GLM, this information, the covariates, are provided by the modeler or the experimenter. In our case, if the tags inferred in the original data set are interpretable (as they are in our examples), predictions could be made on the basis of these interpretations. For example, our fitted model is easily able to predict the response of each IT neuron to a new stimulus tagged exclusively with Feature 0. To the degree we are confident that Feature 0 corresponds to close-ups of monkey faces, we can make predictions about the responses of the neurons in our data set to new monkey faces.
-    \item As we have noted above, it is not generally possible to create a map between latent features and unseen stimuli in the absence of neural response data to those stimuli (at least not without making use of the content of the stimuli themselves). However, because our model is both generative and Bayesian, it does facilitate predictions about the distribution of population responses in response to new stimuli conditioned on knowing the feature labels. As noted above, this does rely on the idea that inferred features are often interpretable.
+    \item As we have noted above, it is not generally possible to create a map between latent features and unseen stimuli in the absence of neural response data to those stimuli (at least not without making use of the content of the stimuli themselves). However, because our model is both generative and Bayesian, it does facilitate predictions about the distribution of population responses in response to new stimuli, conditioned on knowing the feature labels. As noted above, this does rely on the idea that inferred features are often interpretable.
 \end{itemize}
 }
 
@@ -104,16 +108,54 @@ Specific comments.
 \begin{enumerate}
 \item Semi-Markov dynamics are emphasized in the introduction (abstract and at line 50 of page 2). Is the comment about the model handling nontrivial state duration distributions justified given the results presented in this paper? The model fits appear to all assume Markov transitions (geometrically distributed duration times).
 
+\edit{
+Our experiments indeed used only Markov assumptions, but given that both our supplemental text and code are capable of relaxing this assumption to the semi-Markov case, we thought this important to mention. However, we understand how this can be confusing, and so we have removed mention of semi-Markov dynamics from the abstract and introduction and pointed readers to the supplement.
+}
+
 \item The model here defines features as having constant gain effect on the cells when they are present. However, neural responses may include features that are not constant (e.g., oscillatory), and the particular binning used could affect how this model pulls out features as well as the spike count overdispersion. While this model can surely cope with some dynamics, I would like to see a bit of discussion on the assumptions and consequences of this particular definition of feature along with binning choices, perhaps assisted by a simulation. Does changing the bin width on the given examples alter the model’s behavior?
+
+\edit{
+The reviewer raises an important issue. Our model is capable of capturing neural dynamics only over the time resolution provided by binning, and this is surely not sufficient for cases where transients and oscillations in firing rate are important. Moreover, under the Poisson assumption, the coefficient of variation of spike counts scales as $\frac{1}{\sqrt{t}}$ for fixed firing rate, so we are incentivized to choose larger bins as a means of increasing the signal-to-noise ratio.
+}
+
+\edit{
+In our experiments, we have restricted ourselves to ``natural'' bin sizes for each problem: 20ms (a common smoothing window) for the Roitman-Shadlen data and 400ms (the duration of baseline, stimulus exposure, and post-stimulus period) for the McMahon et al. IT data. In the case of the former, this captures a rough accounting of the dynamics (Figure 4C), though one that clearly oversimplifies. In the case of the latter, we are implicitly assuming that the firing rates are constant during each epoch. This assumption is not terrible, but it does ignore the lag in the onset and offset of neural responses.
+}
+
+{\color{red}
+To further explore this, we performed a simulation as suggested by the reviewer\ldots
+}
 
 \item For the model fit performance in figure 4C and 5C-D, could you provide a quantitative summary on how well does this fit the data? I would also like to see a clarification with these inferred rates as to how latent features inferred from the neural responses for those same stimuli as opposed to being a purely predictive measure.
 
+\edit{
+We have added these measures to the relevant section of the manuscript. While we believe the best assessment of goodness of fit to the data is the lower bound on the log evidence of the data $\log p(\mathcal{D})$ estimated by our model, this measure is also less than intuitive.
+{\color{red} Therefore, we have used a simple percent variance explained for the firing rate curves in Figure 4C and a mean squared error for the inferred firing rates in Figures 5C and D (weighted by uncertainty). That is, we calculated the mean of $\frac{(f_a - f_i)^2}{\sigma_a^2 + \sigma_i^2}$ across all stimuli, where the subscripts $a$ and $i$ represent actual and inferred firing rates.}
+}
+
 \item On the LIP data from Roitman \& Shadlen, the use of this dataset along with conditioning on motion coherence strikes me as a peculiar choice for this paper because coherence is a label/feature given by the experimenter, and not the actual stimulus - almost the situation this method is designed to avoid. I don’t think this analysis needs to be dropped, but I’d like to see a little more explanation and justification. To elaborate, each stimulus presentation is randomly generated so that the average motion follows the coherence level, and neurons in MT (although this is a different brain area) show stable rates on average to these stimuli. However, in response to repeated presentations of the same random dot stimulus, MT cells can show more complicated temporal dynamics corresponding to the particular stimulus and thus a different stimulus conditioning could potentially invoke a different set of states (see comment 2).
 a. One clarification on the analysis: is the conditioning on IN vs. OUT purely on choice, or is motion direction given? Does conditioning on both motion direction and choice (which I think is warranted here) show anything more?
+
+\edit{
+We apologize for what we believe is a confusion related to our description of the experiment. The goal of our analysis was to determine how well the binary latent features inferred by our model might match those used by the experimenters in generating the data set. As seen in Figure 4, the features that our model inferred as driving neural responses only partially overlapped with those chosen by the experimenters, and we find this difference illuminating as to both the strengths and limits of our method. More importantly, in answer to several issues raised by the reviewer:
+\begin{itemize}
+    \item Our method never had access to either the response field variables (IN vs OUT) or the coherences, \emph{per se}. Rather, the model receives a unique stimulus code that combines RF, coherence, and time during the trial. Figure 4A represents the design matrix as specified by the experimenters. Figure 4B is sorted along the same horizontal axis for comparison purposes only.
+    \item While we agree with the reviewer that differences in time courses across trials in response to different stimuli with the same coherence are interesting and may be illuminating, we note two things:
+    \begin{itemize}
+        \item The available dataset only contains stimulus codes corresponding to the coherence and RF (IN vs OUT) presented on a given trial. We are thus prevented (for this data set) from a comparison across identical dot patterns.
+        \item Our model only captures regularities across presentations in whatever we code as distinct stimuli. As a result, we are only able to infer what is held in common against repeated presentations of the same motion coherence and RF. Trial-to-trial variation is captured by the variable $\theta$ in our model, which in this experiment was modeled as iid Gamma.
+        \item {\color{red} Motion direction was given in the data set, but our experiment used only correct choices. As a result, these two variables were confounded (choosing the target in the RF means that motion was toward the RF). We regret this omission and have clarified in the text.}
+    \end{itemize}
+\end{itemize}
+}
 \end{enumerate}
 
 Minor comments
-- Page 2, line 36 typo: “from a calcium images”
+\begin{itemize}
+    \item Page 2, line 36 typo: “from a calcium images”
+
+    \edit{Thank you. We have corrected this.}
+\end{itemize}
 
 {\bf Reviewer \#3}: Review of Neuron's Eye View: Inferring Features of Complex Stimuli from Neural Responses
 
