@@ -1,0 +1,80 @@
+\pdfoutput=1
+
+\documentclass[12pt,a4paper]{article}
+% \usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+
+% \usepackage{lastpage,fancyhdr,graphicx}
+% \usepackage{algorithm}
+% \usepackage{algpseudocode}
+%
+% % amsmath and amssymb packages, useful for mathematical formulas and symbols
+% \usepackage{amsmath,amssymb}
+
+% % Use adjustwidth environment to exceed column width (see example table in text)
+% \usepackage{changepage}
+%
+% % Use Unicode characters when possible
+% \usepackage[utf8x]{inputenc}
+%
+% % textcomp package and marvosym package for additional characters
+% \usepackage{textcomp,marvosym}
+%
+% % cite package, to clean up citations in the main text. Do not remove.
+% \usepackage{cite}
+%
+% % Use nameref to cite supporting information files (see Supporting Information section for more info)
+% \usepackage{nameref,hyperref}
+%
+% % line numbers
+% \usepackage[right]{lineno}
+%
+% % ligatures disabled
+% \usepackage{microtype}
+% \DisableLigatures[f]{encoding = *, family = * }
+%
+% % color can be used to apply background shading to table cells only
+\usepackage[table]{xcolor}
+%
+% % array package and thick rules for tables
+% \usepackage{array}
+
+\newcommand{\edit}[1]{\textcolor{blue}{#1}}
+\begin{document}
+
+{\bf Reviewer \#1}: The authors propose a statistical modeling approach for identifying stimulus features within a highly complex stimulus space that are important for a set of neurons under study. Objectively searching for what neurons actually code, without getting stuck in our preconceived notions, is of fundamental importance to performing replicable, generalizable neuroscience. They approach this by modeling the spike rate as a combination of independent, latent features, each modeled as an HMM. Unlike a standard HMM, this model effectively breaks up a single (complex) state controlling firing rates into the product of binary states, resulting in a potentially far more interpretable structure, especially for complex, multi-neuron data. One notable aspect of the model is that it is applicable to independently recorded cells as long as the stimulus set is shared, and the stimuli can have different presentation lengths. Additionally, the authors use a variational algorithm to keeps the method highly tractable while keeping it Bayesian. The method is clearly presented and this particular way of deconstructing spike trains into a simple set of features is potentially widely applicable in systems neuroscience.
+
+My primary critique of this paper is a fundamental issue of framing of the model’s capabilities. Limitations of the model and its features need to be more clearly and accurately addressed. The authors argue that their “work focuses on detecting features in external stimuli.” They state that features they detect in neural data can be used to tag stimuli and refine the stimulus set they use. However, there is a crucial step missing between the states identified by this model in the neural data and stimulus: we are given a set of features corresponding to each stimulus presented in the experiment, not a function mapping stimulus space to features. This problem is highlighted by the IT example with neurons selective for complex visual features. The authors demonstrate that the states in their model correspond to selectivity for complex visual features, such as monkey close-ups or monkey body parts. These are reasonable conclusions (and serve to validate that the model is acting sensibly), but the analysis of the features relied entirely on the hand-labeled stimulus features given by the authors – opening the door to subjective feature selectivity this paper aims to avoid. Unlike a regression model like a GLM, this model does not appear to simply generate predictions of the neural responses to new stimuli. For this model to be more helpful in the way the authors suggest for refining stimulus sets in an objective way without a priori labels, we’d like to have an objective estimate of whether or not a feature is present in a new stimulus. Thus, the strong language of the intro and conclusion ought to be backed up by a more compelling demonstration that it can show something new in the stimulus space, something that is necessary to account for the firing rates, beyond a set of predefined features.
+
+Specific comments.
+\begin{enumerate}
+\item Semi-Markov dynamics are emphasized in the introduction (abstract and at line 50 of page 2). Is the comment about the model handling nontrivial state duration distributions justified given the results presented in this paper? The model fits appear to all assume Markov transitions (geometrically distributed duration times).
+
+\item The model here defines features as having constant gain effect on the cells when they are present. However, neural responses may include features that are not constant (e.g., oscillatory), and the particular binning used could affect how this model pulls out features as well as the spike count overdispersion. While this model can surely cope with some dynamics, I would like to see a bit of discussion on the assumptions and consequences of this particular definition of feature along with binning choices, perhaps assisted by a simulation. Does changing the bin width on the given examples alter the model’s behavior?
+
+\item For the model fit performance in figure 4C and 5C-D, could you provide a quantitative summary on how well does this fit the data? I would also like to see a clarification with these inferred rates as to how latent features inferred from the neural responses for those same stimuli as opposed to being a purely predictive measure.
+
+\item On the LIP data from Roitman \& Shadlen, the use of this dataset along with conditioning on motion coherence strikes me as a peculiar choice for this paper because coherence is a label/feature given by the experimenter, and not the actual stimulus - almost the situation this method is designed to avoid. I don’t think this analysis needs to be dropped, but I’d like to see a little more explanation and justification. To elaborate, each stimulus presentation is randomly generated so that the average motion follows the coherence level, and neurons in MT (although this is a different brain area) show stable rates on average to these stimuli. However, in response to repeated presentations of the same random dot stimulus, MT cells can show more complicated temporal dynamics corresponding to the particular stimulus and thus a different stimulus conditioning could potentially invoke a different set of states (see comment 2).
+a. One clarification on the analysis: is the conditioning on IN vs. OUT purely on choice, or is motion direction given? Does conditioning on both motion direction and choice (which I think is warranted here) show anything more?
+\end{enumerate}
+
+Minor comments
+- Page 2, line 36 typo: “from a calcium images”
+
+{\bf Reviewer \#3}: Review of Neuron's Eye View: Inferring Features of Complex Stimuli from Neural Responses
+
+The paper suggests a Bayesian hierarchical firing rate model for data analysis that aims to identify features that are hidden in unstructured stimuli, based only on the neural data. The approach falls within the class of the widely studied Poisson latent state space models. Going beyond classic approaches positing a simple low-dimensional latent dynamic system, the authors consider a richer hierarchical distribution over prior dynamic models, an approach that is becoming popular in recent years both in Machine Learning and Computational Neuroscience. The firing rates of neurons in this setting are assumed to be sensitive to multiple discrete time-varying features tied to the stimulus, which are modeled based on Markov (or semi-Markov) dynamics. The authors propose a variational inference mechanism for inferring the latent variables, and demonstrate their results in several experimental settings.
+
+As noted above the model presented belongs to the increasingly studied class of hierarchical latent state space models with a Poisson observation model. The main novelty seems to be in the introduction of the binary latent space variables interpreted as tags and modeled using Markovian (or semi-Markovian) dynamics. I found the presentation of the approach somewhat misleading, as it tends to imply that the paper introduces a novel class of models, while the major novelty seems to be in the interpretation of the hidden latent dynamics. I think this issue should be clarified, in order to set the present work within the general context of research in this field. Moreover, the paper emphasizes the novelty of the variational Bayesian approach for neural data analysis. This is a widely studied research domain with Machine Learning in recent years, and many approaches have been developed, albeit for non-Poisson models (e.g., Variational Inference: A Review for Statisticians for a review 2016, Blei et al). In the context of Poisson models, references 14 and 15 as well as the paper "Unlocking neural population non-stationarities using hierarchical dynamics models." By Park et al (NIPS 2015) provide a very similar framework for neural data analysis, which is difficult to distinguish from the present work. Thus, I feel that paper somewhat over-sells the novelty of the approach. As far as I can see the main novelty is in the interpretation of the latent variables, which may be very helpful for interpreting experimental results, but, in my view, does not constitute the conceptual contribution implied by the authors. In order for the paper to be published, I would urge the authors to put their model in context, and describe precisely how it differs from this recent work, and whether the claimed merits are due to a more flexible modeling framework or to a novel interpretation of the hidden dynamic process.
+
+Moving now to more technical issues. I found the presentation of the model and setup somewhat confusing. I assume that when the authors refer to a time-dependent firing rate they are referring to the firing rate of a doubly stochastic point process depending on external signals. However, the authors do not use point processes in continuous time but model the system in discrete time. The use the symbol $\Lambda$ to denote the time-dependent firing rate at time t. This should be clearly defined in terms of the continuous-time time-dependent firing rate characterizing point processes in continuous time. They do not define $N_m$. Are they referring to the total count until time t or the increment in number of spikes between points in time? In short, I would like to see a fundamental definition of the continuous time point process and its relation to the firing-rate process they describe (or, alternatively, provide a precise reference to this equation). Moreover, equation (10) presents the complete log likelihood function. It would be more informative to the reader to first express the likelihood itself, since it simply the product of Poisson distributions and would be much clearer to the reader.
+
+I believe Algorithm 1 should be moved to the main text, as it is comprises an essential part of the paper. Furthermore, each line in the algorithm should refer to a specific equation in the main text or in the supplementary text, so that the implementation of the algorithm is clear and transparent to the reader.
+
+A computational paper of this form should present a self-contained derivation of the algorithm. For example, how are the forward-backward variables in eq. (3) of the supplementary material computed? In short, I would expect a full specification of the algorithm derivation, since there is no other war for a reader to verify its correctness. If certain aspects are standard please refer to a specific equation in a paper/book where it is presented. As a concrete example of the level of detail I would expect in a paper purporting to derive a novel algorithm, please see the appendix of the paper “Unlocking neural population non-stationarities using hierarchical dynamics models", Park et al (NIPS 2015).
+
+As stated previously, there have been several recent papers presenting inference within a variational hierarchical dynamical system Bayesian model. The present paper should clarify the conceptual and practical differences with these works.
+
+Please explain the over-line notation in eq. (4) of the supplementary material.
+The experimental results seem interesting and novel, to the best of my knowledge, and point to the power of the method. I found the figures and figure captions rather difficult to follow. While I don’t have specific suggestions, I would urge the authors to try simplifying the explanations in the captions.
+
+\end{document}
