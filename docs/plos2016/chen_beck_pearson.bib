@@ -943,3 +943,92 @@
   month       =  "10~" # jul,
   year        =  2015
 }
+
+@INCOLLECTION{Park2015-bp,
+  title     = "Unlocking neural population non-stationarities using
+               hierarchical dynamics models",
+  booktitle = "Advances in Neural Information Processing Systems 28",
+  author    = "Park, Mijung and Bohner, Gergo and Macke, Jakob H",
+  editor    = "Cortes, C and Lawrence, N D and Lee, D D and Sugiyama, M and
+               Garnett, R",
+  publisher = "Curran Associates, Inc.",
+  pages     = "145--153",
+  year      =  2015
+}
+
+@ARTICLE{Blei2016-pv,
+  title         = "Variational Inference: A Review for Statisticians",
+  author        = "Blei, David M and Kucukelbir, Alp and McAuliffe, Jon D",
+  abstract      = "One of the core problems of modern statistics is to
+                   approximate difficult-to-compute probability distributions.
+                   This problem is especially important in Bayesian statistics,
+                   which frames all inference about unknown quantities as a
+                   calculation about the posterior. In this paper, we review
+                   variational inference (VI), a method from machine learning
+                   that approximates probability distributions through
+                   optimization. VI has been used in myriad applications and
+                   tends to be faster than classical methods, such as Markov
+                   chain Monte Carlo sampling. The idea behind VI is to first
+                   posit a family of distributions and then to find the member
+                   of that family which is close to the target. Closeness is
+                   measured by Kullback-Leibler divergence. We review the ideas
+                   behind mean-field variational inference, discuss the special
+                   case of VI applied to exponential family models, present a
+                   full example with a Bayesian mixture of Gaussians, and
+                   derive a variant that uses stochastic optimization to scale
+                   up to massive data. We discuss modern research in VI and
+                   highlight important open problems. VI is powerful, but it is
+                   not yet well understood. Our hope in writing this paper is
+                   to catalyze statistical research on this widely-used class
+                   of algorithms.",
+  month         =  "4~" # jan,
+  year          =  2016,
+  archivePrefix = "arXiv",
+  primaryClass  = "stat.CO",
+  eprint        = "1601.00670"
+}
+
+@ARTICLE{Escola2011-gk,
+  title       = "Hidden Markov models for the stimulus-response relationships
+                 of multistate neural systems",
+  author      = "Escola, Sean and Fontanini, Alfredo and Katz, Don and
+                 Paninski, Liam",
+  affiliation = "Center for Theoretical Neuroscience and Department of
+                 Psychiatry, Columbia University, New York, NY 10032, USA.
+                 sean@neurotheory.columbia.edu",
+  abstract    = "Given recent experimental results suggesting that neural
+                 circuits may evolve through multiple firing states, we develop
+                 a framework for estimating state-dependent neural response
+                 properties from spike train data. We modify the traditional
+                 hidden Markov model (HMM) framework to incorporate
+                 stimulus-driven, non-Poisson point-process observations. For
+                 maximal flexibility, we allow external, time-varying stimuli
+                 and the neurons' own spike histories to drive both the spiking
+                 behavior in each state and the transitioning behavior between
+                 states. We employ an appropriately modified
+                 expectation-maximization algorithm to estimate the model
+                 parameters. The expectation step is solved by the standard
+                 forward-backward algorithm for HMMs. The maximization step
+                 reduces to a set of separable concave optimization problems if
+                 the model is restricted slightly. We first test our algorithm
+                 on simulated data and are able to fully recover the parameters
+                 used to generate the data and accurately recapitulate the
+                 sequence of hidden states. We then apply our algorithm to a
+                 recently published data set in which the observed neuronal
+                 ensembles displayed multistate behavior and show that
+                 inclusion of spike history information significantly improves
+                 the fit of the model. Additionally, we show that a simple
+                 reformulation of the state space of the underlying Markov
+                 chain allows us to implement a hybrid half-multistate,
+                 half-histogram model that may be more appropriate for
+                 capturing the complexity of certain data sets than either a
+                 simple HMM or a simple peristimulus time histogram model
+                 alone.",
+  journal     = "Neural Comput.",
+  volume      =  23,
+  number      =  5,
+  pages       = "1071--1132",
+  month       =  may,
+  year        =  2011,
+  language    = "en"
+}
