@@ -270,7 +270,7 @@ Consider a population of $U$ spiking neurons or units exposed to a series of sti
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{movie}
 	\caption{\bf Observational model.}
-    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(\mathrm{time}, \mathrm{unit})$ presentations. Example stimulus sequences for two experiments are shown, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus and unit can be different.
+    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(\mathrm{time}, \mathrm{unit})$ presentations. Example stimulus sequences for two \added{experimental sessions} are shown, with corresponding neuronal spike data. Note that the number of \added{presentations of each stimulus can differ by unit, and that units need not be simultaneously recorded.}
 	\label{fig:movie}
 \end{figure}
 
@@ -317,7 +317,7 @@ in conjunction with the definitions of $p(N|\Lambda, \theta)$ and $\Lambda(\lamb
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{model}
 	\caption{\bf Generative model for spike counts.}
-	A: Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's responses ($\lambda$) to both latent discrete states $z_t$ and observed covariates $x_t$ that change in time, as well as a baseline firing rate $\lambda_0$. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$. B: Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations $M_{tu}$.
+	A: Counts are assumed Poisson-distributed, with firing rates $\Lambda$ that depend on each unit's \added{baseline ($\lambda_0$), as well as responses} to both latent discrete states $z_t$ \added{($\lambda_z$)} and observed covariates $x_t$ \added{($\lambda_x$)} that change in time. $\gamma$ nodes represent hyperparameters for the firing rate effects. $\theta$ is a multiplicative overdispersion term specific to each observation, distributed according to hyperparameters $s$. B: Spike counts $N$ are observed for each of $U$ units over stimulus time $T$ for multiple presentations.
 \label{model}
 \end{figure}
 
@@ -445,7 +445,7 @@ As seen in Figure \ref{synthetic}, the model correctly recovers only the feature
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{synthetic}
-	\caption{\bf Comparison of actual and inferred states of the synthetic data.} A: Actual features for a subset of stimulus times in the synthetic dataset. B: Recovered binary features for the same subset. Features have been reordered for display. The unused features are in gray, indicating a high posterior uncertainty in the model. C: Population posterior distributions for inferred hyper parameters. Features 3 and 4 are effectively point masses around gain 1 (no effect), while features 1--3 approximate the $\text{Gamma}(1, 1)$ data-generating model. D: Normalized mutual information between actual and inferred states.
+	\caption{\bf Comparison of actual and inferred states of the synthetic data.} A: \added{Ground truth binary latent features} for a subset of stimulus times in the synthetic dataset. B: Recovered binary features for the same subset. Features have been reordered to facilitate comparisons with panel A. The unused features are in gray, indicating a high posterior uncertainty in the model. C: Population posterior distributions for inferred hyper parameters. Features 3 and 4 are effectively point masses around gain 1 \added{(no population gain change in response to the feature)}, while features 1--3 approximate the $\text{Gamma}(1, 1)$ data-generating model. D: Normalized mutual information between actual and inferred states.
 	\label{synthetic}
 \end{figure}
 
@@ -463,7 +463,8 @@ But the model also reproduces less obvious features: it correctly discriminates 
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{roitman}
 	\caption{\bf Comparison of actual and inferred states of the Roitman dataset.}
-	A: Indicators of actual categories represented in the stimulus presentation period. The categories are not independent of each other. Stimuli are joined sequentially, labeled by a single, unique stimulus time. B: Recovered binary features during the stimulus presentation period. Note that model features 6 -- 9 are unused and that Features 1 \& 2 closely track the In and Out features of the data, respectively. C: Actual and predicted firing rates for the stimulus period. Note that the model infers stimulus categories from the data, including appropriate timing of differentiation between categories.
+    A: \added{Experimental design features. Each vertical block represents a single type of trial (combination of stimulus coherence and choice location). Features present on a particular trial are plotted in white, and duration of each feature within the stimulus presentation period is indicated by the width of the bar in the horizontal direction. B: Recovered features from the model.}
+	Note that model features 6 -- 9 are unused and that Features 1 \& 2 closely track the In and Out features of the data, respectively. \added{Shorter bars represent inferred features that lasted less than the full stimulus presentation period.} C: Actual and predicted firing rates for the stimulus period. Note that the model infers stimulus categories from the data, including appropriate timing of differentiation between categories.
 	\label{roitman}
 \end{figure}
 
@@ -479,7 +480,7 @@ Again, as noted above, our results in Figure \ref{fig:imgclust}.A and \ref{fig:i
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{imgclust}
 	\caption{\bf Comparison of actual and inferred states of the macaque dataset.}
-	A: Actual categories in the macaque data set. 96 stimuli comprising 8 categories were presented in 1483 trials, with each stimulus presented to each neuron $\sim$15 times. B: The inferred states from our model. The color represents the multiplicative effect to the population baseline firing rates. Note that our model shows a clear increase of firing rates in the categories of monkey faces, whole monkeys, and some stimuli within monkey bodies. C: Actual and predicted spikes per second across all stimulus of neuron 089a. D. Actual and predicted spikes per second across all stimulus of neuron 100a. Error bars for data represent 95\% credible intervals for the firing rate based on observed data under a Poisson model with weak priors. Error bars on predictions are 95\% credible intervals based on simulation from the approximate posterior for the given unit.
+    A: \added{Experimenter-determined features for the IT data set.} 96 stimuli comprising 8 categories were presented in 1483 trials, with each stimulus presented to each neuron $\sim$15 times. B: The inferred states from our model. \added{Color represents the mean percent change in firing rate across the population in response to each feature. For clarity, features with mean population effects <5\% are not plotted. The model has inferred features corresponding to monkey close-ups, whole monkey photos, and most close-ups of monkey body parts.} C: Actual and predicted spikes per second across all stimulus of neuron 089a. D. Actual and predicted spikes per second across all stimulus of neuron 100a. Error bars for data represent 95\% credible intervals for \added{firing rates inferred from observed data using a Poisson model with weak priors.} Error bars on predictions are 95\% credible intervals based on simulation from the approximate posterior for the \added{plotted} unit.
 	\label{fig:imgclust}
 \end{figure}
 
