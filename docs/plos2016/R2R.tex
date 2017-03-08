@@ -8,7 +8,7 @@
 % \usepackage{algpseudocode}
 %
 % % amsmath and amssymb packages, useful for mathematical formulas and symbols
-% \usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb}
 
 % % Use adjustwidth environment to exceed column width (see example table in text)
 % \usepackage{changepage}
@@ -23,7 +23,7 @@
 % \usepackage{cite}
 %
 % % Use nameref to cite supporting information files (see Supporting Information section for more info)
-% \usepackage{nameref,hyperref}
+\usepackage{nameref,hyperref}
 %
 % % line numbers
 % \usepackage[right]{lineno}
@@ -185,15 +185,44 @@ To address this concern, we have substantially expanded our introduction to bett
 To address this shortcoming, we have revised the introduction extensively to discuss these related models, as well as place our own work within that broader context. Changes are highlighted in the revised manuscript.
 }
 
-Moving now to more technical issues. I found the presentation of the model and setup somewhat confusing. I assume that when the authors refer to a time-dependent firing rate they are referring to the firing rate of a doubly stochastic point process depending on external signals. However, the authors do not use point processes in continuous time but model the system in discrete time. The use the symbol $\Lambda$ to denote the time-dependent firing rate at time t. This should be clearly defined in terms of the continuous-time time-dependent firing rate characterizing point processes in continuous time. They do not define $N_m$. Are they referring to the total count until time t or the increment in number of spikes between points in time? In short, I would like to see a fundamental definition of the continuous time point process and its relation to the firing-rate process they describe (or, alternatively, provide a precise reference to this equation). Moreover, equation (10) presents the complete log likelihood function. It would be more informative to the reader to first express the likelihood itself, since it simply the product of Poisson distributions and would be much clearer to the reader.
+Moving now to more technical issues. I found the presentation of the model and setup somewhat confusing. I assume that when the authors refer to a time-dependent firing rate they are referring to the firing rate of a doubly stochastic point process depending on external signals. However, the authors do not use point processes in continuous time but model the system in discrete time. The use the symbol $\Lambda$ to denote the time-dependent firing rate at time t. This should be clearly defined in terms of the continuous-time time-dependent firing rate characterizing point processes in continuous time. They do not define $N_m$. Are they referring to the total count until time t or the increment in number of spikes between points in time? In short, I would like to see a fundamental definition of the continuous time point process and its relation to the firing-rate process they describe (or, alternatively, provide a precise reference to this equation).
+
+\edit{
+We apologize for the confusion. We everywhere use a discrete time index and model binned spike counts. $N_m$ is defined in the paragraph above its first usage (Eq 1), but this has been clarified in the revised text.
+}
+
+Moreover, equation (10) presents the complete log likelihood function. It would be more informative to the reader to first express the likelihood itself, since it simply the product of Poisson distributions and would be much clearer to the reader.
+
+\edit{
+We have added this equation to the manuscript.
+}
 
 I believe Algorithm 1 should be moved to the main text, as it is comprises an essential part of the paper. Furthermore, each line in the algorithm should refer to a specific equation in the main text or in the supplementary text, so that the implementation of the algorithm is clear and transparent to the reader.
 
+\edit{
+We have moved Algorithm 1 to the main paper. It is now located at the end of the Inference section. We have also added equation references for each line.
+}
+
 A computational paper of this form should present a self-contained derivation of the algorithm. For example, how are the forward-backward variables in eq. (3) of the supplementary material computed? In short, I would expect a full specification of the algorithm derivation, since there is no other war for a reader to verify its correctness. If certain aspects are standard please refer to a specific equation in a paper/book where it is presented. As a concrete example of the level of detail I would expect in a paper purporting to derive a novel algorithm, please see the appendix of the paper “Unlocking neural population non-stationarities using hierarchical dynamics models", Park et al (NIPS 2015).
+
+\edit{
+We agree with the reviewer that verifiability of the algorithm is an important point. Our Algorithm now has specific line references for each step, and the supplement provides full details. As for standard algorithms:
+For inference in the HMM, we use the well-known forward-backward algorithm, for which we now provide a textbook citation (Murphy, 2012). For inference in the semi-Markov case, we provide a citation for the relevant algorithm (Yu and Kobayashi, 2006). Moreover, we provide a full implementation of all algorithms used in the paper (with unit tests) at \url{https://github.com/pearsonlab/spiketopics}.
+}
 
 As stated previously, there have been several recent papers presenting inference within a variational hierarchical dynamical system Bayesian model. The present paper should clarify the conceptual and practical differences with these works.
 
+\edit{
+As noted above, we agree with the reviewer about the importance of clarifying these relationships. We hope that the reviewer will agree that our expanded and revised introduction succeeds much better in placing our work within the context of other related models.
+}
+
 Please explain the over-line notation in eq. (4) of the supplementary material.
 The experimental results seem interesting and novel, to the best of my knowledge, and point to the power of the method. I found the figures and figure captions rather difficult to follow. While I don’t have specific suggestions, I would urge the authors to try simplifying the explanations in the captions.
+
+\edit{
+To simplify notation, we have denoted expectations in the supplement by overlines: $\mathbb{E}[x] = \overline{x}$. This is now explained in the supplement.
+}
+
+{\color{red} We have also endeavored to clarify and simplify the figure captions.}
 
 \end{document}

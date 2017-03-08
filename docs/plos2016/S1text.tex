@@ -273,6 +273,7 @@ Here, we have suppressed the latent feature index $k$ and abuse notation by writ
      \right]
     + \text{constant}
  \end{multline}
+where for notational simplicity, we have replaced expectations with overlines: $\overline{x} \equiv \mathbb{E}[x]$.
 In what follows, we will drop the irrelevant constant. For $\overline{\log y}$, where $y \in \lbrace \theta, \lambda_0, \lambda_z, \lambda_x \rbrace$, the assumption $q(y) = \text{Ga}(\alpha, \beta)$ gives
 \begin{equation}
     \overline{\log y} = \psi(\alpha) - \log \beta
@@ -308,11 +309,14 @@ Finally, we want the entropy of the variational posterior over $z$, $\mathbb{E}_
 \end{equation}
 with $(\eta, \tilde{A}, \tilde{\pi})$ the parameters of the variational posterior corresponding to the emission, transition, and initial state probabilities of the Markov chain (interpreted as matrices) and $Z$ the normalization constant. From \cite{beal2003variational}, we have that variational updates should give
 \begin{align}
-    \tilde{A}_k &\leftarrow \overline{\log A_k} &
+    \label{A_update}
+    \tilde{A}_k &\leftarrow \overline{\log A_k} \\
+    \label{pi_update}
     \tilde{\pi}_k &\leftarrow \overline{\log \pi_k}
 \end{align}
-while the effective emission probabilities in the ``on" ($z = 1$) state of the HMM are
+while the effective emission probabilities in the ``on'' ($z = 1$) state of the HMM are
 \begin{align}
+    \label{eta_update}
     \eta_{tk} &\leftarrow \delta_{z_{tk}, 1} \sum_{m; t(m) = t} N_m \overline{\log \lambda_{zu(m)k}}
     - \sum_{m; t(m) = t} \overline{\theta_m} H_{0u(m)} F_{tku(m)} G_{tu(m)}
 \end{align}
@@ -426,17 +430,19 @@ Here, we overload notation to write $N_{tu} = \sum_m \delta_{u(m), u} \delta_{t(
 
 \subsection{Non-conjugate updates}
 \label{non-conj}
-We employ explicit optimization steps for two updates in our iterative Algorithm \ref{algo}. In each case, we employ an off-the-shelf optimization routine, though more efficient alternatives are likely possible.
+We employ explicit optimization steps for two updates in our iterative algorithm. In each case, we employ an off-the-shelf optimization routine, though more efficient alternatives are likely possible.
 
 \subsubsection{Covariate firing rate effects}
 \label{beta_x}
 Because we do not restrict the covariates $x(t)$ to be binary, Equation \ref{eff_rate} no longer yields a conditional log probability for $\lambda_x$ in the exponential family. This leaves us with a transcendental equation to solve for $\beta_{xr}$. However, from Table \ref{conj_updates}, we see that $\alpha_{xr} \gg \sum_t x_{tr}$, allowing us to approximate $G_t \approx \prod_r (\alpha_{xr}/\beta_{xr})^{x_{tr}}$ as we have done above. Moreover, since the sum $\sum_t G_t \sim T\overline{G}$, we expect $\alpha_x / \beta_x \approx 1$ at the optimum for most reasonable datasets. We thus reparameterize $\beta_{xur} = \alpha_{xur}e^{-\epsilon_{ur}}$ and write the relevant $\epsilon$-dependent piece of the objective function $\mathcal{L}$ as
 \begin{equation}
+    \label{fropt}
     \mathcal{L}_\epsilon = \sum_{ur} \left[a_{xur}\epsilon_{ur} - b_{xur}e^{-\epsilon_{ur}} \right] - \sum_m \overline{\theta}_m H_{0u(m)} F_{t(m)u(m)}
     e^{-\sum_r \epsilon_{u(m)r} x_{t(m)u(m)r}}
 \end{equation}
 We also supply the optimizer with the gradient:
 \begin{equation}
+    \label{frgrad}
     \nabla_\epsilon \mathcal{L}_\epsilon = a_{xur} - b_{xur}e^{-\epsilon_{ur}}  - \sum_{m; u(m) = u} x_{t(m)ur} \overline{\theta}_m H_{0u} F_{t(m)u}
     e^{-\sum_r \epsilon_{ur} x_{t(m)ur}}
 \end{equation}
@@ -461,6 +467,7 @@ implying that there are cancellations between $\log p(N, z|\Theta)$ and $\log q(
 
 Thus the objective to be optimized is
 \begin{equation}
+    \label{semi_markov_opt}
     \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
 \end{equation}
 
@@ -477,30 +484,6 @@ with
     (\log d - \mu)^2
 \end{equation}
 This can be derived either by performing the integral directly or by noting that the result should be proportional to the posterior (Normal-Gamma, by conjugacy) of $(m, \tau)$ after having observed a single data point, $\log d$.
-
-\begin{algorithm}[ht]
-\caption{Iterative update for variational inference}\label{algo}
-\begin{algorithmic}[1]
-\Procedure{Iterate}{}
-    \State Update baselines $\lambda_0$\Comment{conjugate Gamma}
-    \State Update baseline hyperparameters $\gamma_0$\Comment{conjugate Gamma}
-    \For{$k = 1\ldots K$}
-        \State Update firing rate effects $\lambda_{zk}$\Comment{conjugate Gamma}
-        \State Update firing rate hyperparameters $\gamma_{zk}$\Comment{conjugate Gamma}
-        \State Calculate expected log evidence $\eta_k$
-        \State Update Markov chain parameters $\tilde{A}_k, \tilde{\pi}_k$
-        \State $\xi_k, \Xi_k, \log Z_k \gets$\Call{forward-backward}{$\eta_k, \tilde{A}_k, \tilde{\pi}_k$}
-        \If{semi-Markov}
-            \State Update duration distribution $p_k(d|j)$\Comment{BFGS optimization}
-        \EndIf
-        \State Update cached $F$
-    \EndFor
-    \State Update covariate firing effects $\lambda_x$\Comment{BFGS optimization}
-    \State Update cached $G$
-    \State Update overdispersion $\theta$\Comment{conjugate Gamma}
-\EndProcedure
-\end{algorithmic}
-\end{algorithm}
 
 \section{Experiments}
 Code for all algorithms and analyses is available at \url{https://github.com/pearsonlab/spiketopics}.

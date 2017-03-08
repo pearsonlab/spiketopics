@@ -154,7 +154,7 @@
 % Header and Footer with logo
 \usepackage{lastpage,fancyhdr,graphicx}
 \usepackage{epstopdf}
-\graphicspath{{figures/upload/}}
+\graphicspath{{figures/upload/}}  % added by JMP
 \pagestyle{myheadings}
 \pagestyle{fancy}
 \fancyhf{}
@@ -166,6 +166,13 @@
 \fancyfootoffset[L]{2.25in}
 \lfoot{\sf PLOS}
 
+% added by JMP for algorithm formatting
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% added by JMP for cross references
+\usepackage{xr}
+\externaldocument{S1text}
 %% Include all macros below
 
 \newcommand{\lorem}{{\bf LOREM}}
@@ -251,29 +258,30 @@ Most importantly, as we will show, the latent features found by our model are of
 }
 
 \added{
-In the rest of this work, we outline the mathematics behind our model, discuss the process of approximate Bayesian inference we use to infer latent features, and perform a series of validation experiments on both synthetic data and real data sets of spiking responses. In the latter, we have chosen datasets where the features that drive spiking are reasonably well understood. We train our model without using this information and then compare the inferred and experimenter-labeled features as a means of illuminating strengths and weaknesses of our model. We conclude by discussing possible extensions and applications to other domains.
+In the sections below, we outline the mathematics behind our model, discuss the process of approximate Bayesian inference we use to infer latent features, and perform a series of validation experiments on both synthetic data and real data sets of spiking responses. In the latter, we have chosen datasets where the features that drive spiking are reasonably well understood. We train our model without using this information and then compare the inferred and experimenter-labeled features as a means of illuminating strengths and weaknesses of our model. We conclude by discussing possible extensions and applications to other domains.
 }
 
 \section*{Model}
 \label{model_sec}
 
 \subsection*{Observation model}
-Consider a population of $U$ spiking neurons or units exposed to a series of stimuli indexed by a time index $t\in \lbrace 1\ldots T\rbrace$. We assume that this time index is unique across all stimuli, such that a particular $t$ represents a unique moment in a particular stimulus. In order to model repeated presentations of the same stimulus to the same neuron, we further assume that each neuron is exposed to a stimulus $M_{tu}$ times, though we do not assume any relationship among $M_{tu}$. That is, we need not assume either that all neurons see each stimulus the same number of times, nor that each stimulus is seen by all neurons. It is thus typical, but not required, that $M_{tu}$ be sparse, containing many 0s, as shown in Figure \ref{fig:movie}.
+Consider a population of $U$ spiking neurons or units exposed to a series of stimuli indexed by a \added{discrete} time index $t\in \lbrace 1\ldots T\rbrace$. We assume that this time index is unique across all stimuli, such that a particular $t$ represents a unique moment in a particular stimulus. In order to model repeated presentations of the same stimulus to the same neuron, we further assume that each neuron is exposed to a stimulus $M_{tu}$ times, though we do not assume any relationship among $M_{tu}$. That is, we need not assume either that all neurons see each stimulus the same number of times, nor that each stimulus is seen by all neurons. It is thus typical, but not required, that $M_{tu}$ be sparse, containing many 0s, as shown in Figure \ref{fig:movie}.
 
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{movie}
 	\caption{\bf Observational model.}
-    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(time, unit)$ presentations. Example stimulus sequences for two experiments are shown, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus and unit can be different.
+    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(\mathrm{time}, \mathrm{unit})$ presentations. Example stimulus sequences for two experiments are shown, with corresponding neuronal spike data. Note that the number of exposure times $M_{tu}$ for each stimulus and unit can be different.
 	\label{fig:movie}
 \end{figure}
 
-For each observation $m$ in $M_{tu}$, we then observe a spike count, $N_m$. Note that $m$ is a unique $(time, unit)$ pair that can be denoted by $(t(m), u(m))$. We model these spike counts as arising from a Poisson process with time-dependent rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
+\added{Each unique observation $m$ in our data set consists of a spike count $N_m$ for a particular $(\mathrm{time}, \mathrm{unit})$ pair $(t(m), u(m))$.}
+We model these spike counts as arising from a Poisson \added{distribution} with rate $\Lambda_{tu}$ and observation-specific multiplicative overdispersion $\theta_m$:
 \begin{align}
     \label{obs_model}
     N_{m} &\sim \text{Pois}(\Lambda_{t(m), u(m)} \theta_m) &
     \text{where} ~~ \theta_m &\sim \text{Gamma}(s_{u(m)}, s_{u(m)})
 \end{align}
-That is, for a given stimulus presentation, the spiking response is governed by the firing rate $\Lambda$, specific to the stimulus and unit, along with a moment-by-moment noise in the unit's gain, $\theta_m$. We restrict these $\theta_m$ to follow a Gamma distribution with the same shape and rate parameters, since this results in an expected noise gain of 1. In practice, we model this noise as independent across observations, though it is possible to weaken this assumption, allowing for $\theta_m$ to be autocorrelated in time (see Supplement). Note that both the unit and time are functions of the observation index $m$, and that the distribution of the overdispersion for each observation may be specific to the unit observed.
+That is, for a given stimulus presentation, the spiking response is governed by the firing rate $\Lambda$ \added{(we set $\Delta t = 1$ for convenience)}, specific to the stimulus and unit, along with a moment-by-moment noise in the unit's gain, $\theta_m$. We restrict these $\theta_m$ to follow a Gamma distribution with the same shape and rate parameters, since this results in an expected noise gain of 1. In practice, we model this noise as independent across observations, though it is possible to weaken this assumption, allowing for $\theta_m$ to be autocorrelated in time (see Supplement). Note that both the unit and time are functions of the observation index $m$, and that the distribution of the overdispersion for each observation may be specific to the unit observed.
 
 \subsection*{Firing rate model}
 At each stimulus time $t$, we assume the existence of $K$ binary latent states $z_{tk}$ and $R$ observed covariates $x_{tr}$. The binary latent states can be thought of as time-varying ``tags'' of each stimulus --- for example, content labels for movie frames --- and are modeled as Markov chains with initial state probabilities $\pi_k$ and transition matrices $A_k$. The observed covariates, by contrast, are known to the experimenter and may include contrast, motion energy, or any other \emph{a priori} variable of interest.
@@ -334,6 +342,19 @@ With this ansatz, the variational objective decomposes in a natural way, and cho
 
 \subsection*{Variational posterior}
 From Eq (\ref{obs_model}) and (\ref{fr_model}) above, we can write the probability of the observed data $N$ as
+\added{
+\begin{equation}
+    p(N, z|x, \Theta) = \prod_{m} \left[
+        \frac{
+        \left(\theta_m \Lambda_{t(m)u(m)}\right)^{N_m}
+        e^{-\theta_m \Lambda_{t(m)u(m)}}
+        }{N_m!}
+    \right]
+    \prod_{mk} (A_k)_{z_{t(m)+1, k}, z_{t(m), k}}
+    \prod_k (\pi_k)_{z_{0k}}
+\end{equation}
+where again, $m$ indexes observations of $(t(m),u(m))$ pairs, the portion in brackets is the Poisson likelihood for each bin count and the last two nontrivial terms represent the probability of the Markov sequence given by $z_{tk}$. From this, we can expand the log likelihood:
+}
 \begin{multline}
     \label{log_evidence}
     \log p(N, z|x, \Theta) = \sum_{mkr} \left[
@@ -347,10 +368,13 @@ From Eq (\ref{obs_model}) and (\ref{fr_model}) above, we can write the probabili
     \sum_{mk} \log (A_k)_{z_{t(m)+1, k}, z_{t(m), k}} +
     \sum_k \log (\pi_k)_{z_{0k}} + \text{constant,}
 \end{multline}
-where again, $m$ indexes observations of $(t(m),u(m))$ pairs and the last two nontrivial terms represent the probability of the Markov sequence given by $z_{tk}$. Given that Eq (\ref{log_evidence}) is of an exponential family form for $\theta$ and $\lambda$ when conditioned on all other variables, free-form variational arguments \cite{Wainwright2008-ii} suggest variational posteriors:
+Given that Eq (\ref{log_evidence}) is of an exponential family form for $\theta$ and $\lambda$ when conditioned on all other variables, free-form variational arguments \cite{Wainwright2008-ii} suggest variational posteriors:
 \begin{align}
-    \lambda_{0u} &\sim \text{Gamma}(\alpha_{0u}, \beta_{0u}) &
-    \lambda_{zuk} &\sim \text{Gamma}(\alpha_{zuk}, \beta_{zuk}) &
+    \label{lambda0}
+    \lambda_{0u} &\sim \text{Gamma}(\alpha_{0u}, \beta_{0u}) \\
+    \label{lambdaz}
+    \lambda_{zuk} &\sim \text{Gamma}(\alpha_{zuk}, \beta_{zuk}) \\
+    \label{lambdax}
     \lambda_{xur} &\sim \text{Gamma}(\alpha_{xur}, \beta_{xur})
 \end{align}
 For the first of these two, updates in terms of sufficient statistics involving expectations of $\gamma = (c, d)$ are straightforward (see Supplement). However, this relies on the fact that $z_t \in \lbrace0, 1\rbrace$. The observed covariates $x_t$ follow no such restriction, which results in a transcendental equation for the $\beta_x$ updates. In our implementation of the model, we solve this using an explicit BFGS optimization on each iteration. Moreover, we place non-hierarchical Gamma priors on these effects: $\lambda_{xur} \sim \text{Gamma}(a_{xur}, b_{xur})$.
@@ -372,9 +396,11 @@ to lower bound the negative gamma function and approximate the above as
 \end{equation}
 Clearly, the conditional probabilities for $c$ and $d$ are gamma in form, so that if we use priors $c \sim \text{Gamma}(a_c, b_c)$ and $d\sim \text{Gamma}(a_d, b_d)$ the posteriors have the form
 \begin{align}
+    \label{gammac}
     c &\sim \text{Gamma}\left(a_c + \frac{U}{2},
     b_c + \sum_u\mathbb{E}_q
         \left[d \lambda_u - \log \lambda_u - \log d - 1\right]\right) \\
+    \label{gammad}
     d &\sim \text{Gamma}\left(
         a_d + U\mathbb{E}_q[c], b_d + \sum_u \mathbb{E}_q [c \lambda_u]
     \right)
@@ -382,6 +408,33 @@ Clearly, the conditional probabilities for $c$ and $d$ are gamma in form, so tha
 This basic form, with appropriate indices added, gives the update rules for the hyperparameter posteriors for $\lambda_0$ and $\lambda_z$. For $\theta$, we simply set $c = s_u$ and $d = 1$.
 
 For each latent variable $z$, the Markov Chain parameters $\pi_k$ and $A_k$, together with the observation model Eq (\ref{log_evidence}) determine a Hidden Markov Model, for which inference can be performed efficiently via conjugate updates and the well-known forward-backward algorithm \cite{beal2003variational}. More explicitly, given $\pi$, $A$, and the emission probabilities for the observations, $\log p(N|z)$, the forward-backward algorithm returns the probabilities $p(z_t=s)$ (posterior marginal), $p(z_{t+1} =s', z_t=s)$ (two-slice marginal) and $\log Z$ (normalizing constant).
+
+\added{
+Our final algorithm is presented in Algorithm \ref{algo}. Equation numbers reference posterior definitions in the text. Exact updates for the sufficient statistics are presented in Table \ref{conj_updates} of the Supplement.
+\begin{algorithm}[ht]
+\caption{Iterative update for variational inference}\label{algo}
+\begin{algorithmic}[1]
+\Procedure{Iterate}{}
+    \State Update baselines $\lambda_0$\Comment{conjugate Gamma (\ref{lambda0})}
+    \State Update baseline hyperparameters $\gamma_0$\Comment{conjugate Gamma (\ref{gammac}, \ref{gammad})}
+    \For{$k = 1\ldots K$}
+        \State Update firing rate effects $\lambda_{zk}$\Comment{conjugate Gamma (\ref{lambdaz})}
+        \State Update firing rate hyperparameters $\gamma_{zk}$\Comment{conjugate Gamma (\ref{gammac}, \ref{gammad})}
+        \State Calculate expected log evidence $\eta_k$ \Comment{(S\ref{eta_update})}
+        \State Update Markov chain parameters $\tilde{A}_k, \tilde{\pi}_k$ \Comment{(S\ref{A_update}, S\ref{pi_update})}
+        \State $\xi_k, \Xi_k, \log Z_k \gets$\Call{forward-backward}{$\eta_k, \tilde{A}_k, \tilde{\pi}_k$} \Comment{\cite{murphy2012machine, Yu2006-bb}}
+        \If{semi-Markov}
+            \State Update duration distribution $p_k(d|j)$\Comment{BFGS optimization (S\ref{semi_markov_opt})}
+        \EndIf
+        \State Update cached $F$ \Comment{(S\ref{F})}
+    \EndFor
+    \State Update covariate firing effects $\lambda_x$\Comment{BFGS optimization (\ref{lambdax}, S\ref{fropt}, S\ref{frgrad})}
+    \State Update cached $G$ \Comment{(S\ref{G})}
+    \State Update overdispersion $\theta$\Comment{conjugate Gamma (\ref{gammac}, \ref{gammad})}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+}
 
 \section*{Experiments}
 \subsection*{Synthetic data}
