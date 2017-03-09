@@ -396,7 +396,222 @@ In this case, we additionally need to perform inference on the parameters $(m, \
     \mathbb{E}_q\left[- \log \left( \sum_{d=1}^D p(d|j)\right) \right]
     \ge -\log \sum_{d = 1}^D \mathbb{E}_q\left[p(d|j)\right]
 \end{equation}
-This correction for truncation must then be added to $\mathbb{E}_q[p(z|\Theta)]$. For inference in the semi-Markov case, we use an extension of the forward-backward algorithm\cite{Yu2006-bb}, at the expense of computational complexity $\mathcal{O}(SDT)$ $(S = 2)$ per latent state, to calculate $q(z_k)$. For the $4SK$ hyperparameters of the Normal-Gamma distribution, we perform an explicit BFGS optimization on the $4S$ parameters of each chain on each iteration (detailed in Subsection \ref{semimarkovdd}).
+This correction for truncation must then be added to $\mathbb{E}_q[p(z|\Theta)]$. For inference in the semi-Markov case, we use an extension of the forward-backward algorithm\cite{Yu2006-bb}, as well as the algorithms in \cite{Mitchell1993-sl, Mitchell1995-go}, at the expense of computational complexity $\mathcal{O}(SDT)$ $(S = 2)$ per latent state, to calculate $q(z_k)$. For the $4SK$ hyperparameters of the Normal-Gamma distribution, we perform an explicit BFGS optimization on the $4S$ parameters of each chain on each iteration (detailed in Subsection \ref{semimarkovdd}).
+
+The new ELBO for the semi-Markov model thus adds to the terms involving $\Xi$ and $\xi_0$ in (\ref{eq:log_evidence}) an additional piece:
+\begin{multline}
+    \sum_{d j k} C(d, j, k) \mathbb{E}_q \left[\log p_k(d|j) - \log \left(\sum_{d=1}^D p_k(d|j) \right) \right] \ge \\
+    \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right]
+\end{multline}
+where as noted above, the second term inside the expectation arises from the need to normalize $p(d|j)$ over discrete times and the inequality follows from Jensen's Inequality. Here, $d$ is the duration variable, $j$ labels states of the chain (here 0 and 1), and $k$, as elsewhere, labels chains\cite{Mitchell1993-sl,Mitchell1995-go,Yu2006-bb}. $C$ is defined for each state and chain as the probability of a dwell time $d$ in state $j$ \emph{conditioned on} the event of just having transitioned to $j$\footnote{Thus $C$ is equivalent to $\mathcal{D}_{t|T}$ in \cite{Yu2006-bb}.}
+\footnote{
+We also note that, just as the emission, transition, and initial state probabilities have their counterparts in variational parameters $(\eta, \tilde{A}, \tilde{\pi})$ in $q(z)$, so $C$ is matched by a term $-\sum_{djk} C(d, j, k) \nu_{djk}$ in $\mathbb{E}_q[-\log q]$. And in analogy with the HMM case, variation with respect to $\nu$ gives
+\begin{equation}
+    \nu_{djk} = \mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right],
+\end{equation}
+implying that there are cancellations between $\log p(N, z|\Theta)$ and $\log q(z)$ in $\mathcal{L}$ and care must be taken when calculating it\cite{beal2003variational}.}
+
+Thus the objective to be optimized is
+\begin{equation}
+    \label{semi_markov_opt}
+    \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
+\end{equation}
+We focus on each of these and their updates below.
+
+\subsubsection{Contributions to the ELBO}
+For the case of $p(d|m, s^2)$ Log-Normal and $(m, \tau = s^{-2})$ Normal-Gamma, the terms $\mathbb{E}_q[\log p(d|j)]$ involve only routine expectations of natural parameters of the Normal-Gamma, and similarly for the expected log prior and entropy in the last term. Writing the delay distribution in the exponential family form with base measure $h$ and natural parameter $\eta$
+\begin{equation}
+    p(d|z=i) = h(d) \exp(\eta_i \cdot T(d) - A(\eta_i))
+\end{equation}
+yields for the lognormal distribution $\log d \sim \mathcal{N}(m, s^2)$
+\begin{align}
+    h(d) &= \frac{1}{\sqrt{2\pi} d} \\
+    T(d) &= \begin{bmatrix}
+    \log d \\
+    (\log d) ^2
+    \end{bmatrix} \\
+    \eta &= \begin{bmatrix}
+    \frac{m}{s^2} \\
+    -\frac{1}{2s^2}
+    \end{bmatrix} \\
+    A(\eta) &= \frac{m^2}{2s^2} + \log s
+\end{align}
+
+If we then put a Normal-Gamma posterior on $(m, \tau)$ with parameters $(\mu, \lambda, \alpha, \beta)$, we can easily calculate
+\begin{align}
+    \mathbb{E}_q[\eta] &= \mathbb{E}_q
+    \begin{bmatrix}
+    m\tau \\
+    -\frac{1}{2}\tau
+    \end{bmatrix} =
+    \begin{bmatrix}
+    \mu\frac{\alpha}{\beta} \\
+    -\frac{\alpha}{2\beta}
+    \end{bmatrix} \\
+    \mathbb{E}_q[A(\eta)] &= \mathbb{E}_q\left[
+    \frac{1}{2}m^2\tau - \frac{1}{2} \log \tau
+    \right] \\
+    &= \frac{1}{2} \mathbb{E}_\tau\left[
+    \left(\mu^2 + \frac{1}{\lambda \tau}\right)\tau
+    \right]
+    -\frac{1}{2} (\psi(\alpha) - \log \beta) \\
+    &= \frac{1}{2} \left(\mu^2 \frac{\alpha}{\beta} + \frac{1}{\lambda} \right)
+    -\frac{1}{2} (\psi(\alpha) - \log \beta)
+\end{align}
+The relevant piece of the evidence lower bound for updating $(\mu, \lambda, \alpha, \beta)$ is
+\begin{equation}
+    \sum_{i, d} C(d, i) [ \log h(d) + \mathbb{E}_q[\eta_i] \cdot T(d) -
+    \mathbb{E}_q[A(\eta_i)] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
+\end{equation}
+again, with $q(m, \tau) = \text{Normal-Gamma}(\mu, \lambda, \alpha, \beta)$. We can thus write
+\begin{align}
+    \label{semi_markov_elogp}
+    \mathbb{E}_q[\log p(d|j)] =& -\frac{1}{2}\log 2\pi C_0 - C_1 +
+    \mathbb{E}_q[m\tau] C_1 -\frac{1}{2}\mathbb{E}_q[\tau] C_2  \nonumber \\
+    &- \frac{1}{2} C_0 \mathbb{E}_q[m^2\tau] + \frac{1}{2} C_0 \mathbb{E}_q[\log \tau] \nonumber \\
+    =& \; G + F \cdot T(\alpha, \beta, \lambda, \mu)
+\end{align}
+where
+\begin{align}
+    G &\equiv -\frac{1}{2}\log 2\pi C_0 - C_1 \\
+    F \cdot T &=
+    \begin{bmatrix}
+        \frac{C_0}{2} &
+        -\frac{C_2}{2} &
+        C_1 &
+        -\frac{C_0}{2}
+    \end{bmatrix} \cdot \mathbb{E}_q
+    \begin{bmatrix}
+        \log \tau \\
+        \tau \\
+        m\tau \\
+        m^2 \tau
+    \end{bmatrix} \\
+    C_0 &\equiv \sum_{id} C_{id} \\
+    C_1 &\equiv \sum_{id} C_{id} \log d \\
+    C_2 &\equiv \sum_{id} C_{id} (\log d)^2
+\end{align}
+
+For calculating the final term in (\ref{semi_markov_opt}), we can make use of conjugacy (since $p(m, \tau|\alpha_0, \beta_0, \lambda_0, \mu_0)$ is itself Normal-Gamma) and the fact that (\ref{semi_markov_elogp}) only depends linearly on the expected sufficient statistics of $q$ to write the contribution of $\mathbb{E}_q[\log p(m, \tau)]$ as an update to $F$:
+\begin{equation}
+    F' =
+    \begin{bmatrix}
+        \frac{C_0}{2} + \alpha_0 \\
+        -\frac{C_2}{2} -\beta_0 - \frac{\lambda_0\mu_0^2}{2} \\
+        C_1 + \lambda_0\mu_0 \\
+        -\frac{C_0}{2} - \frac{\lambda_0}{2}
+    \end{bmatrix}
+\end{equation}
+Moreover, we can make use of the standard entropy formula for the Normal-Gamma distribution:
+\begin{align}
+    \label{normal_gamma_entropy}
+    H[q] &= \mathbb{E}_q[-\log q] = \mathbb{E}_q[-\log q(\tau) - \log q(m|\tau)] \nonumber\\
+    &= H_g(\alpha, \beta) + \mathbb{E}_q\left[
+    -\log \sqrt{\frac{\lambda\tau}{2\pi}} +
+    \frac{\lambda\tau}{2} (m - \mu)^2
+    \right] \nonumber\\
+    &= \alpha - \log \beta + \log \Gamma(\alpha) + (1 - \alpha) \psi(\alpha) \nonumber\\
+    & - \frac{1}{2} \log \frac{\lambda}{2\pi} - \frac{1}{2} \left(\psi(\alpha) - \log \beta\right)
+    + \frac{1}{2}
+\end{align}
+
+Only slightly more complicated is the term arising from the normalization constant, which in the standard $(\mu, \lambda, \alpha, \beta)$ parameterization of the Normal-Gamma takes the form
+\begin{equation}
+    \label{e_normal_gamma}
+    \mathbb{E}_q[p(d|m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau)
+    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}}
+    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)}
+    \frac{\beta^{-\frac{1}{2}}}{\hat{\beta}^{\alpha + \frac{1}{2}}}
+\end{equation}
+with
+\begin{equation}
+    \hat{\beta} \equiv 1 + \frac{1}{2\beta} \frac{\lambda}{1 + \lambda}
+    (\log d - \mu)^2
+\end{equation}
+This can be derived either by performing the integral directly or by noting that the result should be proportional to the posterior (Normal-Gamma, by conjugacy) of $(m, \tau)$ after having observed a single data point, $\log d$.
+
+Taken together, (\ref{semi_markov_elogp}) (with $F\rightarrow F'$), (\ref{normal_gamma_entropy}), and (\ref{e_normal_gamma}) allow (\ref{semi_markov_opt}) to be calculated directly as a function of the variational parameters $(\alpha, \beta, \lambda, \mu)$ of $q(m, \tau)$. Were it not for the normalization constant arising from the restriction of discrete $d$, the updates resulting from optimizing this objective would reduce by conjugacy to simple paramater updates. With that additional term, we are forced to use a brute-force BFGS optimization step instead (see \ref{semimarkovdd} below).
+
+
+\subsubsection{Forward-Backward Algorithm for HSMM: Notation}
+Here, we follow Yu and Kobayashi, mutatis mutandis. Define:
+\begin{align*}
+    \psi_t(m) &= p(y_t|z_t=m) &\text{observation probability}\\
+    \alpha_{t|x}(m, d) &= p(z_t=m, d_t=d|y_{1:x}) &\text{condition on data}\\
+    \gamma_{t|x}(m) &= \sum_d \alpha_{t|x} (m, d) &\text{marginalize out }d\\
+    \psi^*_t(m) &= \frac{\alpha_{t|t}(m, d)}{\alpha_{t|t-1}(m, d)} =
+    \frac{\psi_t(m)}{p(y_t|y_{1:t-1})} \\
+    r_t^{-1} &= p(y_t|y_{1:t-1}) = \sum_{m,d} \alpha_{t|t-1}(m, d)\psi_t(m) \\
+    &= \sum_m \gamma_{t|t-1}(m) \psi_t(m) \\
+    Z &= p(y_{1:T}) = \left(\prod_{t=1}^T r_t\right)^{-1} &\text{probability of data} \\
+    \mathcal{D}_{t|x}(m, d) &= p(z_t=m, d_t=d, d_{t-1}=1|y_{1:x}) &\rightarrow (m, d) \\
+    \mathcal{T}_{t|x}(n, m) &= p(z_t=n, z_{t-1}=m, d_{t-1}=1|y_{1:x}) &m \rightarrow n \\
+    \mathcal{E}_t(m) &= p(z_t=m, d_t=1|y_{1:t}) = \alpha_{t|t-1}(m, 1) \psi^*_t(m) &m \text{ ends at } t \\
+    \mathcal{S}_t(m) &= p(d_t=1, z_{t+1}=m|y_{1:t}) = \sum_n A(m, n)\mathcal{E}_t(n) &m \text{ starts at } t+1
+\end{align*}
+and for the backward pieces
+\begin{align*}
+    \beta_t(m, d) &= \frac{p(z_t=m, d_t=d|y_{1:T})}{p(z_t=m, d_t=d|y_{1:t-1})}
+    = \frac{p(y_{t:T}|z_t=m, d_t=d)}{p(y_{t:T}|y_{1:t-1})} \\
+    \mathcal{E}^*_t(m) &= \frac{p(y_{t:T}|z_t=m, d_{t-1} = 1)}{p(y_{t:T}|y_{1:t-1})} = \sum_d p_m(d) \beta_t(m, d) \\
+    \mathcal{S}^*_t(m) &= \frac{p(y_{t:T}|z_{t-1}=m, d_{t-1}=1)}{p(y_{t:T}|y_{1:t-1})} = \sum_n \mathcal{E}^*_t(n) A(n, m)
+\end{align*}
+These quantities then allow us to write the posterior probabilities
+\begin{align*}
+    \alpha_{t|T}(m, d) &= \beta_t(m, d) \alpha_{t|t-1}(m, d) &\text{posterior prob of }(m, d) \\
+    \mathcal{T}_{t|T}(n, m) &= \mathcal{E}^*_t(n) A(n, m) \mathcal{E}_{t - 1}(m) &\text{posterior prob of } m \rightarrow n \\
+    \mathcal{D}_{t|T}(m, d) &= \beta_t(m, d)p_m(d) \mathcal{S}_{t-1}(m) &\text{posterior prob of entering }(m, d) \text{ at } t
+\end{align*}
+
+\subsubsection{Forward}
+From Yu and Kobayashi, we have the following forward pass:
+\begin{enumerate}
+    \item $\alpha_{1|0}(m, d) = \pi_m p_m(d)$ for time 1; otherwise, use
+    \begin{equation}
+        \alpha_{t|t-1}(m, d) = S_{t-1}(m) p_m(d) + \psi^*_{t-1}(m) \alpha_{t-1|t-2}(m, d + 1)
+    \end{equation}
+    \item Use $\alpha_{t|t-1}$ and $\psi_t$ to get $r_t$; together, these give
+    $\psi_t^*$. Store $r_t$
+    \item Calculate and save $\mathcal{E}_t$.
+    \item Calculate $\mathcal{S}_t$.
+    \item Loop.
+\end{enumerate}
+
+\subsubsection{Backward}
+Again following Yu and Kobayashi:
+\begin{enumerate}
+    \item Initialize $\beta_T(m, d) = \psi^*_T(m) = \psi_T(m) r_T$
+    \item $\psi^*_t(m) = \psi_t(m) r_t$
+    \item Calculate $\beta_t(m, d)$ by
+    \begin{equation}
+        \beta_t(m, d) =
+        \begin{cases}
+            \mathcal{S}^*_{t+1}(m)\psi^*_t(m), & d=1 \\
+            \beta_{t+1}(m, d - 1) \psi^*_t(m), & d > 1
+        \end{cases}
+    \end{equation}
+    where, again,
+    \begin{align}
+        \mathcal{S}^*_{t + 1}(m) &= \sum_{n} \mathcal{E}^*_{t+1}(n) A(n, m) \\
+        \mathcal{E}^*_{t + 1}(n) &= \sum_d \beta_{t+1}(n, d) p_n(d)
+    \end{align}
+    \item Use the above equation to calculate $\mathcal{E}^*_t$ and $\mathcal{S}^*_t$. Save $\mathcal{E}^*$.
+\end{enumerate}
+
+\subsubsection{Sufficient Statistics}
+Finally, we can calculate and return:
+\begin{align}
+    \log Z &= - \sum_{t=1}^T \log r_t \\
+    \xi_t(m) &= \sum_d \alpha_{t|T}(m,d) = \gamma_{t|T}(m) = \sum_d \alpha_{t|t-1}(m, d) \beta_t(m, d) \\
+    \Xi_{t+1, t}(n, m) &= \mathcal{T}_{t+1|T}(n, m) = \mathcal{E}^*_{t+1}(n) A(n, m) \mathcal{E}_t(m) \\
+    C_t(m, d) &= \mathcal{D}_{t|T}(m, d) =
+    \begin{cases}
+        \pi_m p_m(d) \beta_1(m, d) & t = 1 \\
+        \mathcal{S}_{t-1}(m)p_m(d) \beta_t(m, d) & t > 1 \\
+    \end{cases}
+\end{align}
+Note that, because $\Xi_{t+1, t}$ is the \emph{joint} absolute probability of the transition (i.e., not conditioned on $d_t = 1$) it is \emph{not} normalized when summing over $m$ and $n$. The same is true for $C$ when summing over $m$ and $d$.
+
 
 
 \section{Inference}
@@ -448,42 +663,11 @@ We also supply the optimizer with the gradient:
 \end{equation}
 where we sum only over observations with $u(m) = u$. On each iterate, we then optimize $\mathcal{L}_\epsilon$, initializing $\beta_x$ to the just-updated value of $\alpha_x$. In addition, we do not update firing rate effects for covariates separately, but optimize $\beta_{xur}$ for all $r$ together. Again, more efficient schemes are no doubt possible.
 
-\subsubsection{Semi-Markov duration distribution}
+\subsection{Semi-Markov duration distribution}
 \label{semimarkovdd}
 If the dwell time distributions of states in the semi-Markov model were truly continuous, the parameters $(m, s^2)$ of a lognormal distribution $p(d|j)$ would have a Normal-Gamma conjugate prior, and updates would be closed-form. However, the requirement that the durations be integers and that there exist a maximal duration, $D$, over which these probability mass functions must normalize results in an extra term in $\mathbb{E}_q[\log p]$ arising from the normalization constant. In this case, we must explicitly optimize for the parameters of the Normal-Gamma prior on $(m, s^2)$. However, unlike the case of \ref{beta_x}, these parameters are only updated for one latent feature at a time. Since the Normal-Gamma distribution has only 4 parameters and the number of states of the latent variable is $S = 2$, this requires updating $4SK$ parameters, but only taken $4S = 8$ at a time, a much more manageable task.
 
-To derive the optimization objective, we begin by noting that the semi-Markov model adds to the terms involving $\Xi$ and $\xi_0$ in latent state dynamics an additional piece:
-\begin{multline}
-    \sum_{d j k} C(d, j, k) \mathbb{E}_q \left[\log p_k(d|j) - \log \left(\sum_{d=1}^D p_k(d|j) \right) \right] \ge \\
-    \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right]
-\end{multline}
-where as noted above, the second term inside the expectation arises from the need to normalize $p(d|j)$ over discrete times and the inequality follows from Jensen's Inequality. Here, $d$ is the duration variable, $j$ labels states of the chain (here 0 and 1), and $k$, as elsewhere, labels chains\cite{Mitchell1993-sl,Mitchell1995-go,Yu2006-bb}. $C$ is defined for each state and chain as the probability of a dwell time $d$ in state $j$ \emph{conditioned on} the event of just having transitioned to $j$\footnote{Thus $C$ is equivalent to $\mathcal{D}_{t|T}$ in \cite{Yu2006-bb}.}
-\footnote{
-We also note that, just as the emission, transition, and initial state probabilities have their counterparts in variational parameters $(\eta, \tilde{A}, \tilde{\pi})$ in $q(z)$, so $C$ is matched by a term $-\sum_{djk} C(d, j, k) \nu_{djk}$ in $\mathbb{E}_q[-\log q]$. And in analogy with the HMM case, variation with respect to $\nu$ gives
-\begin{equation}
-    \nu_{djk} = \mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right],
-\end{equation}
-implying that there are cancellations between $\log p(N, z|\Theta)$ and $\log q(z)$ in $\mathcal{L}$ and care must be taken when calculating it\cite{beal2003variational}.}
 
-Thus the objective to be optimized is
-\begin{equation}
-    \label{semi_markov_opt}
-    \sum_{d j k} C(d, j, k) \left[\mathbb{E}_q \left[\log p_k(d|j)\right] - \log \sum_{d=1}^D \mathbb{E}_q\left[p_k(d|j) \right] \right] + \mathbb{E}_q\left[\log \frac{p(m, \tau)}{q(m, \tau)} \right]
-\end{equation}
-
-For the case of $p(d|m, s^2)$ Log-Normal and $(m, \tau = s^{-2})$ Normal-Gamma, the terms $\mathbb{E}_q[\log p(d)]$ involve only routine expectations of natural parameters of the Normal-Gamma, and similarly for the expected log prior and entropy in the last term. Only slightly more complicated is the term arising from the normalization constant, which in the standard $(\mu, \lambda, \alpha, \beta)$ parameterization of the Normal-Gamma takes the form
-\begin{equation}
-    \mathbb{E}_q[p(d|m, \tau)] = \int d\tau dm \; p(d|i, m, \tau) q(m, \tau)
-    = \frac{1}{\sqrt{2\pi}d} \sqrt{\frac{\lambda}{1 + \lambda}}
-    \frac{\Gamma(\alpha + 1/2)}{\Gamma(\alpha)}
-    \frac{\beta^{-\frac{1}{2}}}{\hat{\beta}^{\alpha + \frac{1}{2}}}
-\end{equation}
-with
-\begin{equation}
-    \hat{\beta} \equiv 1 + \frac{1}{2\beta} \frac{\lambda}{1 + \lambda}
-    (\log d - \mu)^2
-\end{equation}
-This can be derived either by performing the integral directly or by noting that the result should be proportional to the posterior (Normal-Gamma, by conjugacy) of $(m, \tau)$ after having observed a single data point, $\log d$.
 
 \section{Experiments}
 Code for all algorithms and analyses is available at \url{https://github.com/pearsonlab/spiketopics}.
