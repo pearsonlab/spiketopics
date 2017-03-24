@@ -65,9 +65,10 @@ class GammaModel(object):
         of spike counts at each time, one of number of observations of each
         time.
         """
-        # Modified by Xin
-        cols = ['unit', 'time', 'trial', 'count']
-        # cols = ['unit', 'time', 'count']
+        cols = ['unit', 'time', 'count']
+        if 'trial' in data.columns:
+            cols.append('trial')
+
         self.Nframe = data[cols].copy()
 
         # empty data frame for simple model
@@ -528,7 +529,7 @@ class GammaModel(object):
         else:
             G_sorted = self._sort_values(ind_mat, G)
 
-        cumprod_phi = np.cumprod(exphi_sorted.reshape(-1, time_nat), axis=1) 
+        cumprod_phi = np.cumprod(exphi_sorted.reshape(-1, time_nat), axis=1)
         prod_phi_F = cumprod_phi * bl_sorted.reshape(-1, time_nat) * F_sorted.reshape(-1, time_nat) * \
                      G_sorted.reshape(-1, time_nat)
         cumsum_phi_F = np.cumsum(prod_phi_F[:, ::-1], axis=1)[:, ::-1] / exphi_sorted.reshape(-1, time_nat)
@@ -967,9 +968,9 @@ def _minfun_guts(eps, grad, G, aa, ww, uu, Fblod, X):
 
 
 @jit(nopython=True, nogil=True)
-def _reg_omega_zeta(time_nat, omega, zeta, new_omega, new_zeta, prior_shape, prior_rate, 
+def _reg_omega_zeta(time_nat, omega, zeta, new_omega, new_zeta, prior_shape, prior_rate,
     reg_prod, cnt_cumsum, cumsum_phi_F):
-    
+
     for i in xrange(time_nat):
         new_zeta[:, i] = cumsum_phi_F[:, i] * reg_prod + prior_rate[:, i]
         new_omega[:, i] = cnt_cumsum[:, i] + prior_shape[:, i]
