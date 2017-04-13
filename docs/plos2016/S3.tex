@@ -115,7 +115,6 @@
 %\usepackage{graphics}
 \graphicspath{{figures/upload/}}  % added by JMP
 
-
 % Remove comment for double spacing
 %\usepackage{setspace}
 %\doublespacing
@@ -197,9 +196,9 @@
 % Please capitalize all terms in the title except conjunctions, prepositions, and articles.
 \begin{flushleft}
 {\Large
-\textbf{S2 Figure. \\}
+\textbf{S3 Figure. \\}
 \bigskip
-\textbf{Categorization of multinomial logistic regression} % Please use "title case" (capitalize all terms in the title except conjunctions, prepositions, and articles).
+\textbf{Effects of Bin Size and Dynamics} % Please use "title case" (capitalize all terms in the title except conjunctions, prepositions, and articles).
 }
 \newline
 % % Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
@@ -235,21 +234,48 @@
 \end{flushleft}
 % Please keep the abstract below 300 words
 
-\section{Categorization of multinomial logistic regression using raw data and inferred features}
 % Place figure captions after the first paragraph in which they are cited.
 
-\section*{Categorization using raw data and model inferred features}
-As a byproduct to the inferred features of our model, the generated labels provide a concise and fairly complete summary of the stimulus-related activity of all neural recordings. Here we want to emphasize that although our model is not a data compression method, it nonetheless preserves most of the information from raw data.
+Code to reproduce all experiments presented here is available at
+ \url{https://github.com/pearsonlab/spiketopics}.
 
-Thus a sparse logistic regression on two-bit combinations of our features is performed to predict stimulus category ties and outperforms, respectively a multinomial logistic regression on the raw spike counts with L1 and L2 regularization, as shown in Figure \ref{fig:softmax}.
+\section*{Robustness of inference to time step size}
+Our model assumes a fixed time step $\Delta t$ between count observations, which is also the time step for the Hidden Markov Model. However, if the time step used for inference (and binning spike data) is too large, the model may miss important temporal features of the data. Here, we performed two experiments to test the robustness of our inferred features to these possibilities. In both cases, we simulated data from our model ($U=20$ units, $T=1$s stimulus length, $M=200$ trials, $\Delta t = 5$ms, $K_{data} = 3$ features, $K = 5$ inferred features), similar to our synthetic data experiment. Just as in that experiment, our goal was to compare our recovered latent features to those that generated the data. However, in our inference, we systematically varied $\Delta t = (5, 10, 20, 50, 100)$ ms. We used the same relative error tolerance for training as in our synthetic data experiment, with 10 random parameter restarts, from which we chose the solution with highest ELBO. We did not include overdispersion effects in this experiment, though similar results may be obtained in that condition by including a larger number of trials.
+
+Results are displayed in Figure \ref{fig:no_trans}. At the top, we display the binary features used to generate the data. Below this, we show recovered binary features for each bin size, weighted by the mean absolute effect size (as a percent change from baseline) across the units in our simulation. This weighting serves to make inferred features with negligible effect on firing less visually salient, since a feature may be inferred with a low accompanying firing rate, effectively rendering it unused. Clearly, even though some discovered features are inverted, the model faithfully recovers the latent dynamics for small bin sizes (up to 20ms), gracefully degrading for larger bin sizes. This effect is likewise obvious in the comparison of actual, empirical, and recovered firing rates in Figure \ref{fig:no_trans_fr}, where deviations become more apparent as the time step increases and the model's recovered firing becomes coarser.
+
 
 \begin{figure}[!ht]
-    \includegraphics[width=.8\linewidth]{softmax}
-	\caption{\bf Comparison of actual and inferred states of the macaque dataset.}
-    A. The overall hit rate of prediction with L1 regularization respect to eight categories: Faces, Animals, Bodies, Fruit, Natural, Manmade, Scene, Pattern. B. The overall hit rate of prediction with L1 regularization for eight categories.
-	 %using raw data and inferred features for visual category dataset.
-	\label{fig:softmax}
+    \includegraphics[width=.9\linewidth]{bin_expt_no_trans}
+	\caption{\bf Recovery of latent features with different time step sizes.}
+    Comparison of recovered latent features from synthetic data generated with a 5ms time step resolution. Top panel shows actual binary features, while bottom panels show recovered features (weighted by mean absolute effect size) for a range of increasing time step sizes.
+	\label{fig:no_trans}
 \end{figure}
 
+\begin{figure}[!ht]
+    \includegraphics[width=.75\linewidth]{fr_recover}
+	\caption{\bf Recovery of firing rates with different time step sizes.}
+    Comparison of actual firing rates, trial-averaged empirical firing rates, and model-recovered firing rates for a variety of time step sizes.
+	\label{fig:no_trans_fr}
+\end{figure}
+
+\section*{Robustness of inference to firing rate dynamics}
+As a second check of model robustness, we repeated the bin size experiment of the previous but added a transient increase in firing rate (e.g. stimulus onset response) to the beginning of each trial. This transient was encoded as an additional multiplicative effect of $1 + 0.1\Gamma(5, 80)$, where $\Gamma(a, b)$ is the pdf of the Gamma distribution (in the shape, rate parameterization) and the data generating $\Delta t$ was again 5ms.
+
+Figure \ref{fig:with_trans} shows the results in the same format as Figure \ref{fig:no_trans}. Here, the model correctly recovers the underlying features for small time bin sizes, accounting for the transient by utilizing extra features (3 and 4) in the model. That is, in this simplified scenario, the model's response to additional temporal dynamics is simply to infer additional features. Nevertheless, as in the previous section, with larger time steps, features begin to blend, and the transient dynamics is poorly captured. This is also visible in the corresponding firing rate reconstruction (Figure \ref{fig:with_trans_fr})
+
+\begin{figure}[!ht]
+    \includegraphics[width=.9\linewidth]{bin_expt_with_trans}
+	\caption{\bf Recovery of latent features with different time step sizes.}
+    Comparison of recovered latent features from synthetic data generated with a 5ms time step resolution. Top panel shows actual binary features, while bottom panels show recovered features (weighted by mean absolute effect size) for a range of increasing time step sizes.
+	\label{fig:with_trans}
+\end{figure}
+
+\begin{figure}[!ht]
+    \includegraphics[width=.75\linewidth]{fr_recover_trans}
+	\caption{\bf Recovery of firing rates with different time step sizes.}
+    Comparison of actual firing rates, trial-averaged empirical firing rates, and model-recovered firing rates for a variety of time step sizes.
+	\label{fig:with_trans_fr}
+\end{figure}
 
 \end{document}

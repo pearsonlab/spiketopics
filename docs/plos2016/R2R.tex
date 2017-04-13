@@ -58,8 +58,8 @@
     \item We have substantially revised the introduction to place our work in the context of other latent variable models, particularly those using similar Variational Bayes methods.
     \item We have moved Algorithm 1 from the Supplement to the main text, with equation references for each step.
     \item As suggested by Reviewer 3, we have extensively edited the figure captions for clarity.
-    \item \color{red}{goodness of fit for firing rates?}
-    \item \color{red}{binning simulation?}
+    \item {\color{red} goodness of fit for firing rates?}
+    \item A new simulation as suggested by Reviewer 1 that shows how the ability of our model to recover latent features is effected by choices of time step size and transient dynamics.
 \end{enumerate}
 }
 
@@ -120,8 +120,12 @@ The reviewer raises an important issue. Our model is capable of capturing neural
 In our experiments, we have restricted ourselves to ``natural'' bin sizes for each problem: 20ms (a common smoothing window) for the Roitman-Shadlen data and 400ms (the duration of baseline, stimulus exposure, and post-stimulus period) for the McMahon et al. IT data. In the case of the former, this captures a rough accounting of the dynamics (Figure 4C), though one that clearly oversimplifies. In the case of the latter, we are implicitly assuming that the firing rates are constant during each epoch. This assumption is not terrible, but it does ignore the lag in the onset and offset of neural responses.
 }
 
-{\color{red}
-To further explore this, we performed a simulation as suggested by the reviewer\ldots
+\edit{
+To further explore this, we performed a simulation as suggested by the reviewer. We repeated an experiment similar to our synthetic data example, except in this case, the time step used to generate the data ($5$ms) was not necessarily that used to perform inference (5, 10, 20, 50, or 100ms). As expected, recovery performance degrades as coarser and coarser bins are used for inference, but it does so gracefully. Not until a bin size of 50ms (a tenfold increase over the underlying Markov dynamics) is the ability of the model to recover accurate features seriously compromised. We believe this suggests that, so long as the inference time step size is not grossly larger than the feature dynamics of interest, the model should perform well.
+}
+
+\edit{
+Additionally, we explored the effect of a different kind of dynamics---firing rate transients unrelated to HMM features---by repeating the simulation with a stimulus onset transient added to the start of each trial. As expected, the model accommodated this additional phenomenon by inferring \emph{previously unused} features that could account for the sudden increase in firing. And again, these new features were distince from the data-generating latents until time steps grew large, at which point the model largely lost its ability to capture the transient. Like the above, this suggests that applications of the model should use a time step comparable in magnitude to the fastest dynamics of interest, but that this correspondence need not be precise. Full details and results of both of these simulations are now available in Supplementary Material S3.
 }
 
 \item For the model fit performance in figure 4C and 5C-D, could you provide a quantitative summary on how well does this fit the data? I would also like to see a clarification with these inferred rates as to how latent features inferred from the neural responses for those same stimuli as opposed to being a purely predictive measure.
