@@ -197,11 +197,11 @@
 % Please capitalize all terms in the title except conjunctions, prepositions, and articles.
 \begin{flushleft}
 {\Large
-\textbf{S2 Figure. \\}
+\textbf{S2 Text. Inferred latents as classification features\\}
 \bigskip
-\textbf{Categorization of multinomial logistic regression} % Please use "title case" (capitalize all terms in the title except conjunctions, prepositions, and articles).
+% \textbf{Inferred latents as classification features} % Please use "title case" (capitalize all terms in the title except conjunctions, prepositions, and articles).
 }
-\newline
+% \newline
 % % Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
 % Xin (Cindy) Chen\textsuperscript{1,3},
 % Jeffrey M. Beck\textsuperscript{2,3},
@@ -214,7 +214,6 @@
 % \\
 % \textbf{3} Center for Cognitive Neuroscience, Duke University, Durham, North Carolina, USA
 % \\
-\bigskip
 
 % Insert additional author notes using the symbols described below. Insert symbol callouts after author names as necessary.
 %
@@ -235,16 +234,14 @@
 \end{flushleft}
 % Please keep the abstract below 300 words
 
-\section{Categorization of multinomial logistic regression using raw data and inferred features}
 % Place figure captions after the first paragraph in which they are cited.
 
-\section*{Categorization using raw data and model inferred features}
-As a byproduct to the inferred features of our model, the generated labels provide a concise and fairly complete summary of the stimulus-related activity of all neural recordings. Here we want to emphasize that although our model is not a data compression method, it nonetheless preserves most of the information from raw data.
+As a byproduct of our model, the generated labels provide a concise and fairly complete summary of the stimulus-related activity in the neural recordings. Here we want to emphasize that although our model is not a data compression method, it nonetheless preserves most of the information from raw data.
 
-Thus a sparse logistic regression on two-bit combinations of our features is performed to predict stimulus category ties and outperforms, respectively a multinomial logistic regression on the raw spike counts with L1 and L2 regularization, as shown in Figure \ref{fig:softmax}.
+Here, we use all pairwise combinations of binary features of our model to train a sparse logistic regression predicting stimulus category. We compare the results of this to a multinomial logistic regression on raw spike counts with L1 and L2 regularization. Results are shown in Figure \ref{fig:softmax}.
 
 \begin{figure}[!ht]
-    \includegraphics[width=.8\linewidth]{softmax}
+    \includegraphics[width=.7\linewidth]{softmax}
 	\caption{\bf Comparison of actual and inferred states of the macaque dataset.}
     A. The overall hit rate of prediction with L1 regularization respect to eight categories: Faces, Animals, Bodies, Fruit, Natural, Manmade, Scene, Pattern. B. The overall hit rate of prediction with L1 regularization for eight categories.
 	 %using raw data and inferred features for visual category dataset.

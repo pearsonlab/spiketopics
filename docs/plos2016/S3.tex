@@ -196,11 +196,11 @@
 % Please capitalize all terms in the title except conjunctions, prepositions, and articles.
 \begin{flushleft}
 {\Large
-\textbf{S3 Figure. \\}
-\bigskip
-\textbf{Effects of Bin Size and Dynamics} % Please use "title case" (capitalize all terms in the title except conjunctions, prepositions, and articles).
+\textbf{S3 Text. Effects of bin size and dynamics\\}
+% \bigskip
+% \textbf{Effects of Bin Size and Dynamics} % Please use "title case" (capitalize all terms in the title except conjunctions, prepositions, and articles).
 }
-\newline
+% \newline
 % % Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
 % Xin (Cindy) Chen\textsuperscript{1,3},
 % Jeffrey M. Beck\textsuperscript{2,3},
@@ -213,7 +213,7 @@
 % \\
 % \textbf{3} Center for Cognitive Neuroscience, Duke University, Durham, North Carolina, USA
 % \\
-\bigskip
+% \bigskip
 
 % Insert additional author notes using the symbols described below. Insert symbol callouts after author names as necessary.
 %
@@ -236,8 +236,8 @@
 
 % Place figure captions after the first paragraph in which they are cited.
 
-Code to reproduce all experiments presented here is available at
- \url{https://github.com/pearsonlab/spiketopics}.
+% Code to reproduce all experiments presented here is available at
+ % \url{https://github.com/pearsonlab/spiketopics}.
 
 \section*{Robustness of inference to time step size}
 Our model assumes a fixed time step $\Delta t$ between count observations, which is also the time step for the Hidden Markov Model. However, if the time step used for inference (and binning spike data) is too large, the model may miss important temporal features of the data. Here, we performed two experiments to test the robustness of our inferred features to these possibilities. In both cases, we simulated data from our model ($U=20$ units, $T=1$s stimulus length, $M=200$ trials, $\Delta t = 5$ms, $K_{data} = 3$ features, $K = 5$ inferred features), similar to our synthetic data experiment. Just as in that experiment, our goal was to compare our recovered latent features to those that generated the data. However, in our inference, we systematically varied $\Delta t = (5, 10, 20, 50, 100)$ ms. We used the same relative error tolerance for training as in our synthetic data experiment, with 10 random parameter restarts, from which we chose the solution with highest ELBO. We did not include overdispersion effects in this experiment, though similar results may be obtained in that condition by including a larger number of trials.
