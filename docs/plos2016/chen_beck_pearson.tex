@@ -154,7 +154,7 @@
 % Header and Footer with logo
 \usepackage{lastpage,fancyhdr,graphicx}
 \usepackage{epstopdf}
-\graphicspath{{figures/upload/}}  % added by JMP
+% \graphicspath{{figures/upload/}}  % added by JMP
 \pagestyle{myheadings}
 \pagestyle{fancy}
 \fancyhf{}
@@ -270,7 +270,7 @@ Consider a population of $U$ spiking neurons or units exposed to a series of sti
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{movie}
 	\caption{\bf Observational model.}
-    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(\mathrm{time}, \mathrm{unit})$ presentations. Example stimulus sequences for two \added{experimental sessions} are shown, with corresponding neuronal spike data. Note that the number of \added{presentations of each stimulus can differ by unit, and that units need not be simultaneously recorded.}
+    A: Stimuli are concatenated to form a single time series indexed by $t$. B: Individual experimental sessions draw from the available set of stimuli, with index $m$ representing unique $(\mathrm{time}, \mathrm{unit})$ presentations. Example stimulus sequences for two \added{experimental sessions} are shown, with corresponding neuronal spike data. Note that the number of \added{presentations of each stimulus can differ by unit, and that units need not be simultaneously recorded. Images copyright J.M. Garg, Einar Fredriksen (retrieved from Wikimedia Commons) and flickr/dvs under CC-BY.}
 	\label{fig:movie}
 \end{figure}
 
@@ -483,7 +483,7 @@ Again, as noted above, our results in Figure \ref{fig:imgclust}.A and \ref{fig:i
 \begin{figure}[!h]
     \includegraphics[width=\linewidth]{imgclust}
 	\caption{\bf Comparison of actual and inferred states of the macaque dataset.}
-    A: \added{Experimenter-determined features for the IT data set.} 96 stimuli comprising 8 categories were presented in 1483 trials, with each stimulus presented to each neuron $\sim$15 times. B: The inferred states from our model. \added{Color represents the mean percent change in firing rate across the population in response to each feature. For clarity, features with mean population effects <5\% are not plotted. The model has inferred features corresponding to monkey close-ups, whole monkey photos, and most close-ups of monkey body parts.} C: Actual and predicted spikes per second across all stimulus of neuron 089a. D. Actual and predicted spikes per second across all stimulus of neuron 100a. Error bars for data represent 95\% credible intervals for \added{firing rates inferred from observed data using a Poisson model with weak priors.} Error bars on predictions are 95\% credible intervals based on simulation from the approximate posterior for the \added{plotted} unit.
+    A: \added{Experimenter-determined features for the IT data set.} 96 stimuli comprising 8 categories were presented in 1483 trials, with each stimulus presented to each neuron $\sim$15 times. B: The inferred states from our model. \added{Color represents the mean percent change in firing rate across the population in response to each feature. For clarity, features with mean population effects <5\% are not plotted. The model has inferred features corresponding to monkey close-ups, whole monkey photos, and most close-ups of monkey body parts.} C: Actual and predicted spikes per second across all stimulus of neuron 089a. D. Actual and predicted spikes per second across all stimulus of neuron 100a. Error bars for data represent 95\% credible intervals for \added{firing rates inferred from observed data using a Poisson model with weak priors.} Error bars on predictions are 95\% credible intervals based on simulation from the approximate posterior for the \added{plotted} unit. \added{Images copyright J.M. Garg, Einar Fredriksen, flickr/kimubert, flickr/dvs, Julien Harneis, and WikiMedia/Celtus under CC-BY.}
 	\label{fig:imgclust}
 \end{figure}
 
@@ -517,11 +517,11 @@ Finally, even small features in our model recapitulated known physiological resu
 \label{S1_Text}
 {Derivation of ELBO and Inference.}
 
- \paragraph*{S2 Text. Inferred latents as classification features}
- \label{S2_Text}
+\paragraph*{S2 Text. Inferred latents as classification features}
+\label{S2_Text}
 
- \paragraph*{S3 Text. Effects of bin size and dynamics}
- \label{S3_Text}
+\paragraph*{S3 Text. Effects of bin size and dynamics}
+\label{S3_Text}
 
 \section*{Acknowledgments}
 We would like to thank David McMahon and David Leopold for generously sharing the visual cateogry stimuli and neural data from \cite{McMahon2014-qq} and for comments on the manuscript. \added{This work was supported by NIH awards R21-NS-084176 and K01-ES-025442 (to JMP).}
