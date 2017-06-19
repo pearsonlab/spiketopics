@@ -248,7 +248,7 @@ Results are displayed in Figure \ref{fig:no_trans}. At the top, we display the b
 \begin{figure}[!ht]
     \includegraphics[width=.9\linewidth]{bin_expt_no_trans}
 	\caption{\bf Recovery of latent features with different time step sizes.}
-    Comparison of recovered latent features from synthetic data generated with a 5ms time step resolution. Top panel shows actual binary features, while bottom panels show recovered features (weighted by mean absolute effect size) for a range of increasing time step sizes.
+    Comparison of recovered latent features from synthetic data generated with a 5ms time step resolution. Top panel shows actual binary features, while bottom panels show recovered features for a range of increasing time step sizes. Recovered features are plotted as $\mathbb{E}[z] \lvert \mathbb{E}[\lambda] - 1 \rvert$, the expected value of the binary feature weighted by the absolute magnitude of the effect (calculated as a fractional change in firing rate from baseline). That is, brighter colors indicate features corresponding to larger changes in firing rate, both positive and negative.
 	\label{fig:no_trans}
 \end{figure}
 
@@ -267,8 +267,8 @@ Figure \ref{fig:with_trans} shows the results in the same format as Figure \ref{
 \begin{figure}[!ht]
     \includegraphics[width=.9\linewidth]{bin_expt_with_trans}
 	\caption{\bf Recovery of latent features with transient dynamics.}
-    Comparison of recovered latent features from synthetic data generated with a 5ms time step resolution and a transient increase in firing at the start of each trial. Top panel shows actual binary features, while bottom panels show recovered features (weighted by mean absolute effect size) for a range of increasing time step sizes.
-	\label{fig:with_trans}
+    Comparison of recovered latent features from synthetic data generated with a 5ms time step resolution and a transient increase in firing at the start of each trial. Top panel shows actual binary features, while bottom panels show recovered features for a range of increasing time step sizes. Color scale is as in Figure \ref{fig:no_trans}.
+    \label{fig:with_trans}
 \end{figure}
 
 \begin{figure}[!ht]
