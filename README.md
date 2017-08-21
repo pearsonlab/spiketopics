@@ -16,10 +16,6 @@ This code implements a version of the Gamma-Poisson model on a pseudopopulation 
 - `hsmm_forward_backward.py`: Forward-Backward inference for the hidden semi-Markov model. Again uses Numba to provide just-in-time compilation.
 
 
-## Archived
-Deprecated files from semi-Markov model in gamma poisson model and lognormal model. The `archive` folder contains the codes that are not used in our current settings, but kept for recording purposes. 
-
-
 ## Documentation:
 The `docs` folder contains notes, papers, and other documentation for the algorithms.
 
@@ -41,11 +37,3 @@ or as modules by
 ~~~
 nosetests tests/name_of_test_module.py
 ~~~
-
-
-
-## TODO:
-- [ ] Correlated noise across neurons (log-Normal model does this)
-- [x] Response sparsity within populations, not just features
-- [ ] Smarter feature sparsity
-- [x] Noise autocorrelation in time (hard)
